@@ -39,7 +39,7 @@ class RokuRemoteControl(object):
         # but doesn't install the channel. We simulate a user key press
         # to install the channel
         self.send_post_request("%s/install/%s" % (self.api_url, channel_id))
-        sleep(1)
+        sleep(2)
         self.press_key("Select")
         # TODO: this will leave the confirmation (channel added) dialog on
         # send a Home key press to dismiss
@@ -49,11 +49,14 @@ class RokuRemoteControl(object):
         """Uninstall a given channel by simulating key presses."""
         # 11 is the Roku Channel Store app id
         # https://sdkdocs.roku.com/display/sdkdoc/External+Control+API#ExternalControlAPI-query/apps  # noqa
-        self.send_post_request("%s/launch/11?contentID=%s" % (self.api_url, channel_id)) 
-        sleep(1)
+        self.send_post_request("%s/launch/11?contentID=%s" % (self.api_url, channel_id))
+        sleep(2)
         self.press_key("Down")  # go to Remove channel
+        sleep(0.5)
         self.press_key("Select")
+        sleep(0.5)
         self.press_key("Up")  # Confirm removal
+        sleep(0.5)
         self.press_key("Select")
 
     def get_channel_list(self):

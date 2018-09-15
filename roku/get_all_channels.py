@@ -22,7 +22,7 @@ def main():
 
     for (category, page_url) in CHANNEL_URLS.iteritems():
 
-        page_number = 1
+        page_number = 0
 
         while True:
 
