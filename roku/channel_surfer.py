@@ -24,7 +24,6 @@ class ChannelSurfer(object):
 
         self.rrc = RokuRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
-        self.channel_initially_exists = self.channel_is_installed()
         self.go_home()
 
         self.log('Initialized', channel_id)
@@ -46,7 +45,7 @@ class ChannelSurfer(object):
 
         time.sleep(2)
         self.rrc.press_key('Home')
-        time.sleep(1)
+        time.sleep(2)
 
     def channel_is_installed(self):
 
@@ -55,15 +54,11 @@ class ChannelSurfer(object):
 
     def install_channel(self):
 
-        if self.channel_initially_exists:
-            self.log('Channel initially exists. Not installing')
+        if self.channel_is_installed():
+            self.log('Not installing channel as it already exists.')
             return
 
         self.log('Installing channel.')
-
-        if self.channel_is_installed():
-            self.log('Installing an existing channel. Aborted.')
-            raise SurferAborted
 
         self.go_home()
         self.rrc.install_channel(self.channel_id)
@@ -82,10 +77,6 @@ class ChannelSurfer(object):
             raise SurferAborted
 
     def uninstall_channel(self):
-
-        if self.channel_initially_exists:
-            self.log('Channel initially exists. Not uninstalling')
-            return
 
         self.log('Uninstalling channel.')
 
@@ -152,7 +143,13 @@ class ChannelSurfer(object):
 
 def main():
 
-    surfer = ChannelSurfer('10.0.0.13', '12')
+    try:
+        channel_id = sys.argv[1]
+    except Exception:
+        print 'Specify channel_id as the command line argument.'
+        return
+    
+    surfer = ChannelSurfer('10.0.0.13', channel_id)
 
     surfer.install_channel()
 

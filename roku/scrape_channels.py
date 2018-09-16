@@ -1,12 +1,21 @@
 """
 Goes through channel list. Scrapes all of them.
 
+TODO:
+
+ - Do not scrape paid channels. Free ones only.
+ - Need to capture screen.
+ - Need to do OK click stream.
+ - Need to start scraping after going home.
+ - Need to investigate a bug where the same channel is opened twice.
+
 """
 from channel_surfer import ChannelSurfer
 import json
 import datetime
 import traceback
 import time
+import os
 
 
 def main():
@@ -19,6 +28,14 @@ def main():
             record = json.loads(line)
             channel_dict.setdefault(record['_category'], []).append(record)
 
+    # Check what channels we have already scraped
+    scraped_channel_ids = set()
+    for filename in os.listdir('pcaps/'):
+        if not filename.endswith('.pcap'):
+            continue
+        channel_id = filename.split('-', 1)[0]
+        scraped_channel_ids.add(channel_id)
+            
     # Scrape from the top channels of each category
 
     while True:
@@ -34,6 +51,10 @@ def main():
 
         for channel in next_channels:
 
+            if channel['id'] in scraped_channel_ids:
+                log('Skipping', channel['id'])
+                continue
+            
             log('Scraping', channel['_category'], '-', channel['id'])
 
             try:
