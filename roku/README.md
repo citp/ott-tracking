@@ -6,6 +6,10 @@
 
 Run `sudo apt install dsniff` to install the `arpspoof` tool.
 
+Run `sudo apt install fswebcam` so that you can take screenshots of the Roku TV.
+
+You need to buy "ClonerAlliance Flint LX". Here's the [Amazon link](https://www.amazon.com/gp/product/B076GXQTJK/ref=oh_aui_detailpage_o00_s00?ie=UTF8&psc=1). When you connect it to a PC via USB, the device shows up as a video capturing device under `/dev/video0`. You can basically interact with it as if it were a webcam.
+
 
 ## Method
 
