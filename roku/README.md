@@ -21,8 +21,8 @@ the same network as your Roku TV.
 
 
 First, edit `start_arpspoof.sh`. Replace `10.0.0.1` with the IP
-address of your router. Replace `10.0.0.13` with th eIP address of
-your Roku TV. Run `start_arpspoof.sh`.
+address of your router. Replace `10.0.0.13` with the IP address of
+your Roku TV and replace `eth0` with your iface name. Run `start_arpspoof.sh`.
 
 Second, edit `start_pcap.sh`. Replace `10.0.0.13` with the IP address
 of your Roku TV. Replace `b8:27:eb:63:ef:53` with the MAC address of
