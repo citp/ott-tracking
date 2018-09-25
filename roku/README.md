@@ -19,6 +19,9 @@ the same network as your Roku TV.
 
 ## Scripts to run
 
+### Capturing Packets
+
+The first two steps let you create pcap files for Roku's traffic.
 
 First, edit `start_arpspoof.sh`. Replace `10.0.0.1` with the IP
 address of your router. Replace `10.0.0.13` with the IP address of
@@ -28,6 +31,8 @@ Second, edit `start_pcap.sh`. Replace `10.0.0.13` with the IP address
 of your Roku TV. Replace `b8:27:eb:63:ef:53` with the MAC address of
 the computer that runs these scripts. Create a new directory called
 `pcaps`. Run `start_pcap.sh`.
+
+### Scraping Channels
 
 Third, edit `scrape_channels.py`. Replace `10.0.0.13` with the IP
 address of your Roku TV. Run `scrape_channels.py`. In this way, the
