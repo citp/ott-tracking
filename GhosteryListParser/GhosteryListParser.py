@@ -4,7 +4,6 @@ import utils
 
 class GhosteryListParser:
 
-
     def __init__(self, bugs_file=None, bug_db=None, categorical_blocking=False):
         if bugs_file is None:
             bugs = bug_db
@@ -36,7 +35,8 @@ class GhosteryListParser:
 
     def should_block(self, url, options=None):
         bug_id = self._should_block_bug_id(url, options)
-        if int(bug_id):
+
+        if bug_id is not None and int(bug_id):
             return True
         else:
             return False
