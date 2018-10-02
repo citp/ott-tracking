@@ -8,6 +8,7 @@ from roku_remote import RokuRemoteControl
 import time
 import subprocess
 import datetime
+import sys
 
 
 LOG_FILE = 'channel_surfer.log'
@@ -22,6 +23,7 @@ class ChannelSurfer(object):
 
     def __init__(self, roku_ip, channel_id):
 
+        self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
         self.go_home()
@@ -109,30 +111,45 @@ class ChannelSurfer(object):
 
         self.log('Launching channel.')
 
-        self.go_home()
-
         self.rrc.launch_channel(self.channel_id)
 
         time.sleep(1)
 
+    def press_select(self):
+
+        self.log('Pressing the Select button.')
+        
+        self.rrc.press_key('Select')        
+        
     def capture_packets(self, event_name):
 
         self.kill_all_tcpdump()
 
         time.sleep(3)
 
-        pcap_filename = '{}-{}-{}'.format(
+        self.pcap_filename = '{}-{}-{}'.format(
             self.channel_id,
             int(time.time()),
             event_name
         )
 
         subprocess.Popen(
-            './start_pcap.sh {}'.format(pcap_filename),
+            './start_pcap.sh {}'.format(self.pcap_filename),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
 
-        self.log('Capturing packets:', pcap_filename)
+        self.log('Capturing packets:', self.pcap_filename)
+
+    def capture_screenshots(self, timeout):
+
+        start_time = time.time()
+
+        while time.time() - start_time <= timeout:
+            screenshot_filename = '{}-{}'.format(self.pcap_filename, int(time.time()))
+            subprocess.call(
+                './capture_screenshot.sh {}'.format(screenshot_filename),
+                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
 
     def kill_all_tcpdump(self):
 
@@ -149,17 +166,20 @@ def main():
         print 'Specify channel_id as the command line argument.'
         return
     
-    surfer = ChannelSurfer('10.0.0.13', channel_id)
+    surfer = ChannelSurfer('172.24.1.239', channel_id)
 
     surfer.install_channel()
 
     surfer.capture_packets('launch')
-
     surfer.launch_channel()
-
-    time.sleep(20)
-
+    surfer.capture_screenshots(20)    
     surfer.kill_all_tcpdump()
+
+    for okay_ix in range(0, 3):
+        surfer.capture_packets('select-{}'.format(okay_ix))
+        surfer.press_select()
+        surfer.capture_screenshots(20)
+        surfer.kill_all_tcpdump()
 
     surfer.uninstall_channel()
 

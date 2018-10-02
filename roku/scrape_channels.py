@@ -16,6 +16,7 @@ import datetime
 import traceback
 import time
 import os
+import subprocess
 
 
 def main():
@@ -30,12 +31,18 @@ def main():
 
     # Check what channels we have already scraped
     scraped_channel_ids = set()
-    for filename in os.listdir('pcaps/'):
+    file_list = subprocess.check_output(
+        'sudo ssh yuxingh@wash.cs.princeton.edu "ls ~/iot-house/public_html/pcaps/roku-channel-surfer/2018-09-27/pcaps"',
+        shell=True
+    ).split()
+    for filename in file_list:
         if not filename.endswith('.pcap'):
             continue
         channel_id = filename.split('-', 1)[0]
-        scraped_channel_ids.add(channel_id)
-            
+        scraped_channel_ids.add(int(channel_id))
+
+    print 'Skipping channels:', scraped_channel_ids
+        
     # Scrape from the top channels of each category
 
     while True:
@@ -77,17 +84,20 @@ def log(*args):
 
 def scrape(channel):
 
-    surfer = ChannelSurfer('10.0.0.13', channel['id'])
+    surfer = ChannelSurfer('172.24.1.239', channel['id'])
 
     surfer.install_channel()
 
     surfer.capture_packets('launch')
-
     surfer.launch_channel()
-
-    time.sleep(20)
-
+    surfer.capture_screenshots(20)    
     surfer.kill_all_tcpdump()
+
+    for okay_ix in range(0, 3):
+        surfer.capture_packets('select-{}'.format(okay_ix))
+        surfer.press_select()
+        surfer.capture_screenshots(20)
+        surfer.kill_all_tcpdump()
 
     surfer.uninstall_channel()
 
