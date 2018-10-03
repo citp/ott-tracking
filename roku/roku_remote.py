@@ -22,14 +22,20 @@ class RokuRemoteControl(object):
         r = requests.post(url)
         if DEBUG_HTTP:
             print(r.status_code, r.reason)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            print(r.status_code, r.reason)
         return r
 
     def send_get_request(self, url):
         r = requests.get(url)
         if DEBUG_HTTP:
             print(r.status_code, r.reason)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            print(r.status_code, r.reason)
         return r
 
     def press_key(self, key):
@@ -79,3 +85,18 @@ class RokuRemoteControl(object):
             # print "App", app.get("id"), app.get("type"), app.get("subtype"),\
             #    app.get("version"), app.text
         return channel_list
+
+    def get_active_channel(self):
+        r = self.send_get_request("%s/query/active-app" % self.api_url)
+        apps = ET.fromstring(r.text)
+        for app in apps:
+            app_id = app.get("id")
+            #channel_list[app_id] = {
+            #    "id": app_id, "type": app.get("type"),
+            #    "subtype": app.get("subtype"),
+            #    "version": app.get("version"),
+            #    "name": app.text
+            #    }
+            # print "App", app.get("id"), app.get("type"), app.get("subtype"),\
+            #    app.get("version"), app.text
+        return app_id
