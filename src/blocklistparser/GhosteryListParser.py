@@ -4,6 +4,7 @@ import utils
 
 class GhosteryListParser:
 
+
     def __init__(self, bugs_file=None, bug_db=None, categorical_blocking=False):
         if bugs_file is None:
             bugs = bug_db
@@ -35,8 +36,7 @@ class GhosteryListParser:
 
     def should_block(self, url, options=None):
         bug_id = self._should_block_bug_id(url, options)
-
-        if bug_id is not None and int(bug_id):
+        if int(bug_id):
             return True
         else:
             return False
@@ -88,6 +88,23 @@ class GhosteryListParser:
 
     def get_bug_db(self):
         return self.bugs
+
+    # TODO: Handle FirstPartyExceptions
+    def check_host_in_list(self, url):
+        url_protocol, url_host, url_path, url, anchor, url_cleaned = self._process_url(url)
+
+        bug_host_path = self._matches_host(self.bugs['patterns']['host_path'], url_host, None)
+        bug_host = self._matches_host(self.bugs['patterns']['host'], url_host)
+        bug_path = self._matches_path(url_path)
+        bug_regex = self._matches_regex(url)
+
+        bug_id = bug_host_path or bug_host or bug_path or bug_regex
+
+        if bug_id:
+            return True
+        else:
+            return False
+
 
     @staticmethod
     def get_all_items(bugs_file):
