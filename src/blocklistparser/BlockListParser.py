@@ -33,7 +33,12 @@ def get_disconnect_blocked_hosts():
     blocked_hosts = set()
     disconnect = json.loads(open("blocklists/disconnect.json").read())
     categories = disconnect["categories"]
-    for _, entries in categories.iteritems():
+    for category_name, entries in categories.iteritems():
+        if category_name == "Content":
+            # Content category is not used by default by Firefox's
+            # tracking protection and Focus browsers
+            print "Will not block the Content category"
+            continue
         for entry in entries:
             adresses = entry.values()
             for address in adresses:
