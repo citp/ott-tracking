@@ -1,4 +1,5 @@
 import collections
+import redis
 import random
 import re
 import os
@@ -18,9 +19,7 @@ class InterceptionResult(Enum):
     skipped = None
 
 mitmable = set()
-mitmableFileName = '/tmp/mitmable.txt'
 unMitmable = set()
-unMitmableFileName = '/tmp/unMitmable.txt'
 
 class _TlsStrategy:
     """
@@ -30,6 +29,16 @@ class _TlsStrategy:
     def __init__(self):
         # A server_address -> interception results mapping
         self.history = collections.defaultdict(lambda: collections.deque(maxlen=200))
+        self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0)
+        self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1)
+
+    def getAssocitatedIPs(self, IPAddress):
+        IPList = set([str(IPAddress)])
+        hostname = self.rIP2NameDic.get(IPAddress)
+        if hostname and hostname in self.rName2IPDic:
+            IPList = IPList.union(self.rName2IPDic.get(hostname))
+        return list(IPList)
+
 
     def should_intercept(self, server_address):
         """
@@ -42,14 +51,18 @@ class _TlsStrategy:
     def record_success(self, server_address):
         self.history[server_address].append(InterceptionResult.success)
         with open(mitmableFileName, 'a') as the_file:
-            the_file.write("%s\n" % str(server_address))
+            the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
             mitmable.add(server_address)
 
     def record_failure(self, server_address):
-        self.history[server_address].append(InterceptionResult.failure)
-        with open(unMitmableFileName, 'a') as the_file:
-            the_file.write("%s\n" % str(server_address))
-            unMitmable.add(server_address)
+        portNum = server_address[1]
+        serverList = self.getAssocitatedIPs(str(server_address[0]))
+        for server in serverList:
+            server_address_tuple = (server, portNum)
+            self.history[server_address_tuple].append(InterceptionResult.failure)
+            with open(unMitmableFileName, 'a') as the_file:
+                the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address_tuple)))
+                unMitmable.add(server_address_tuple)
                 #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
@@ -74,18 +87,14 @@ class TlsFeedback(TlsLayer):
     Monkey-patch _establish_tls_with_client to get feedback if TLS could be established
     successfully on the client connection (which may fail due to cert pinning).
     """
-    def set_ctx(self,ctx):
-        self.contex = ctx
-        pass
-
     def _establish_tls_with_client(self):
         server_address = self.server_conn.address
 
         try:
-            with open('/tmp/my.log', 'a') as the_file:
+            with open('my.log', 'a') as the_file:
                 the_file.write("Connecting to %s\n" % str(server_address))
             super(TlsFeedback, self)._establish_tls_with_client()
-            with open('/tmp/my.log', 'a') as the_file:
+            with open('my.log', 'a') as the_file:
                 the_file.write("Done connecting to %s\n" % str(server_address))
         except TlsProtocolException as e:
             tls_strategy.record_failure(server_address)
@@ -103,20 +112,32 @@ def load(l):
     l.add_option(
         "tlsstrat", int, 0, "TLS passthrough strategy (0-100)",
     )
+    l.add_option(
+        "channel_id", int, 0, "Channel ID",
+    )
+    l.add_option(
+        "data_dir", str, "", "Data dir",
+    )
+    '''
     try:
         os.remove(mitmableFileName)
         os.remove(unMitmableFileName)
     except Exception:
         pass
+    '''
 
 
 def configure(updated):
-    global tls_strategy
+    global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileName
     #if ctx.options.tlsstrat > 0:
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
     #    tls_strategy = ConservativeStrategy()
     tls_strategy = ConservativeStrategy()
+    channel_id = ctx.options.channel_id
+    data_dir = ctx.options.data_dir
+    mitmableFileName = str(data_dir) + "/mitmlog/" + str(channel_id) + '.mitmable'
+    unMitmableFileName = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
 
 
 def next_layer(next_layer):
@@ -126,7 +147,7 @@ def next_layer(next_layer):
     """
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
-
+        #cert = next_layer._find_cert()
 
         if tls_strategy.should_intercept(server_address):
             # We try to intercept.
