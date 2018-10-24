@@ -9,9 +9,11 @@ import time
 import subprocess
 import datetime
 import sys
+import os
 
 
 LOG_FILE = 'channel_surfer.log'
+INSTALL_RETRY_CNT = 10
 
 
 class SurferAborted(Exception):
@@ -21,14 +23,17 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id):
+    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
+        self.data_dir = data_dir
+        self.pcap_dir = str(data_dir) + str(pcap_prefix)
         self.go_home()
 
         self.log('Initialized', channel_id)
+        self.launchIter = 1
 
     def log(self, *args):
 
@@ -54,6 +59,11 @@ class ChannelSurfer(object):
         channel_dict = self.rrc.get_channel_list()
         return self.channel_id in channel_dict
 
+    def channel_is_active(self):
+        active_channel = self.rrc.get_active_channel()
+        print("Active Channel is " + str(active_channel)) 
+        return self.channel_id == str(active_channel)
+
     def install_channel(self):
 
         if self.channel_is_installed():
@@ -62,15 +72,20 @@ class ChannelSurfer(object):
 
         self.log('Installing channel.')
 
-        self.go_home()
-        self.rrc.install_channel(self.channel_id)
-
-        for _ in range(60):
-            time.sleep(1)
+        iter = 0
+        while iter < INSTALL_RETRY_CNT:
             if self.channel_is_installed():
                 break
+            self.go_home()
+            self.rrc.install_channel(self.channel_id)
 
-        self.go_home()
+            for _ in range(60):
+                time.sleep(1)
+                if self.channel_is_installed():
+                    break
+
+            self.go_home()
+            iter += 1
 
         if self.channel_is_installed():
             self.log('Channel successfully installed.')
@@ -109,10 +124,13 @@ class ChannelSurfer(object):
             self.log('Cannot launch a non-existent channel.')
             raise SurferAborted
 
-        self.log('Launching channel.')
+        self.log('Launching channel. Attempt %s' % self.launchIter)
+
+        self.go_home()
 
         self.rrc.launch_channel(self.channel_id)
 
+        self.launchIter += 1
         time.sleep(1)
 
     def press_select(self):
@@ -134,7 +152,7 @@ class ChannelSurfer(object):
         )
 
         subprocess.Popen(
-            './start_pcap.sh {}'.format(self.pcap_filename),
+            './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
 
@@ -153,11 +171,24 @@ class ChannelSurfer(object):
 
     def kill_all_tcpdump(self):
 
-        subprocess.call('sudo pkill -f tcpdump', shell=True)
+        subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         time.sleep(1)
-        subprocess.call('sudo pkill -9 -f tcpdump', shell=True)
+        subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
 
+    def rsync(self):
+        time.sleep(3)
 
+        print ('rsync -av --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" )
+        p = subprocess.Popen(
+            'rsync -av --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" ,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
+        #res = p.communicate()
+        #print("retcode =", p.returncode)
+        #print("res =", res)
+        #print("stderr =", res[1])
+
+#DEPRECATED
 def main():
 
     try:

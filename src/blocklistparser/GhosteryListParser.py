@@ -98,10 +98,14 @@ class GhosteryListParser:
         bug_path = self._matches_path(url_path)
         bug_regex = self._matches_regex(url)
 
-        bug_id = bug_host_path or bug_host or bug_path or bug_regex
+        bug_id = (isinstance(bug_host_path, int) or isinstance(bug_host, int) or
+                    isinstance(bug_path, int) or isinstance(bug_regex, int))
 
         if bug_id:
-            return True
+            if str(bug_id) in self.bugs['firstPartyExceptions']:
+                return False
+            else:
+                return True
         else:
             return False
 
