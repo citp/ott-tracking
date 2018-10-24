@@ -37,7 +37,7 @@ def get_disconnect_blocked_hosts():
         if category_name == "Content":
             # Content category is not used by default by Firefox's
             # tracking protection and Focus browsers
-            print "Will not block the Content category"
+            print "Will not block the hosts in Disconnect's Content category"
             continue
         for entry in entries:
             adresses = entry.values()
