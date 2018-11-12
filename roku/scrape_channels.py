@@ -20,12 +20,15 @@ import os
 import subprocess
 
 LAUNCH_RETRY_CNT = 6
-TV_IP_ADDR = '172.24.1.97'
+TV_IP_ADDR = '172.24.1.135'
+#TV_IP_ADDR = '172.24.1.97'
 SLEEP_TIMER = 20
 remove_dup = False
 DATA_DIR="data/"
 PCAP_PREFIX="pcaps/"
 DUMP_PREFIX="mitmdumps/"
+LOG_PREFIX="mitmlog/"
+SCREENSHOT_PREFIX="screenshots/"
 CUTOFF_TRESHOLD=200
 
 #repeat = {96637,93374,7767,76936,74519,70275,7019,59997,59643,50118,50025,47643,44665,252241,252210,252143,250636,245889,241827,239827,237128,235963,234709,232422,23048,230440,223608,223597,220798,219384,216910,210892,210205,207814,205592,205385,196549,196460,196276,195482,195316,188555,179080,177305,175461,170744,160252,154157,153241,152032,151908,151483,149840,146731,146559,14654,144475,143105,14295,140474,122409,121999,12,118762,104764}
@@ -42,6 +45,7 @@ def dns_sniffer_run():
 
 def main():
     dns_sniffer_run()
+    prep_folders()
 
     # Maps category to a list of channels
     channel_dict = {}
@@ -112,13 +116,26 @@ def log(*args):
         print >> fp, s
 
 
-def scrape(channel):
 
-    if not os.path.exists(str(DATA_DIR) + str(PCAP_PREFIX)):
-        print (PCAP_PREFIX + " doesn't exist.")
-        exit(-1)
-    if not os.path.exists(str(DATA_DIR) + str(DUMP_PREFIX)):
-        print (DUMP_PREFIX + " doesn't exist.")
+def prep_folders():
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX]
+    for f in folders:
+        fullpath = str(DATA_DIR) + str(f)
+        if not os.path.exists(fullpath):
+            os.makedirs(fullpath)
+
+def check_folders():
+    all_exist = True
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX]
+    for f in folders:
+        fullpath = str(DATA_DIR) + str(f)
+        if not os.path.exists(fullpath):
+            all_exist = False
+            print (fullpath + " doesn't exist.")
+    return all_exist
+
+def scrape(channel):
+    if not check_folders():
         exit(-1)
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel['id'], str(DATA_DIR), str(PCAP_PREFIX))
@@ -126,6 +143,7 @@ def scrape(channel):
 
 
     try:
+        mitmrunner.kill_mitmproxy()
         surfer.install_channel()
 
         mitmrunner.run_mitmproxy()

@@ -53,12 +53,12 @@ class MITMRunner(object):
             self.selector
         )
 
-        CMD = str(MITMPRXY_CMD % ( str(str(self.dump_dir) + str(self.dump_filename)) , str(self.channel_id), str(self.data_dir)))
-        print(CMD)
-        subprocess.Popen(
-            CMD,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
+        #CMD = str(MITMPRXY_CMD % ( str(str(self.dump_dir) + str(self.dump_filename)) , str(self.channel_id), str(self.data_dir)))
+        #print(CMD)
+        #subprocess.Popen(
+        #    CMD,
+        #    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        #)
 
         self.log('Dumping MITMing flows to:', self.dump_filename)
 
