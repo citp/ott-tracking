@@ -1,7 +1,8 @@
 # encoding=utf8
+from __future__ import print_function
 import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
 import requests
 import xml.etree.ElementTree as ET
@@ -21,21 +22,21 @@ class RokuRemoteControl(object):
     def send_post_request(self, url):
         r = requests.post(url)
         if DEBUG_HTTP:
-            print(r.status_code, r.reason)
+            print((r.status_code, r.reason))
         try:
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(r.status_code, r.reason)
+            print((r.status_code, r.reason))
         return r
 
     def send_get_request(self, url):
         r = requests.get(url)
         if DEBUG_HTTP:
-            print(r.status_code, r.reason)
+            print((r.status_code, r.reason))
         try:
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(r.status_code, r.reason)
+            print((r.status_code, r.reason))
         return r
 
     def press_key(self, key):

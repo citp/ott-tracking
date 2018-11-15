@@ -10,6 +10,7 @@ TODO:
  - Need to investigate a bug where the same channel is opened twice.
 
 """
+from __future__ import print_function
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 import json
@@ -18,6 +19,7 @@ import traceback
 import time
 import os
 import subprocess
+import sys
 
 LAUNCH_RETRY_CNT = 6
 TV_IP_ADDR = '172.24.1.135'
@@ -29,6 +31,7 @@ PCAP_PREFIX="pcaps/"
 DUMP_PREFIX="mitmdumps/"
 LOG_PREFIX="mitmlog/"
 SCREENSHOT_PREFIX="screenshots/"
+SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
 
 #repeat = {96637,93374,7767,76936,74519,70275,7019,59997,59643,50118,50025,47643,44665,252241,252210,252143,250636,245889,241827,239827,237128,235963,234709,232422,23048,230440,223608,223597,220798,219384,216910,210892,210205,207814,205592,205385,196549,196460,196276,195482,195316,188555,179080,177305,175461,170744,160252,154157,153241,152032,151908,151483,149840,146731,146559,14654,144475,143105,14295,140474,122409,121999,12,118762,104764}
@@ -44,7 +47,6 @@ def dns_sniffer_run():
 
 
 def main():
-    dns_sniffer_run()
     prep_folders()
 
     # Maps category to a list of channels
@@ -68,15 +70,15 @@ def main():
             channel_id = filename.split('-', 1)[0]
             scraped_channel_ids.add(int(channel_id))
 
-    print 'Skipping channels:', scraped_channel_ids
-        
+    print('Skipping channels:', scraped_channel_ids)
+
     # Scrape from the top channels of each category
 
     while True:
 
         next_channels = []
 
-        for channel_list in channel_dict.itervalues():
+        for channel_list in channel_dict.values():
             if channel_list:
                 next_channels.append(channel_list.pop(0))
 
@@ -93,7 +95,7 @@ def main():
             if channel['id'] in scraped_channel_ids:
                 log('Skipping', channel['id'])
                 continue
-            
+
             log('Scraping', channel['_category'], '-', channel['id'])
 
             #if channel['id'] not in repeat:
@@ -111,14 +113,14 @@ def log(*args):
     s = '[{}] '.format(datetime.datetime.today())
     s += ' '.join([str(v) for v in args])
 
-    print s
+    print(s)
     with open('scrape_channels.log', 'a') as fp:
-        print >> fp, s
+        print(s, file=fp)
 
 
 
 def prep_folders():
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX]
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX]
     for f in folders:
         fullpath = str(DATA_DIR) + str(f)
         if not os.path.exists(fullpath):
@@ -126,7 +128,7 @@ def prep_folders():
 
 def check_folders():
     all_exist = True
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX]
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX]
     for f in folders:
         fullpath = str(DATA_DIR) + str(f)
         if not os.path.exists(fullpath):
@@ -143,7 +145,7 @@ def scrape(channel):
 
 
     try:
-        mitmrunner.kill_mitmproxy()
+        mitmrunner.clean_iptables()
         surfer.install_channel()
 
         mitmrunner.run_mitmproxy()
@@ -168,8 +170,11 @@ def scrape(channel):
             surfer.capture_screenshots(20)
             surfer.kill_all_tcpdump()
         surfer.go_home()
-    except SurferAborted, e:
-        print 'Error!'
+    except SurferAborted as e:
+        print('Error!')
+        traceback.print_exc()
+    except Exception as e:
+        print('Error!')
         traceback.print_exc()
     finally:
         mitmrunner.kill_mitmproxy()
