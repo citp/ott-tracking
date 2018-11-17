@@ -30,11 +30,11 @@
 
 
 FILTER="eth"  # do not filter out any packets by default
-
+FORMAT="fields"  # output format, CSV by default. -T in tshark
 
 usage()
 {
-    echo "Usage: extract_fields.sh -i /path/to/pcaps [-f filter] -e field1 -e field2 ... -e fieldN"
+    echo "Usage: extract_fields.sh -i /path/to/pcaps [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
 }
 
 while [ "$1" != "" ]; do
@@ -43,11 +43,15 @@ while [ "$1" != "" ]; do
         -i | --input_dir )      shift
                                 PCAP_DIR=$1
                                 ;;
-         # packet filter, optional
+		# packet filter, optional
         -f | --filter )         shift
                                 FILTER=$1
                                 ;;
-        # list of fields to ve extracted
+		# output format, optional
+        -t | --format )         shift
+                                FORMAT=$1
+                                ;;
+        # list of fields to be extracted
         -e )
                                 FIELDS=$@
                                 break
@@ -66,7 +70,7 @@ MAX_PROCESS=8
 i=0
 for f in $PCAP_DIR/*.pcap; do
   basename=$(basename "$f")
-  tshark -r $f -E separator="|" -T fields $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
+  tshark -r $f -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
   #sleep 0.05;
   n_running+=1
   ((i=i%MAX_PROCESS)); ((i++==0)) && wait
