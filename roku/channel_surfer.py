@@ -4,6 +4,7 @@ Installs a single channel. Interacts with it. Uninstalls it.
 Captures packets at every stage.
 
 """
+from __future__ import print_function
 from roku_remote import RokuRemoteControl
 import time
 import subprocess
@@ -40,13 +41,13 @@ class ChannelSurfer(object):
         current_time = '[{}]'.format(datetime.datetime.today())
 
         with open(LOG_FILE, 'a') as fp:
-            print >> fp, current_time,
-            print current_time,
+            print(current_time, end=' ', file=fp)
+            print(current_time, end=' ')
             for arg in args:
-                print >> fp, arg,
-                print arg,
-            print >> fp, ''
-            print ''
+                print(arg, end=' ', file=fp)
+                print(arg, end=' ')
+            print('', file=fp)
+            print('')
 
     def go_home(self):
 
@@ -194,7 +195,7 @@ def main():
     try:
         channel_id = sys.argv[1]
     except Exception:
-        print 'Specify channel_id as the command line argument.'
+        print('Specify channel_id as the command line argument.')
         return
     
     surfer = ChannelSurfer('172.24.1.239', channel_id)
@@ -214,7 +215,7 @@ def main():
 
     surfer.uninstall_channel()
 
-    print 'Done'
+    print('Done')
 
 
 if __name__ == '__main__':

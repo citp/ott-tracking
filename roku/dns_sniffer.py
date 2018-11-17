@@ -1,3 +1,4 @@
+from __future__ import print_function
 import redis
 import sys
 from scapy.all import *
@@ -45,7 +46,7 @@ def querysniff(pkt):
                         IP2NameDic[IPAddr].add(DomainName)
                         rIP2NameDic.set(IPAddr, IP2NameDic[IPAddr])
 
-                        print DomainName + " IP:" + IPAddr + ":" + str(p[DNSRR][x].type)
+                        print(DomainName + " IP:" + IPAddr + ":" + str(p[DNSRR][x].type))
                     #name = p.an.rdata
                     #print(name)
 

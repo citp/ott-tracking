@@ -4,6 +4,7 @@ Downloads the info from all Roku channels.
 Saves output to channel_list.txt, where every line is a json of a channel.
 
 """
+from __future__ import print_function
 import urllib2
 import json
 import time
@@ -27,7 +28,7 @@ def main():
         while True:
 
             url = page_url.format(page_number)
-            print 'Loading', url
+            print('Loading', url)
             data = urllib2.urlopen(url).read()
 
             channel_list = json.loads(data)
@@ -37,7 +38,7 @@ def main():
             for channel in channel_list:
                 channel['_category'] = category
                 channel['_scrape_ts'] = int(time.time())
-                print >> fp, json.dumps(channel, sort_keys=True)
+                print(json.dumps(channel, sort_keys=True), file=fp)
 
             page_number += 1
 
