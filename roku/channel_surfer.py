@@ -179,9 +179,9 @@ class ChannelSurfer(object):
     def rsync(self):
         time.sleep(3)
 
-        print ('rsync -av --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" )
+        print ('rsync --rlptDv --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" )
         p = subprocess.Popen(
-            'rsync -av --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" ,
+            'rsync --rlptDv --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" ,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         #res = p.communicate()

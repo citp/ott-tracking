@@ -21,7 +21,7 @@ import os
 import subprocess
 import sys
 
-LAUNCH_RETRY_CNT = 6
+LAUNCH_RETRY_CNT = 7
 TV_IP_ADDR = '172.24.1.135'
 #TV_IP_ADDR = '172.24.1.97'
 SLEEP_TIMER = 20
@@ -34,8 +34,12 @@ SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
 
-#repeat = {96637,93374,7767,76936,74519,70275,7019,59997,59643,50118,50025,47643,44665,252241,252210,252143,250636,245889,241827,239827,237128,235963,234709,232422,23048,230440,223608,223597,220798,219384,216910,210892,210205,207814,205592,205385,196549,196460,196276,195482,195316,188555,179080,177305,175461,170744,160252,154157,153241,152032,151908,151483,149840,146731,146559,14654,144475,143105,14295,140474,122409,121999,12,118762,104764}
+#repeat = {}
+# To get this list use this command:
+# ls -la /mnt/iot-house/pcaps/ | grep launch |  awk '{print $9}' | awk -F'[-]' '{print $1}' | tr '\n' ','
+#channels_done = {}
 
+global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
 
 
 def dns_sniffer_run():
@@ -59,6 +63,7 @@ def main():
 
     # Check what channels we have already scraped
     scraped_channel_ids = set()
+    #scraped_channel_ids.update(channels_done)
     if remove_dup:
         file_list = subprocess.check_output(
             'sudo ssh yuxingh@wash.cs.princeton.edu "ls ~/iot-house/public_html/pcaps/roku-channel-surfer/2018-09-27/pcaps"',
@@ -141,7 +146,7 @@ def scrape(channel):
         exit(-1)
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel['id'], str(DATA_DIR), str(PCAP_PREFIX))
-    mitmrunner = MITMRunner(channel['id'], 0, str(DATA_DIR), str(DUMP_PREFIX))
+    mitmrunner = MITMRunner(channel['id'], 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
 
 
     try:
