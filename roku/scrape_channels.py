@@ -20,10 +20,11 @@ import time
 import os
 import subprocess
 import sys
+import redisdl
 
 LAUNCH_RETRY_CNT = 7
-TV_IP_ADDR = '172.24.1.135'
-#TV_IP_ADDR = '172.24.1.97'
+#TV_IP_ADDR = '172.24.1.135'
+TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
 DATA_DIR="data/"
@@ -49,8 +50,25 @@ def dns_sniffer_run():
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
+def dump_redis(PREFIX):
+    full_path = os.path.abspath(PREFIX)
+    log("Dumping Redis DBs in " + full_path)
+    rName2IPDB = redisdl.dumps(host='localhost', port=6379, db=0)
+    rName2IPDB_path = full_path + '/rName2IPDB.json'
+    #log("writing to " + rName2IPDB_path)
+    with open(rName2IPDB_path, 'a') as f:
+        redisdl.dump(f)
+
+
+    rIP2NameDB = redisdl.dumps(host='localhost', port=6379, db=1)
+    rIP2NameDB_path =  full_path + '/rIP2NameDB.json'
+    #log("writing to " + rIP2NameDB_path)
+    with open(rIP2NameDB_path, 'a') as f:
+        redisdl.dump(f)
+
 
 def main():
+    dns_sniffer_run()
     prep_folders()
 
     # Maps category to a list of channels
@@ -141,11 +159,16 @@ def check_folders():
             print (fullpath + " doesn't exist.")
     return all_exist
 
+def cleanup_sslkey_file(fileAddr):
+    log('Erasing content of file '+ fileAddr)
+    open(fileAddr, 'w').close()
+
 def scrape(channel):
     if not check_folders():
         exit(-1)
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel['id'], str(DATA_DIR), str(PCAP_PREFIX))
+    cleanup_sslkey_file(global_keylog_file)
     mitmrunner = MITMRunner(channel['id'], 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
 
 
@@ -184,6 +207,7 @@ def scrape(channel):
     finally:
         mitmrunner.kill_mitmproxy()
         surfer.uninstall_channel()
+        dump_redis(DATA_DIR)
         surfer.rsync()
 
 

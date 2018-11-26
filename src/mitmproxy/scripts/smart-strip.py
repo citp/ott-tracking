@@ -6,12 +6,16 @@ import urllib.parse
 import typing  # noqa
 import mitmproxy
 import logging
+import os
+
 
 from enum import Enum
 from mitmproxy import ctx
 from mitmproxy.exceptions import TlsProtocolException
 from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
+
+
 
 
 
@@ -57,12 +61,13 @@ class _TlsStrategy:
         raise NotImplementedError()
 
     def record_success(self, server_address):
+        portNum = server_address[1]
         self.history[server_address].append(InterceptionResult.success)
         with open(mitmableFileName, 'a') as the_file:
             the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
             hostname = self.getAssociatedDomain(str(server_address[0]))
             if hostname:
-                server_address[0] = hostname
+                server_address = (hostname, portNum)
             mitmable.add(server_address)
 
     def record_failure(self, server_address):
@@ -76,7 +81,7 @@ class _TlsStrategy:
         with open(unMitmableFileName, 'a') as the_file:
             hostname = self.getAssociatedDomain(str(server_address[0]))
             if hostname:
-                server_address[0] = hostname
+                server_address = (hostname, portNum)
             the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
 
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
@@ -159,8 +164,10 @@ def configure(updated):
     )
     mitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.mitmable'
     unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
-    LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.stripdown'
+    LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
     logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
+
+    #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
 
 
 def next_layer(next_layer):
@@ -225,10 +232,10 @@ def response(flow: http.HTTPFlow) -> None:
     if flow.response.headers.pop('Strict-Transport-Security', None):
         #mitmproxy.ctx.log(
         logging.info(
-            "Removing header Strict-Transport-Security for %s %s:%s" % (repr(flow.response), repr(flow.response.host), repr(flow.response.port)))
+            "Removing header Strict-Transport-Security for %s:%s" % (repr(flow.response), repr(flow.response.port)))
     if flow.response.headers.pop('Public-Key-Pins', None):
         logging.info(
-            "Removing header Public-Key-Pins for %s %s:%s" % (repr(flow.response), repr(flow.response.host), repr(flow.response.port)))
+            "Removing header Public-Key-Pins for %s:%s" % (repr(flow.response), repr(flow.response.port)))
 
 
     # strip links in response body

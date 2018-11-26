@@ -45,7 +45,7 @@ def prepare_master(master_cls: typing.Type[master.Master]):
     return master, opts
 
 
-def mitmdump_run(master, opts, event_handler, global_keylog_file, keylog_file, args=None) -> typing.Optional[int]:  # pragma: no cover
+def mitmdump_run(master, opts, event_handler, args=None) -> typing.Optional[int]:  # pragma: no cover
     def extra(args):
         if args.filter_args:
             v = " ".join(args.filter_args)
@@ -56,7 +56,7 @@ def mitmdump_run(master, opts, event_handler, global_keylog_file, keylog_file, a
             )
         return {}
 
-    Thread(target=shutdown_master, args=(master,event_handler, global_keylog_file, keylog_file,)).start()
+    Thread(target=shutdown_master, args=(master,event_handler,)).start()
     m = my_run(master, opts, cmdline.mitmdump, args, extra)
     if m and m.errorcheck.has_errored:  # type: ignore
         return 1
@@ -69,7 +69,7 @@ def move_keylog_file(src, dest):
     print('Moving '+ src_full_path + " to " + dest_full_path)
     shutil.move(src_full_path, dest_full_path)
 
-def shutdown_master(master, event_handler, global_keylog_file, keylog_file):
+def shutdown_master(master, event_handler):
     event_handler.wait()
     print("Shutting down DumpMaster!")
     master.addons.get("save").done()
@@ -77,8 +77,7 @@ def shutdown_master(master, event_handler, global_keylog_file, keylog_file):
     time.sleep(2)
     master.shutdown()
     print("DumpMaster was successfully shut down!")
-    move_keylog_file(global_keylog_file, keylog_file)
-    subprocess.call('./iptables_flush.sh', shell=True)
+
 
 def my_run(
     master,
@@ -157,6 +156,9 @@ def my_run(
         pass
     return master
 
+def set_event_handler(e):
+    e.set()
+
 class MITMRunner(object):
 
     def __init__(self, channel_id ,selector, data_dir, dump_prefix, global_keylog_file):
@@ -169,6 +171,7 @@ class MITMRunner(object):
         self.log('Initialized MITMRunner', channel_id ,selector)
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
+        self.p = None
 
     def log(self, *args):
 
@@ -216,17 +219,31 @@ class MITMRunner(object):
         ARGS.append('data_dir=' + str(data_dir))
         #print(ARGS)
         #print(os.environ)
-        self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, self.global_keylog_file, self.keylog_file, ARGS,))
+        self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
         self.p.start()
 
     def clean_iptables(self):
+        self.log("Flushing iptables")
         subprocess.call('./iptables_flush.sh', shell=True)
 
     def set_iptables(self):
+        self.log("Setting up iptables")
         subprocess.call('./iptables.sh', shell=True)
 
     def kill_mitmproxy(self):
         self.log("Killing MITM proxy!!!")
-        self.event_handler.set()
+        try:
+            t = Thread(target=set_event_handler, args=(self.event_handler,))
+            t.start()
+        except Exception as e:
+            self.log('Error in killing the proxy!')
+            traceback.print_exc()
+        
+        self.log("Sleeping for 5 seconds before forcing manual termination!!!")
+        time.sleep(5)
+        self.log("Forcing manual termination!!!")
+        self.p.terminate()
         self.clean_iptables()
+        move_keylog_file(self.global_keylog_file, self.keylog_file)
+
 
