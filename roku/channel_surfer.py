@@ -179,15 +179,14 @@ class ChannelSurfer(object):
     def rsync(self):
         time.sleep(3)
 
-        print ('rsync -rlptDv --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" )
-        p = subprocess.Popen(
-            'rsync -rlptDv --remove-source-files ' + str(self.data_dir) + " /mnt/iot-house/" ,
+        rsync_command = str('rsync -rlptDv --remove-source-files ' + str(self.data_dir) + ' /mnt/iot-house/')
+        print (rsync_command)
+        #p = subprocess.Popen(
+        p = subprocess.run(
+            rsync_command,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
-        #res = p.communicate()
-        #print("retcode =", p.returncode)
-        #print("res =", res)
-        #print("stderr =", res[1])
+        self.log("rsync return code: " + str(p.returncode))
 
 #DEPRECATED
 def main():

@@ -15,10 +15,6 @@ from mitmproxy.exceptions import TlsProtocolException
 from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
 
-
-
-
-
 class InterceptionResult(Enum):
     success = True
     failure = False
@@ -232,7 +228,7 @@ def response(flow: http.HTTPFlow) -> None:
     if flow.response.headers.pop('Strict-Transport-Security', None):
         #mitmproxy.ctx.log(
         logging.info(
-            "Removing header Strict-Transport-Security for %s:%s" % (repr(flow.response), repr(flow.response.port)))
+            "Removing header Strict-Transport-Security for %s" % (repr(flow.response)))
     if flow.response.headers.pop('Public-Key-Pins', None):
         logging.info(
             "Removing header Public-Key-Pins for %s:%s" % (repr(flow.response), repr(flow.response.port)))

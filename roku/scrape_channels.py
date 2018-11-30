@@ -53,18 +53,17 @@ def dns_sniffer_run():
 def dump_redis(PREFIX):
     full_path = os.path.abspath(PREFIX)
     log("Dumping Redis DBs in " + full_path)
-    rName2IPDB = redisdl.dumps(host='localhost', port=6379, db=0)
+
     rName2IPDB_path = full_path + '/rName2IPDB.json'
     #log("writing to " + rName2IPDB_path)
     with open(rName2IPDB_path, 'a') as f:
-        redisdl.dump(f)
+        redisdl.dump(f, host='localhost', port=6379, db=0)
 
 
-    rIP2NameDB = redisdl.dumps(host='localhost', port=6379, db=1)
     rIP2NameDB_path =  full_path + '/rIP2NameDB.json'
     #log("writing to " + rIP2NameDB_path)
     with open(rIP2NameDB_path, 'a') as f:
-        redisdl.dump(f)
+        redisdl.dump(f, host='localhost', port=6379, db=1)
 
 
 def main():
@@ -81,7 +80,7 @@ def main():
 
     # Check what channels we have already scraped
     scraped_channel_ids = set()
-    #scraped_channel_ids.update(channels_done)
+    scraped_channel_ids.update(channels_done)
     if remove_dup:
         file_list = subprocess.check_output(
             'sudo ssh yuxingh@wash.cs.princeton.edu "ls ~/iot-house/public_html/pcaps/roku-channel-surfer/2018-09-27/pcaps"',
