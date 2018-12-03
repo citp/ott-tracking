@@ -51,6 +51,11 @@ while [ "$1" != "" ]; do
         -t | --format )         shift
                                 FORMAT=$1
                                 ;;
+        # use SSLKEYLOGFOLDER to decrypt traffic
+		-o | --sslkeydir)
+                                shift
+                                SSLKEYLOGFOLDER=$1
+                                ;;
         # list of fields to be extracted
         -e )
                                 FIELDS=$@
@@ -70,7 +75,14 @@ MAX_PROCESS=8
 i=0
 for f in $PCAP_DIR/*.pcap; do
   basename=$(basename "$f")
-  tshark -r $f -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
+  channelid=`echo $basename | awk -F'[-]' '{print $1}'`
+
+  SSLKEYOPTION=""
+  # We assume that each SSLKEYLOGFILE is like 1234.txt
+  SSLKEYFILE=${SSLKEYLOGFOLDER}/`ls $SSLKEYLOGFOLDER | grep "^${channelid}\.txt"`
+  [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:'${SSLKEYFILE}'"
+
+  tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
   #sleep 0.05;
   n_running+=1
   ((i=i%MAX_PROCESS)); ((i++==0)) && wait
