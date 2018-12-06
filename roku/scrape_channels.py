@@ -38,6 +38,8 @@ LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
+MASTER_LOG = "master.log"
+
 
 #repeat = {}
 # To get this list use this command:
@@ -77,6 +79,7 @@ def dump_redis(PREFIX):
 
 
 def main():
+    truncate_file(MASTER_LOG)
     dns_sniffer_run()
 
     # Maps category to a list of channels
@@ -172,8 +175,17 @@ def copy_log_file(channel_id):
 
     copyfile(LOG_FILE_PATH_NAME, output_path)
 
+
+def concat(src, dst):
+    with open(src) as src:
+        with open(dst, 'a') as dst:
+            for l in src:
+                dst.write(l)
+
+def truncate_file(path):
     #Clear the original log file
-    open(LOG_FILE_PATH_NAME, 'w').close()
+    open(path, 'w').close()
+
 
 def scrape(channel):
     check_folders()
@@ -221,8 +233,10 @@ def scrape(channel):
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        surfer.rsync()
         copy_log_file(channel)
+        surfer.rsync()
+        concat(LOG_FILE_PATH_NAME, MASTER_LOG)
+        truncate_file(LOG_FILE_PATH_NAME)
 
 
 if __name__ == '__main__':
