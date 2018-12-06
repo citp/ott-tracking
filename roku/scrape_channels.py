@@ -123,7 +123,7 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel)
+                scrape(channel['id'])
 
             except Exception:
                 log('Crashed:', channel['id'])
@@ -162,13 +162,13 @@ def cleanup_sslkey_file(fileAddr):
     log('Erasing content of file '+ fileAddr)
     open(fileAddr, 'w').close()
 
-def scrape(channel):
+def scrape(channel_id):
     if not check_folders():
         exit(-1)
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel['id'], str(DATA_DIR), str(PCAP_PREFIX))
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX))
     cleanup_sslkey_file(global_keylog_file)
-    mitmrunner = MITMRunner(channel['id'], 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
+    mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
 
 
     try:
@@ -211,5 +211,8 @@ def scrape(channel):
 
 
 if __name__ == '__main__':
-    main()
-
+    if len(sys.argv) > 1:
+        channel_id = sys.argv[1]
+        scrape(channel_id)
+    else:
+        main()
