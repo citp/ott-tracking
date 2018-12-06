@@ -32,7 +32,7 @@ class ChannelSurfer(object):
         self.pcap_dir = str(data_dir) + str(pcap_prefix)
         self.go_home()
         self.crawl_folder = datetime.datetime.now().\
-            strftime("%Y-%m-%d-%H:%M:%S")
+            strftime("%Y%m%d-%H%M%S")
         self.log('Initialized', channel_id)
         self.launchIter = 1
 
