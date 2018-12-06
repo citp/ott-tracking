@@ -172,7 +172,7 @@ class ChannelSurfer(object):
     def kill_all_tcpdump(self):
 
         subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
-        time.sleep(1)
+        time.sleep(5)
         subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
 
     def rsync(self):
