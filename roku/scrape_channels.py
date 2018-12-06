@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import redisdl
+from shutil import copyfile
 
 LAUNCH_RETRY_CNT = 7
 #TV_IP_ADDR = '172.24.1.135'
@@ -70,7 +71,6 @@ def dump_redis(PREFIX):
 
 def main():
     dns_sniffer_run()
-    prep_folders()
 
     # Maps category to a list of channels
     channel_dict = {}
@@ -163,11 +163,7 @@ def copy_log_file(channel_id):
 
     output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
 
-    with open(LOG_FILE_PATH_NAME) as f:
-        lines = f.readlines()
-        lines = [l for l in lines if "ROW" in l]
-        with open(output_path, "w") as f1:
-            f1.writelines(lines)
+    copyfile(LOG_FILE_PATH_NAME, output_path)
 
     #Clear the original log file
     open(LOG_FILE_PATH_NAME, 'w').close()
