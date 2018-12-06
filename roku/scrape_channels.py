@@ -37,7 +37,7 @@ CUTOFF_TRESHOLD=200
 
 #repeat = {}
 # To get this list use this command:
-# ls -la /mnt/iot-house/pcaps/ | grep launch |  awk '{print $9}' | awk -F'[-]' '{print $1}' | tr '\n' ','
+# ls -larSt /mnt/iot-house/keys |  awk '{print $9}' | tr '\n' ','
 #channels_done = {}
 
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")

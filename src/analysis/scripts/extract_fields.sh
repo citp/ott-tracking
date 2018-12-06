@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 #
 # Extract requested fields from pcaps and write to separate files.
 #
@@ -34,7 +35,7 @@ FORMAT="fields"  # output format, CSV by default. -T in tshark
 
 usage()
 {
-    echo "Usage: extract_fields.sh -i /path/to/pcaps [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
+    echo "Usage: extract_fields.sh -i /path/to/pcaps [-o /path/to/keys] [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
 }
 
 while [ "$1" != "" ]; do
