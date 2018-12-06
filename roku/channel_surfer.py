@@ -9,7 +9,6 @@ from roku_remote import RokuRemoteControl
 import time
 import subprocess
 import datetime
-import sys
 import os
 
 
@@ -32,7 +31,8 @@ class ChannelSurfer(object):
         self.data_dir = data_dir
         self.pcap_dir = str(data_dir) + str(pcap_prefix)
         self.go_home()
-
+        self.crawl_folder = datetime.datetime.now().\
+            strftime("%Y-%m-%d-%H:%M:%S")
         self.log('Initialized', channel_id)
         self.launchIter = 1
 
@@ -140,16 +140,15 @@ class ChannelSurfer(object):
         
         self.rrc.press_key('Select')        
         
-    def capture_packets(self, event_name):
+    def capture_packets(self, timestamp):
 
         self.kill_all_tcpdump()
 
         time.sleep(3)
 
-        self.pcap_filename = '{}-{}-{}'.format(
+        self.pcap_filename = '{}-{}'.format(
             self.channel_id,
-            int(time.time()),
-            event_name
+            int(timestamp)
         )
 
         subprocess.Popen(
@@ -179,7 +178,9 @@ class ChannelSurfer(object):
     def rsync(self):
         time.sleep(3)
 
-        rsync_command = str('rsync -rlptDv --remove-source-files ' + str(self.data_dir) + ' /mnt/iot-house/')
+        rsync_command = str('rsync -rlptDv --remove-source-files ' +
+                            str(self.data_dir) + ' /mnt/iot-house/' +
+                            self.crawl_folder)
         print (rsync_command)
         #p = subprocess.Popen(
         p = subprocess.run(
@@ -187,38 +188,3 @@ class ChannelSurfer(object):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.log("rsync return code: " + str(p.returncode))
-
-#DEPRECATED
-def main():
-
-    try:
-        channel_id = sys.argv[1]
-    except Exception:
-        print('Specify channel_id as the command line argument.')
-        return
-    
-    surfer = ChannelSurfer('172.24.1.239', channel_id)
-
-    surfer.install_channel()
-
-    surfer.capture_packets('launch')
-    surfer.launch_channel()
-    surfer.capture_screenshots(20)    
-    surfer.kill_all_tcpdump()
-
-    for okay_ix in range(0, 3):
-        surfer.capture_packets('select-{}'.format(okay_ix))
-        surfer.press_select()
-        surfer.capture_screenshots(20)
-        surfer.kill_all_tcpdump()
-
-    surfer.uninstall_channel()
-
-    print('Done')
-
-
-if __name__ == '__main__':
-    main()
-
-
-

@@ -22,6 +22,7 @@ import subprocess
 import sys
 import redisdl
 from shutil import copyfile
+from os.path import join
 
 LAUNCH_RETRY_CNT = 7
 #TV_IP_ADDR = '172.24.1.135'
@@ -52,6 +53,12 @@ def dns_sniffer_run():
         'sudo python2 ./dns_sniffer.py ',
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
+
+
+def dump_as_json(obj, json_path):
+    with open(json_path, 'w') as f:
+        json.dump(obj, f, indent=2)
+
 
 def dump_redis(PREFIX):
     full_path = os.path.abspath(PREFIX)
@@ -174,15 +181,17 @@ def scrape(channel):
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX))
     cleanup_sslkey_file(global_keylog_file)
     mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
-
+    timestamps = {}
 
     try:
         mitmrunner.clean_iptables()
+        timestamps["install_channel"] = int(time.time())
         surfer.install_channel()
 
         mitmrunner.run_mitmproxy()
-        surfer.capture_packets('launch')
-
+        timestamp = int(time.time())
+        surfer.capture_packets(timestamp)
+        timestamps["launch"] = timestamp
 
         iter = 0
         while iter < LAUNCH_RETRY_CNT:
@@ -192,15 +201,12 @@ def scrape(channel):
 
         time.sleep(SLEEP_TIMER)
 
-        surfer.kill_all_tcpdump()
-
         for okay_ix in range(0, 3):
             if not surfer.channel_is_active():
                 surfer.launch_channel()
-            surfer.capture_packets('select-{}'.format(okay_ix))
+            timestamps['select-{}'.format(okay_ix)] = int(time.time())
             surfer.press_select()
             surfer.capture_screenshots(20)
-            surfer.kill_all_tcpdump()
         surfer.go_home()
     except SurferAborted as e:
         print('Error!')
@@ -211,7 +217,10 @@ def scrape(channel):
     finally:
         mitmrunner.kill_mitmproxy()
         surfer.uninstall_channel()
+        surfer.kill_all_tcpdump()
         dump_redis(DATA_DIR)
+        dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
+                                      "%s_timestamps.json" % channel_id))
         surfer.rsync()
         copy_log_file(channel)
 
