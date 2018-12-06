@@ -31,6 +31,8 @@ DATA_DIR="data/"
 PCAP_PREFIX="pcaps/"
 DUMP_PREFIX="mitmdumps/"
 LOG_PREFIX="mitmlog/"
+LOG_FOLDER="logs/"
+LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
@@ -141,30 +143,37 @@ def log(*args):
 
 
 
-def prep_folders():
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX]
-    for f in folders:
-        fullpath = str(DATA_DIR) + str(f)
-        if not os.path.exists(fullpath):
-            os.makedirs(fullpath)
-
 def check_folders():
-    all_exist = True
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX]
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
     for f in folders:
         fullpath = str(DATA_DIR) + str(f)
         if not os.path.exists(fullpath):
-            all_exist = False
-            print (fullpath + " doesn't exist.")
-    return all_exist
+            print (fullpath + " doesn't exist! Creating it!")
+            os.makedirs(fullpath)
 
 def cleanup_sslkey_file(fileAddr):
     log('Erasing content of file '+ fileAddr)
     open(fileAddr, 'w').close()
 
-def scrape(channel_id):
-    if not check_folders():
-        exit(-1)
+def copy_log_file(channel_id):
+    filename = '{}-{}'.format(
+        channel_id,
+        int(time.time())
+    )
+
+    output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+
+    with open(LOG_FILE_PATH_NAME) as f:
+        lines = f.readlines()
+        lines = [l for l in lines if "ROW" in l]
+        with open(output_path, "w") as f1:
+            f1.writelines(lines)
+
+    #Clear the original log file
+    open(LOG_FILE_PATH_NAME, 'w').close()
+
+def scrape(channel):
+    check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX))
     cleanup_sslkey_file(global_keylog_file)
@@ -208,6 +217,7 @@ def scrape(channel_id):
         surfer.uninstall_channel()
         dump_redis(DATA_DIR)
         surfer.rsync()
+        copy_log_file(channel)
 
 
 if __name__ == '__main__':
