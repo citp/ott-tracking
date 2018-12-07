@@ -187,7 +187,7 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel):
+def scrape(channel_id):
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX))
@@ -233,7 +233,7 @@ def scrape(channel):
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel)
+        copy_log_file(channel_id)
         surfer.rsync()
         concat(LOG_FILE_PATH_NAME, MASTER_LOG)
         truncate_file(LOG_FILE_PATH_NAME)
