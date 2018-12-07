@@ -179,7 +179,8 @@ class ChannelSurfer(object):
         time.sleep(3)
 
         rsync_command = str('rsync -rlptDv --remove-source-files ' +
-                            str(self.data_dir) + ' /mnt/iot-house/crawl-data/' +
+                            str(self.data_dir) +
+                            ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/' +
                             self.crawl_folder)
         print (rsync_command)
         #p = subprocess.Popen(
