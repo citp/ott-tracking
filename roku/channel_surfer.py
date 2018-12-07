@@ -23,7 +23,7 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix):
+    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
@@ -31,9 +31,8 @@ class ChannelSurfer(object):
         self.data_dir = data_dir
         self.pcap_dir = str(data_dir) + str(pcap_prefix)
         self.go_home()
-        self.crawl_folder = datetime.datetime.now().\
-            strftime("%Y%m%d-%H%M%S")
         self.log('Initialized', channel_id)
+        self.crawl_folder = crawl_folder
         self.launchIter = 1
 
     def log(self, *args):

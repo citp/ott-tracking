@@ -14,7 +14,7 @@ from __future__ import print_function
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 import json
-import datetime
+from datetime import datetime
 import traceback
 import time
 import os
@@ -81,7 +81,7 @@ def dump_redis(PREFIX):
 def main():
     truncate_file(MASTER_LOG)
     dns_sniffer_run()
-
+    crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
     channel_dict = {}
 
@@ -135,7 +135,7 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel['id'])
+                scrape(channel['id'], crawl_folder)
 
             except Exception:
                 log('Crashed:', channel['id'])
@@ -144,7 +144,7 @@ def main():
 
 def log(*args):
 
-    s = '[{}] '.format(datetime.datetime.today())
+    s = '[{}] '.format(datetime.today())
     s += ' '.join([str(v) for v in args])
 
     print(s)
@@ -187,10 +187,10 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel_id):
+def scrape(channel_id, crawl_folder):
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX))
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
     cleanup_sslkey_file(global_keylog_file)
     mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
@@ -242,6 +242,6 @@ def scrape(channel_id):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         channel_id = sys.argv[1]
-        scrape(channel_id)
+        scrape(channel_id, "TEST")
     else:
         main()
