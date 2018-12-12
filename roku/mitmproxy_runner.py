@@ -244,7 +244,7 @@ class MITMRunner(object):
         self.log("Forcing manual termination!!!")
         self.p.terminate()
         time.sleep(2)
-        subprocess.call('kill -9 -f ' + str(self.p.pid, shell=True, stderr=open(os.devnull, 'wb'))
+        subprocess.call('kill -9 -f ' + str(self.p.pid, shell=True, stderr=open(os.devnull, 'wb')))
         self.clean_iptables()
         move_keylog_file(self.global_keylog_file, self.keylog_file)
 
