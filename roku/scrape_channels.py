@@ -161,6 +161,9 @@ def check_folders():
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
 
+    log('Erasing content of file ' + str(MASTER_LOG))
+    open(MASTER_LOG, 'w').close()
+
 def cleanup_sslkey_file(fileAddr):
     log('Erasing content of file '+ fileAddr)
     open(fileAddr, 'w').close()
