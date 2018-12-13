@@ -207,6 +207,7 @@ def scrape(channel_id, crawl_folder):
 
     try:
         mitmrunner.clean_iptables()
+        mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
         surfer.install_channel()
 
