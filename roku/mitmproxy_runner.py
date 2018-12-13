@@ -32,7 +32,7 @@ SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
 ADDN_DIR='/home/pi/.mitmproxy/scripts/smart-strip.py'
-MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
+MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
 
 class MITMRunnerAborted(Exception):

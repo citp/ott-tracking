@@ -173,13 +173,16 @@ def strip_null_chr(output_path):
     copyfileobj(from_file, to_file)
 
 
-def copy_log_file(channel_id, output_file_desc):
+def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     filename = '{}-{}'.format(
         channel_id,
         int(time.time())
     )
 
-    output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+    if not is_rsync_res:
+        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+    else:
+        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".rsync.log"
 
     #copy dest file for copying
     to_file = open(output_path,mode="w")
@@ -246,8 +249,9 @@ def scrape(channel_id, crawl_folder, output_file_desc):
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel_id, output_file_desc)
+        copy_log_file(channel_id, output_file_desc, False)
         surfer.rsync()
+        copy_log_file(channel_id, output_file_desc, True)
 
 
 if __name__ == '__main__':
