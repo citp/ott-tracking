@@ -38,7 +38,6 @@ LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
-MASTER_LOG = "master.log"
 
 
 #repeat = {}
@@ -79,7 +78,7 @@ def dump_redis(PREFIX):
 
 
 def main():
-    truncate_file(MASTER_LOG)
+    output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
@@ -135,7 +134,7 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel['id'], crawl_folder)
+                scrape(channel['id'], crawl_folder, output_file_desc)
 
             except Exception:
                 log('Crashed:', channel['id'])
@@ -174,7 +173,7 @@ def strip_null_chr(output_path):
     copyfileobj(from_file, to_file)
 
 
-def copy_log_file(channel_id):
+def copy_log_file(channel_id, output_file_desc):
     filename = '{}-{}'.format(
         channel_id,
         int(time.time())
@@ -182,9 +181,12 @@ def copy_log_file(channel_id):
 
     output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
 
-    copyfile(LOG_FILE_PATH_NAME, output_path)
+    #copy dest file for copying
+    to_file = open(output_path,mode="w")
+    copyfileobj(output_file_desc, to_file)
+    #move the read file descriptor to the end of the file
+    output_file_desc.seek(0,2)
 
-    strip_null_chr(output_path)
 
 def concat(src, dst):
     with open(src) as src:
@@ -197,7 +199,7 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel_id, crawl_folder):
+def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
@@ -244,10 +246,8 @@ def scrape(channel_id, crawl_folder):
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel_id)
+        copy_log_file(channel_id, output_file_desc)
         surfer.rsync()
-        concat(LOG_FILE_PATH_NAME, MASTER_LOG)
-        truncate_file(LOG_FILE_PATH_NAME)
 
 
 if __name__ == '__main__':
