@@ -21,7 +21,7 @@ import os
 import subprocess
 import sys
 import redisdl
-from shutil import copyfile
+from shutil import copyfile, copyfileobj
 from os.path import join
 
 LAUNCH_RETRY_CNT = 7
@@ -165,6 +165,15 @@ def cleanup_sslkey_file(fileAddr):
     log('Erasing content of file '+ fileAddr)
     open(fileAddr, 'w').close()
 
+def strip_null_chr(output_path):
+    from_file = open(output_path)
+    line = from_file.readline().replace('\x00', '')
+
+    to_file = open(output_path,mode="w")
+    to_file.write(line)
+    copyfileobj(from_file, to_file)
+
+
 def copy_log_file(channel_id):
     filename = '{}-{}'.format(
         channel_id,
@@ -175,6 +184,7 @@ def copy_log_file(channel_id):
 
     copyfile(LOG_FILE_PATH_NAME, output_path)
 
+    strip_null_chr(output_path)
 
 def concat(src, dst):
     with open(src) as src:
