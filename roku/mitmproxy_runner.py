@@ -27,7 +27,7 @@ import multiprocessing
 from threading import Thread
 
 OPTIONS_FILE_NAME = "config.yaml"
-MITMPROXY_PORT_NO=8080
+MITMPROXY_PORT_NO=str(8080)
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
@@ -232,7 +232,7 @@ class MITMRunner(object):
         subprocess.call('./iptables.sh', shell=True)
 
     def kill_existing_mitmproxy(self):
-        command = "sudo kill -9 `sudo lsof -Pni  | grep \"\\*\\:"+ str(MITMPROXY_PORT_NO) + "\" | awk '{print $2}'`"
+        command = "sudo kill -9 `sudo lsof -Pni  | grep \"\\*\\:"+ MITMPROXY_PORT_NO + "\" | awk '{print $2}'`"
         self.log("Killing existing mitmproxy")
         self.log(command)
         subprocess.call(command, shell=True, stderr=open(os.devnull, 'wb'))
