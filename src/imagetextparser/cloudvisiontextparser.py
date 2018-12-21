@@ -10,6 +10,7 @@ from glob import glob
 from _collections import defaultdict
 import binascii
 import pytesseract
+from celery import Celery
 
 
 class FailedToQueryError(Exception):
@@ -51,6 +52,22 @@ def get_img_base64(img_file_path):
     return base64.b64encode(img_file.read())
 
 
+app = Celery('cloudvisiontextparser', broker='pyamqp://guest@localhost//')
+
+
+@app.task
+def call_make_request(img_path, img_base64, key, output_dir):
+    try:
+        img_basename = basename(img_path)
+        json_str = make_request(img_path, img_base64, key)
+        json_path = join(output_dir, img_basename + '.json')
+        with io.open(abspath(json_path), 'w', encoding='utf-8') as f:
+            f.write(unicode(json.dumps(json_str, ensure_ascii=False)))
+    except Exception:
+        logger.exception(
+            'Exception while extracting text for %s' % img_basename)
+
+
 def make_request(img_file, img_file_base64, key):
     r = requests.post(endpoint % key, data=payload % img_file_base64,
                       headers=headers)
@@ -90,24 +107,12 @@ def compile_text(img_dir, output_dir, key):
                     "Image doesn't contain text (by tesseract) %s, will skip."
                     % img_basename)
                 continue
-            try:
-                txt_path = join(output_dir, img_basename + '.txt')
-                with io.open(abspath(txt_path), 'w', encoding='utf-8') as f:
-                    f.write(text)
-            except Exception:
-                logger.warning(
-                    "Exception while writing OCR text %s" % img_basename)
+            txt_path = join(output_dir, img_basename + '.txt')
+            with io.open(abspath(txt_path), 'w', encoding='utf-8') as f:
+                f.write(text)
 
         logger.info("Will run text recognition %s" % img_basename)
-        try:
-            json_str = make_request(img_path, img_base64, key)
-            json_path = join(output_dir, img_basename + '.json')
-            with io.open(abspath(json_path), 'w', encoding='utf-8') as f:
-                f.write(unicode(json.dumps(json_str, ensure_ascii=False)))
-        except Exception:
-            logger.exception(
-                'Exception while extracting text for %s' % img_basename)
-            pass
+        call_make_request.delay(img_path, img_base64, key, output_dir)
 
 
 if __name__ == '__main__':
