@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, basename
 from glob import glob
 import json
 
@@ -8,7 +8,7 @@ for json_path in glob(join(JSON_DIR, "*.json")):
     ocr = json.loads(open(json_path).read())
     if not ocr or not len(ocr['responses'][0]):
         continue
-    print "*********"
+    print "*********", basename(json_path)
     print "========="
     print "Google Cloud"
     print "========="
@@ -16,7 +16,7 @@ for json_path in glob(join(JSON_DIR, "*.json")):
         for txt in ocr['responses'][0]['fullTextAnnotation']['text'].split('\n'):
             if not txt:
                 continue
-            print txt
+            print txt.encode('utf-8')
 
     except KeyError:
         print "ERROR", ocr['responses'][0]
