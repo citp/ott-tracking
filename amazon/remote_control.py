@@ -1,3 +1,17 @@
+"""
+Amazon Remote Control emulator.
+
+Prerequisites:
+
+ - Install adb
+ - Test adb connection to your Amazon device:
+     adb connect [ip_addr]
+     adb devices
+ - Run this script!
+
+"""
+
+
 import subprocess as sp
 import sys
 import time
