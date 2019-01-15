@@ -41,3 +41,9 @@ Python script will go through all the channels in `channel_list.txt`
 install each one, capture packets, launch the channel, run the channel
 for 20 seconds, stop the packet capture, and uninstall the channel.
 
+
+
+#Package MITMPROXY requires the following packages to be installed:
+scapy: https://scapy.net/
+
+redis-dump-load: https://github.com/p/redis-dump-load
