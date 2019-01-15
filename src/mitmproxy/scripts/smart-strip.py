@@ -31,14 +31,14 @@ class _TlsStrategy:
     def __init__(self):
         # A server_address -> interception results mapping
         self.history = collections.defaultdict(lambda: collections.deque(maxlen=200))
-        self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0)
-        self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1)
+        self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
+        self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
         hostname = self.rIP2NameDic.get(IPAddress)
         if hostname and hostname in self.rName2IPDic:
-            IPList = IPList.union(self.rName2IPDic.get(hostname))
+            IPList = IPList.union(self.rName2IPDic.smembers(hostname))
         return list(IPList)
     def getAssociatedDomain(self, IPAddress):
         hostname = ""
@@ -79,7 +79,6 @@ class _TlsStrategy:
             if hostname:
                 server_address = (hostname, portNum)
             the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
-
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
