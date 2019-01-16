@@ -172,7 +172,7 @@ class ChannelSurfer(object):
             self.deduplicate_screenshots(screenshot_filename)
 
     def deduplicate_screenshots(self, screenshot_filename):
-        screenshot_crc = binascii.crc32(open(img_file_path, 'rb').read())
+        screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
         if screenshot_crc == self.last_screenshot_crc:
             self.log('Will remove duplicate screenshot:', screenshot_filename)
             os.remove(screenshot_filename)
