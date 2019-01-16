@@ -51,7 +51,7 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 def dns_sniffer_run():
     time.sleep(2)
     p = subprocess.Popen(
-        'sudo python2 ./dns_sniffer.py ',
+        'sudo -E python3 ./dns_sniffer.py ',
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 

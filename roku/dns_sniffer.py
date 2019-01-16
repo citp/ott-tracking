@@ -1,12 +1,15 @@
 from __future__ import print_function
 import redis
+import os
 import sys
 from scapy.all import *
 
-if sys.argv[1]:
+if len(sys.argv) > 1:
     interface = str(sys.argv[1])
 else:
-    interface = "wlan0"
+    interface = os.getenv('WLANIF', "wlan0")
+print(interface)
+
 Name2IPDic = {}
 IP2NameDic = {}
 
