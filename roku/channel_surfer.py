@@ -10,6 +10,7 @@ import time
 import subprocess
 import datetime
 import os
+import binascii
 
 
 LOG_FILE = 'channel_surfer.log'
@@ -33,7 +34,8 @@ class ChannelSurfer(object):
         self.go_home()
         self.log('Initialized', channel_id)
         self.crawl_folder = crawl_folder
-        self.launchIter = 1
+        self.launch_iter = 1
+        self.last_screenshot_crc = 0
 
     def log(self, *args):
 
@@ -124,13 +126,13 @@ class ChannelSurfer(object):
             self.log('Cannot launch a non-existent channel.')
             raise SurferAborted
 
-        self.log('Launching channel. Attempt %s' % self.launchIter)
+        self.log('Launching channel. Attempt %s' % self.launch_iter)
 
         self.go_home()
 
         self.rrc.launch_channel(self.channel_id)
 
-        self.launchIter += 1
+        self.launch_iter += 1
         time.sleep(1)
 
     def press_select(self):
@@ -167,6 +169,15 @@ class ChannelSurfer(object):
                 './capture_screenshot.sh {}'.format(screenshot_filename),
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
+            self.deduplicate_screenshots(screenshot_filename)
+
+    def deduplicate_screenshots(self, screenshot_filename):
+        screenshot_crc = binascii.crc32(open(img_file_path, 'rb').read())
+        if screenshot_crc == self.last_screenshot_crc:
+            self.log('Will remove duplicate screenshot:', screenshot_filename)
+            os.remove(screenshot_filename)
+
+        self.last_screenshot_crc = screenshot_crc
 
     def kill_all_tcpdump(self):
 

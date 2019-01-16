@@ -21,7 +21,7 @@ import os
 import subprocess
 import sys
 import redisdl
-from shutil import copyfile
+from shutil import copyfile, copyfileobj
 from os.path import join
 
 LAUNCH_RETRY_CNT = 7
@@ -38,7 +38,6 @@ LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
-MASTER_LOG = "master.log"
 
 
 #repeat = {}
@@ -52,7 +51,7 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 def dns_sniffer_run():
     time.sleep(2)
     p = subprocess.Popen(
-        'sudo python2 ./dns_sniffer.py ',
+        'sudo -E python3 ./dns_sniffer.py ',
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
@@ -79,7 +78,7 @@ def dump_redis(PREFIX):
 
 
 def main():
-    truncate_file(MASTER_LOG)
+    output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
@@ -135,7 +134,7 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel['id'], crawl_folder)
+                scrape(channel['id'], crawl_folder, output_file_desc)
 
             except Exception:
                 log('Crashed:', channel['id'])
@@ -165,15 +164,31 @@ def cleanup_sslkey_file(fileAddr):
     log('Erasing content of file '+ fileAddr)
     open(fileAddr, 'w').close()
 
-def copy_log_file(channel_id):
+def strip_null_chr(output_path):
+    from_file = open(output_path)
+    line = from_file.readline().replace('\x00', '')
+
+    to_file = open(output_path,mode="w")
+    to_file.write(line)
+    copyfileobj(from_file, to_file)
+
+
+def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     filename = '{}-{}'.format(
         channel_id,
         int(time.time())
     )
 
-    output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+    if not is_rsync_res:
+        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+    else:
+        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".rsync.log"
 
-    copyfile(LOG_FILE_PATH_NAME, output_path)
+    #copy dest file for copying
+    to_file = open(output_path,mode="w")
+    copyfileobj(output_file_desc, to_file)
+    #move the read file descriptor to the end of the file
+    output_file_desc.seek(0,2)
 
 
 def concat(src, dst):
@@ -187,7 +202,7 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel_id, crawl_folder):
+def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
@@ -197,6 +212,7 @@ def scrape(channel_id, crawl_folder):
 
     try:
         mitmrunner.clean_iptables()
+        mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
         surfer.install_channel()
 
@@ -233,10 +249,9 @@ def scrape(channel_id, crawl_folder):
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel_id)
+        copy_log_file(channel_id, output_file_desc, False)
         surfer.rsync()
-        concat(LOG_FILE_PATH_NAME, MASTER_LOG)
-        truncate_file(LOG_FILE_PATH_NAME)
+        copy_log_file(channel_id, output_file_desc, True)
 
 
 if __name__ == '__main__':

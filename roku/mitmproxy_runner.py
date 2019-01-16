@@ -27,11 +27,12 @@ import multiprocessing
 from threading import Thread
 
 OPTIONS_FILE_NAME = "config.yaml"
+MITMPROXY_PORT_NO=str(8080)
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
-ADDN_DIR='/home/pi/.mitmproxy/scripts/smart-strip.py'
-MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
+ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
+MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
 
 class MITMRunnerAborted(Exception):
@@ -105,11 +106,13 @@ def my_run(
         arg_check.check()
         sys.exit(1)
     try:
+        print(str(os.path.join(opts.confdir, OPTIONS_FILE_NAME)))
         opts.confdir = args.confdir
         optmanager.load_paths(
             opts,
             os.path.join(opts.confdir, OPTIONS_FILE_NAME),
         )
+
         pconf = process_options(parser, opts, args)
         #server: typing.Any = None
         if pconf.options.server:
@@ -120,7 +123,6 @@ def my_run(
                 sys.exit(1)
         else:
             server = proxy.server.DummyServer(pconf)
-
         master.server = server
         if args.options:
             print(optmanager.dump_defaults(opts))
@@ -131,7 +133,6 @@ def my_run(
         opts.set(*args.setoptions, defer=True)
         if extra:
             opts.update(**extra(args))
-
         loop = asyncio.get_event_loop()
         for signame in ('SIGINT', 'SIGTERM'):
             try:
@@ -218,7 +219,7 @@ class MITMRunner(object):
         ARGS.append('--set')
         ARGS.append('data_dir=' + str(data_dir))
         #print(ARGS)
-        #print(os.environ)
+        #
         self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
         self.p.start()
 
@@ -229,6 +230,12 @@ class MITMRunner(object):
     def set_iptables(self):
         self.log("Setting up iptables")
         subprocess.call('./iptables.sh', shell=True)
+
+    def kill_existing_mitmproxy(self):
+        command = "sudo kill -9 `sudo lsof -Pni  | grep \"\\*\\:"+ MITMPROXY_PORT_NO + "\" | awk '{print $2}'`"
+        self.log("Killing existing mitmproxy")
+        self.log(command)
+        subprocess.call(command, shell=True, stderr=open(os.devnull, 'wb'))
 
     def kill_mitmproxy(self):
         self.log("Killing MITM proxy!!!")
@@ -243,6 +250,9 @@ class MITMRunner(object):
         time.sleep(5)
         self.log("Forcing manual termination!!!")
         self.p.terminate()
+        time.sleep(2)
+        subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
+        self.kill_existing_mitmproxy()
         self.clean_iptables()
         move_keylog_file(self.global_keylog_file, self.keylog_file)
 
