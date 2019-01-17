@@ -29,9 +29,9 @@ class ChannelSurfer(object):
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
-        self.data_dir = data_dir
-        self.pcap_dir = str(data_dir) + str(pcap_prefix)
-        self.screenshot_folder = str(data_dir) + str(screenshot_folder)
+        self.data_dir = data_dir + "/"
+        self.pcap_dir = self.data_dir  + str(pcap_prefix)
+        self.screenshot_folder = self.data_dir + str(screenshot_folder)
         self.go_home()
         self.log('Initialized', channel_id)
         self.crawl_folder = crawl_folder

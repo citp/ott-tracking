@@ -30,19 +30,18 @@ LAUNCH_RETRY_CNT = 7
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
-DATA_DIR="data/"
-PCAP_PREFIX="pcaps/"
-DUMP_PREFIX="mitmdumps/"
-LOG_PREFIX="mitmlog/"
-LOG_FOLDER="logs/"
-LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
-SCREENSHOT_PREFIX="screenshots/"
-SSLKEY_PREFIX="keys/"
+DATA_DIR = os.getenv("DATA_DIR")
+PCAP_PREFIX = "pcaps/"
+DUMP_PREFIX = "mitmdumps/"
+LOG_PREFIX = "mitmlog/"
+LOG_FOLDER = "logs/"
+LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
+SCREENSHOT_PREFIX = "screenshots/"
+SSLKEY_PREFIX = "keys/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
 
 
 CUTOFF_TRESHOLD=200
-
 
 #repeat = {}
 # To get this list use this command:
@@ -83,8 +82,6 @@ def dump_redis(PREFIX):
 
 def main():
     output_file_desc = open(LOG_FILE_PATH_NAME)
-    log('Clearing Data Folder!')
-    clear_folders()
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
@@ -156,18 +153,9 @@ def log(*args):
     with open('scrape_channels.log', 'a') as fp:
         print(s, file=fp)
 
-
-def clear_folders():
-    for f in folders:
-        try:
-            fullpath = str(DATA_DIR) + str(f)
-            shutil.rmtree(fullpath)
-        except Exception as e:
-            print(e)
-
 def check_folders():
     for f in folders:
-        fullpath = str(DATA_DIR) + str(f)
+        fullpath = str(DATA_DIR) + "/" +str(f)
         if not os.path.exists(fullpath):
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)

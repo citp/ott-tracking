@@ -27,13 +27,14 @@ import multiprocessing
 from threading import Thread
 
 OPTIONS_FILE_NAME = "config.yaml"
-MITMPROXY_PORT_NO=str(8080)
+MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
 ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
 MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
+MITMPROXY_NET_SET = False
 
 class MITMRunnerAborted(Exception):
     """Raised when we encounter an error while running this instance."""
@@ -172,6 +173,29 @@ class MITMRunner(object):
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
         self.p = None
+
+        global MITMPROXY_NET_SET
+        if not MITMPROXY_NET_SET:
+            self.set_global_net_settings()
+
+    def set_global_net_settings(self):
+        self.log("Setting global network settings")
+        cmd1 = "sudo -E sysctl -w net.ipv4.ip_forward=1"
+        cmd2 = "sudo -E sysctl -w net.ipv6.conf.all.forwarding=1"
+        cmd3 = "sudo -E sysctl -w net.ipv4.conf.all.send_redirects=0"
+
+        self.log(cmd1)
+        subprocess.call(cmd1, shell=True, stderr=open(os.devnull, 'wb'))
+
+        self.log(cmd2)
+        subprocess.call(cmd2, shell=True, stderr=open(os.devnull, 'wb'))
+
+        self.log(cmd2)
+        subprocess.call(cmd2, shell=True, stderr=open(os.devnull, 'wb'))
+
+        global MITMPROXY_NET_SET
+        MITMPROXY_NET_SET = True
+
 
     def log(self, *args):
 
