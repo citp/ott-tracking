@@ -106,7 +106,6 @@ def my_run(
         arg_check.check()
         sys.exit(1)
     try:
-        print(str(os.path.join(opts.confdir, OPTIONS_FILE_NAME)))
         opts.confdir = args.confdir
         optmanager.load_paths(
             opts,

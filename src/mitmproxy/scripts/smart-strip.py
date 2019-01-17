@@ -67,6 +67,7 @@ class _TlsStrategy:
             mitmable.add(server_address)
 
     def record_failure(self, server_address):
+        domainName=str(self.getAssociatedDomain(server_address[0]))
         portNum = server_address[1]
         serverList = self.getAssocitatedIPs(str(server_address[0]))
         for server in serverList:
@@ -78,7 +79,7 @@ class _TlsStrategy:
             hostname = self.getAssociatedDomain(str(server_address[0]))
             if hostname:
                 server_address = (hostname, portNum)
-            the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
+            the_file.write("Channel \"%s\": {%s: %s} \n" % (str(channel_id), domainName, str(server_address)))
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
