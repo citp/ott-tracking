@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import redisdl
+import shutil
 from shutil import copyfile, copyfileobj
 from os.path import join
 
@@ -37,6 +38,9 @@ LOG_FOLDER="logs/"
 LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
 SSLKEY_PREFIX="keys/"
+folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
+
+
 CUTOFF_TRESHOLD=200
 
 
@@ -79,6 +83,8 @@ def dump_redis(PREFIX):
 
 def main():
     output_file_desc = open(LOG_FILE_PATH_NAME)
+    log('Clearing Data Folder!')
+    clear_folders()
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
@@ -151,9 +157,15 @@ def log(*args):
         print(s, file=fp)
 
 
+def clear_folders():
+    for f in folders:
+        try:
+            fullpath = str(DATA_DIR) + str(f)
+            shutil.rmtree(fullpath)
+        except Exception as e:
+            print(e)
 
 def check_folders():
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
     for f in folders:
         fullpath = str(DATA_DIR) + str(f)
         if not os.path.exists(fullpath):
@@ -205,7 +217,7 @@ def truncate_file(path):
 def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder, str(SCREENSHOT_PREFIX))
     cleanup_sslkey_file(global_keylog_file)
     mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
