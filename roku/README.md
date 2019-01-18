@@ -47,3 +47,10 @@ for 20 seconds, stop the packet capture, and uninstall the channel.
 scapy: https://scapy.net/
 
 redis-dump-load: https://github.com/p/redis-dump-load
+
+### Capturing audio
+
+To capture audio, you will need three python libraries:
+1. NumPy (pip install numpy)
+2. sounddevice (pip install sounddevice)
+3. soundfile (pip install soundfile)
