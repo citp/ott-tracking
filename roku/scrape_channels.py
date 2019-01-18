@@ -237,8 +237,8 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             surfer.capture_screenshots(20)
         surfer.go_home()
     except SurferAborted as e:
-        print('Error!')
-        traceback.print_exc()
+        log('Channel not installed! Aborting scarping of channel')
+        #traceback.print_exc()
     except Exception as e:
         print('Error!')
         traceback.print_exc()

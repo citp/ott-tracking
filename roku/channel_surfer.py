@@ -102,7 +102,8 @@ class ChannelSurfer(object):
 
         if not self.channel_is_installed():
             self.log('Uninstalling a non-existent channel. Aborted.')
-            raise SurferAborted
+            return
+            #raise SurferAborted
 
         self.go_home()
 
@@ -119,7 +120,7 @@ class ChannelSurfer(object):
             self.log('Channel successfully uninstalled.')
         else:
             self.log('Unable to uninstall channel. Aborted.')
-            raise SurferAborted
+            #raise SurferAborted
 
     def launch_channel(self):
 

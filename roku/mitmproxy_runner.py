@@ -14,6 +14,8 @@ import os
 import signal  # noqa
 import argparse  # noqa
 import shutil
+import traceback
+
 
 from mitmproxy.tools import cmdline  # noqa
 from mitmproxy import exceptions, master  # noqa
@@ -180,22 +182,10 @@ class MITMRunner(object):
 
     def set_global_net_settings(self):
         self.log("Setting global network settings")
-        cmd1 = "sudo -E sysctl -w net.ipv4.ip_forward=1"
-        cmd2 = "sudo -E sysctl -w net.ipv6.conf.all.forwarding=1"
-        cmd3 = "sudo -E sysctl -w net.ipv4.conf.all.send_redirects=0"
+        cmd = "sudo -E ./ip_forwarding.sh"
 
-        self.log(cmd1)
-        subprocess.call(cmd1, shell=True, stderr=open(os.devnull, 'wb'))
-
-        self.log(cmd2)
-        subprocess.call(cmd2, shell=True, stderr=open(os.devnull, 'wb'))
-
-        self.log(cmd2)
-        subprocess.call(cmd2, shell=True, stderr=open(os.devnull, 'wb'))
-
-        global MITMPROXY_NET_SET
-        MITMPROXY_NET_SET = True
-
+        self.log(cmd)
+        subprocess.call(cmd, shell=True, stderr=open(os.devnull, 'wb'))
 
     def log(self, *args):
 
@@ -267,12 +257,13 @@ class MITMRunner(object):
             t.start()
         except Exception as e:
             self.log('Error in killing the proxy!')
-            traceback.print_exc()
+            traceback.print_tb(e.__traceback__)
         
         self.log("Sleeping for 5 seconds before forcing manual termination!!!")
         time.sleep(5)
         self.log("Forcing manual termination!!!")
-        self.p.terminate()
+        if self.p is not None:
+            self.p.terminate()
         time.sleep(2)
         subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
         self.kill_existing_mitmproxy()
