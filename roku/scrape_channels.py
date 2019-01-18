@@ -40,6 +40,8 @@ SCREENSHOT_PREFIX = "screenshots/"
 SSLKEY_PREFIX = "keys/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
 
+MITMPROXY_ENABLED = True
+
 
 CUTOFF_TRESHOLD=200
 
@@ -206,17 +208,20 @@ def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder, str(SCREENSHOT_PREFIX))
-    cleanup_sslkey_file(global_keylog_file)
-    mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
+    if MITMPROXY_ENABLED:
+        cleanup_sslkey_file(global_keylog_file)
+        mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
 
     try:
-        mitmrunner.clean_iptables()
-        mitmrunner.kill_existing_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.clean_iptables()
+            mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
         surfer.install_channel()
 
-        mitmrunner.run_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.run_mitmproxy()
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
@@ -243,20 +248,23 @@ def scrape(channel_id, crawl_folder, output_file_desc):
         print('Error!')
         traceback.print_exc()
     finally:
-        mitmrunner.kill_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.kill_mitmproxy()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel_id, output_file_desc, False)
+        if output_file_desc is not None:
+            copy_log_file(channel_id, output_file_desc, False)
         surfer.rsync()
-        copy_log_file(channel_id, output_file_desc, True)
+        if output_file_desc is not None:
+            copy_log_file(channel_id, output_file_desc, True)
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         channel_id = sys.argv[1]
-        scrape(channel_id, "TEST", "/tmp/out_desc")
+        scrape(channel_id, "/tmp/scrape-crawl", None)
     else:
         main()
