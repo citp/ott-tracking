@@ -36,6 +36,7 @@ LOG_PREFIX="mitmlog/"
 LOG_FOLDER="logs/"
 LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX="screenshots/"
+AUDIO_PREFIX="audio/"
 SSLKEY_PREFIX="keys/"
 CUTOFF_TRESHOLD=200
 
@@ -153,7 +154,7 @@ def log(*args):
 
 
 def check_folders():
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
+    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX]
     for f in folders:
         fullpath = str(DATA_DIR) + str(f)
         if not os.path.exists(fullpath):
@@ -205,7 +206,7 @@ def truncate_file(path):
 def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder, str(AUDIO_PREFIX))
     cleanup_sslkey_file(global_keylog_file)
     mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
@@ -227,6 +228,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             time.sleep(4)
             iter += 1
 
+        surfer.start_audio_recording(40)
         time.sleep(SLEEP_TIMER)
 
         for okay_ix in range(0, 3):
@@ -235,6 +237,8 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             timestamps['select-{}'.format(okay_ix)] = int(time.time())
             surfer.press_select()
             surfer.capture_screenshots(20)
+
+        surfer.complete_audio_recording()
         surfer.go_home()
     except SurferAborted as e:
         print('Error!')

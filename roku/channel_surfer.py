@@ -11,10 +11,12 @@ import subprocess
 import datetime
 import os
 import binascii
-
+import sounddevice as sd
+import soundfile as sf
 
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 10
+RECORD_FS = 44100
 
 
 class SurferAborted(Exception):
@@ -24,7 +26,7 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder):
+    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder, audio_prefix):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
@@ -34,8 +36,10 @@ class ChannelSurfer(object):
         self.go_home()
         self.log('Initialized', channel_id)
         self.crawl_folder = crawl_folder
+        self.audio_dir = str(data_dir) + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
+        self.recording = None
 
     def log(self, *args):
 
@@ -63,7 +67,7 @@ class ChannelSurfer(object):
 
     def channel_is_active(self):
         active_channel = self.rrc.get_active_channel()
-        print("Active Channel is " + str(active_channel)) 
+        print("Active Channel is " + str(active_channel))
         return self.channel_id == str(active_channel)
 
     def install_channel(self):
@@ -138,9 +142,9 @@ class ChannelSurfer(object):
     def press_select(self):
 
         self.log('Pressing the Select button.')
-        
-        self.rrc.press_key('Select')        
-        
+
+        self.rrc.press_key('Select')
+
     def capture_packets(self, timestamp):
 
         self.kill_all_tcpdump()
@@ -178,6 +182,13 @@ class ChannelSurfer(object):
             os.remove(screenshot_filename)
 
         self.last_screenshot_crc = screenshot_crc
+
+    def start_audio_recording(self, seconds):
+        self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+
+    def complete_audio_recording(self):
+        sd.wait()
+        sf.write(self.audio_dir + '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time())), self.recording, RECORD_FS)
 
     def kill_all_tcpdump(self):
 
