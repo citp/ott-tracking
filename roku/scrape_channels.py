@@ -257,6 +257,6 @@ def scrape(channel_id, crawl_folder, output_file_desc):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         channel_id = sys.argv[1]
-        scrape(channel_id, "TEST")
+        scrape(channel_id, "TEST", "/tmp/out_desc")
     else:
         main()
