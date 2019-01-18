@@ -14,6 +14,8 @@ import os
 import signal  # noqa
 import argparse  # noqa
 import shutil
+import traceback
+
 
 from mitmproxy.tools import cmdline  # noqa
 from mitmproxy import exceptions, master  # noqa
@@ -27,13 +29,14 @@ import multiprocessing
 from threading import Thread
 
 OPTIONS_FILE_NAME = "config.yaml"
-MITMPROXY_PORT_NO=str(8080)
+MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
 ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
 MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
+MITMPROXY_NET_SET = False
 
 class MITMRunnerAborted(Exception):
     """Raised when we encounter an error while running this instance."""
@@ -106,7 +109,6 @@ def my_run(
         arg_check.check()
         sys.exit(1)
     try:
-        print(str(os.path.join(opts.confdir, OPTIONS_FILE_NAME)))
         opts.confdir = args.confdir
         optmanager.load_paths(
             opts,
@@ -173,6 +175,17 @@ class MITMRunner(object):
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
         self.p = None
+
+        global MITMPROXY_NET_SET
+        if not MITMPROXY_NET_SET:
+            self.set_global_net_settings()
+
+    def set_global_net_settings(self):
+        self.log("Setting global network settings")
+        cmd = "sudo -E ./ip_forwarding.sh"
+
+        self.log(cmd)
+        subprocess.call(cmd, shell=True, stderr=open(os.devnull, 'wb'))
 
     def log(self, *args):
 
@@ -244,12 +257,13 @@ class MITMRunner(object):
             t.start()
         except Exception as e:
             self.log('Error in killing the proxy!')
-            traceback.print_exc()
+            traceback.print_tb(e.__traceback__)
         
         self.log("Sleeping for 5 seconds before forcing manual termination!!!")
         time.sleep(5)
         self.log("Forcing manual termination!!!")
-        self.p.terminate()
+        if self.p is not None:
+            self.p.terminate()
         time.sleep(2)
         subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
         self.kill_existing_mitmproxy()

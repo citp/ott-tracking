@@ -26,13 +26,14 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder, audio_prefix):
+    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder, screenshot_folder, audio_prefix):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
-        self.data_dir = data_dir
-        self.pcap_dir = str(data_dir) + str(pcap_prefix)
+        self.data_dir = data_dir + "/"
+        self.pcap_dir = self.data_dir  + str(pcap_prefix)
+        self.screenshot_folder = self.data_dir + str(screenshot_folder)
         self.go_home()
         self.log('Initialized', channel_id)
         self.crawl_folder = crawl_folder
@@ -105,7 +106,8 @@ class ChannelSurfer(object):
 
         if not self.channel_is_installed():
             self.log('Uninstalling a non-existent channel. Aborted.')
-            raise SurferAborted
+            return
+            #raise SurferAborted
 
         self.go_home()
 
@@ -122,7 +124,7 @@ class ChannelSurfer(object):
             self.log('Channel successfully uninstalled.')
         else:
             self.log('Unable to uninstall channel. Aborted.')
-            raise SurferAborted
+            #raise SurferAborted
 
     def launch_channel(self):
 
@@ -156,6 +158,7 @@ class ChannelSurfer(object):
             int(timestamp)
         )
 
+        #self.log('./start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename))
         subprocess.Popen(
             './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
@@ -168,7 +171,8 @@ class ChannelSurfer(object):
         start_time = time.time()
 
         while time.time() - start_time <= timeout:
-            screenshot_filename = '{}-{}'.format(self.pcap_filename, int(time.time()))
+            screenshot_filename = self.screenshot_folder + '{}-{}'.format(self.pcap_filename, int(time.time()))
+            #self.log('Taking screenshot to:', screenshot_filename)
             subprocess.call(
                 './capture_screenshot.sh {}'.format(screenshot_filename),
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -176,12 +180,13 @@ class ChannelSurfer(object):
             self.deduplicate_screenshots(screenshot_filename)
 
     def deduplicate_screenshots(self, screenshot_filename):
-        screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
-        if screenshot_crc == self.last_screenshot_crc:
-            self.log('Will remove duplicate screenshot:', screenshot_filename)
-            os.remove(screenshot_filename)
+        if os.path.exists(screenshot_filename):
+            screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
+            if screenshot_crc == self.last_screenshot_crc:
+                self.log('Will remove duplicate screenshot:', screenshot_filename)
+                os.remove(screenshot_filename)
 
-        self.last_screenshot_crc = screenshot_crc
+            self.last_screenshot_crc = screenshot_crc
 
     def start_audio_recording(self, seconds):
         self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)

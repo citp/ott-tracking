@@ -6,6 +6,7 @@ import sys
 
 import requests
 import xml.etree.ElementTree as ET
+import traceback
 from time import sleep
 
 HTTP_OK = 200
@@ -20,23 +21,27 @@ class RokuRemoteControl(object):
         self.installed_apps = {}
 
     def send_post_request(self, url):
-        r = requests.post(url)
-        if DEBUG_HTTP:
-            print((r.status_code, r.reason))
         try:
+            r = requests.post(url)
+            if DEBUG_HTTP:
+                print((r.status_code, r.reason))
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
             print((r.status_code, r.reason))
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
         return r
 
     def send_get_request(self, url):
-        r = requests.get(url)
-        if DEBUG_HTTP:
-            print((r.status_code, r.reason))
         try:
+            r = requests.get(url)
+            if DEBUG_HTTP:
+                print((r.status_code, r.reason))
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
             print((r.status_code, r.reason))
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
         return r
 
     def press_key(self, key):
