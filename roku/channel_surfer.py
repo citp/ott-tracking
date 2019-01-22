@@ -37,7 +37,7 @@ class ChannelSurfer(object):
         self.go_home()
         self.log('Initialized', channel_id)
         self.crawl_folder = crawl_folder
-        self.audio_dir = str(data_dir) + str(audio_prefix)
+        self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
         self.recording = None
