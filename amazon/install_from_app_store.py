@@ -31,11 +31,14 @@ def main():
     if os.path.isfile(LOG_PATH):
         with open(LOG_PATH) as fp:
             for line in fp:
+                line = line.strip()
                 try:
+                    success = line.split()[3] == 'successful'
                     asin = line.split()[2]
                 except Exception:
                     continue
-                previously_installed_asins.add(asin)
+                if success:
+                    previously_installed_asins.add(asin)
 
     # Install each ASIN
     with open(ASIN_PATH) as fp:
