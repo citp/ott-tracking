@@ -148,7 +148,8 @@ class AmazonRemoteControl(object):
                 if not line.startswith('package:/data/app/'):
                     continue
                 if line.startswith('package:/data/app/com.amazon'):
-                    continue
+                    if 'com.amazon.rialto' not in line:
+                        continue
             line = line.replace('package:', '')
             apk_path, apk_id = line.split('=')
             apk_dict[apk_id] = apk_path
