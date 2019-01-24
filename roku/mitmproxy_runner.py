@@ -76,7 +76,11 @@ def move_keylog_file(src, dest):
 def shutdown_master(master, event_handler):
     event_handler.wait()
     print("Shutting down DumpMaster!")
-    master.addons.get("save").done()
+    try:
+        master.addons.get("save").done()
+    except Exception as e:
+        print('Error in saving MITM flows before exit!')
+        traceback.print_exc()
 
     time.sleep(2)
     master.shutdown()
@@ -179,6 +183,7 @@ class MITMRunner(object):
         global MITMPROXY_NET_SET
         if not MITMPROXY_NET_SET:
             self.set_global_net_settings()
+            MITMPROXY_NET_SET = True
 
     def set_global_net_settings(self):
         self.log("Setting global network settings")
@@ -222,6 +227,8 @@ class MITMRunner(object):
 
     def run_mitmdump(self, dump_filename, data_dir, channel_id, dump_prefix):
         from mitmproxy.tools import dump
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         self.master, self.opts = prepare_master(dump.DumpMaster)
         dump_dir = str(data_dir) + str(dump_prefix)
         ARGS = MITM_CONST_ARGS.copy()
@@ -264,10 +271,9 @@ class MITMRunner(object):
         self.log("Forcing manual termination!!!")
         if self.p is not None:
             self.p.terminate()
+            time.sleep(2)
+            subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
         time.sleep(2)
-        subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
         self.kill_existing_mitmproxy()
         self.clean_iptables()
         move_keylog_file(self.global_keylog_file, self.keylog_file)
-
-

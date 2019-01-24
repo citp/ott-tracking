@@ -13,11 +13,13 @@ import os
 import binascii
 import sounddevice as sd
 import soundfile as sf
+import threading
 
 LOG_FILE = 'channel_surfer.log'
-INSTALL_RETRY_CNT = 10
+INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
-
+LOG_CRC_EN = False
+LOG_AUD_EN = True
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -81,6 +83,7 @@ class ChannelSurfer(object):
 
         iter = 0
         while iter < INSTALL_RETRY_CNT:
+            self.log('Installing channel. Attempt %s' % str(iter+1))
             if self.channel_is_installed():
                 break
             self.go_home()
@@ -183,17 +186,33 @@ class ChannelSurfer(object):
         if os.path.exists(screenshot_filename):
             screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
             if screenshot_crc == self.last_screenshot_crc:
-                self.log('Will remove duplicate screenshot:', screenshot_filename)
+                if LOG_CRC_EN:
+                    self.log('Will remove duplicate screenshot:', screenshot_filename)
                 os.remove(screenshot_filename)
 
             self.last_screenshot_crc = screenshot_crc
 
     def start_audio_recording(self, seconds):
+        if LOG_AUD_EN:
+            self.log('Starting audio recording!')
         self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+        if LOG_AUD_EN:
+            self.log('Audio recording started with value', str(self.recording))
 
-    def complete_audio_recording(self):
+    def audio_rec_worker(self):
+        audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
+        if LOG_AUD_EN:
+            self.log('Writing audio file to:', audio_name)
+
         sd.wait()
-        sf.write(self.audio_dir + '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time())), self.recording, RECORD_FS)
+        sf.write(self.audio_dir + audio_name, self.recording, RECORD_FS)
+
+        if LOG_AUD_EN:
+            self.log('Finished writing audio file:', audio_name)
+    def complete_audio_recording(self, seconds):
+        t = threading.Thread(target=self.audio_rec_worker)
+        t.start()
+        t.join(timeout=seconds)
 
     def kill_all_tcpdump(self):
 

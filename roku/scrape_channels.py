@@ -21,7 +21,8 @@ import os
 import subprocess
 import sys
 import redisdl
-import shutil
+import threading
+import queue
 from shutil import copyfile, copyfileobj
 from os.path import join
 
@@ -45,6 +46,7 @@ MITMPROXY_ENABLED = True
 
 
 CUTOFF_TRESHOLD=200
+SCRAPE_TO = 900
 
 #repeat = {}
 # To get this list use this command:
@@ -98,16 +100,6 @@ def main():
     # Check what channels we have already scraped
     scraped_channel_ids = set()
     scraped_channel_ids.update(channels_done)
-    if remove_dup:
-        file_list = subprocess.check_output(
-            'sudo ssh yuxingh@wash.cs.princeton.edu "ls ~/iot-house/public_html/pcaps/roku-channel-surfer/2018-09-27/pcaps"',
-            shell=True
-        ).split()
-        for filename in file_list:
-            if not filename.endswith('.pcap'):
-                continue
-            channel_id = filename.split('-', 1)[0]
-            scraped_channel_ids.add(int(channel_id))
 
     print('Skipping channels:', scraped_channel_ids)
 
@@ -140,8 +132,19 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel['id'], crawl_folder, output_file_desc)
+                que = queue.Queue()
+                scrape_success = False
+                #t = threading.Thread(target=scrape,args=(channel['id'], crawl_folder, output_file_desc,))
+                t = threading.Thread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
+                                     args=(que, channel['id'], crawl_folder, output_file_desc,))
 
+                t.start()
+                t.join(timeout=SCRAPE_TO)
+                scrape_success= que.get()
+                if scrape_success:
+                    log('Scraping of channel %s successful!' % str(channel['id']))
+                else:
+                    log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
             except Exception:
                 log('Crashed:', channel['id'])
                 log(traceback.format_exc())
@@ -243,7 +246,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             surfer.press_select()
             surfer.capture_screenshots(20)
 
-        surfer.complete_audio_recording()
+        surfer.complete_audio_recording(40)
         surfer.go_home()
     except SurferAborted as e:
         log('Channel not installed! Aborting scarping of channel')
@@ -251,9 +254,14 @@ def scrape(channel_id, crawl_folder, output_file_desc):
     except Exception as e:
         print('Error!')
         traceback.print_exc()
+        return False
     finally:
         if MITMPROXY_ENABLED:
-            mitmrunner.kill_mitmproxy()
+            try:
+                mitmrunner.kill_mitmproxy()
+            except Exception as e:
+                print('Error killing MTIM!')
+                traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
         dump_redis(DATA_DIR)
@@ -264,6 +272,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
         surfer.rsync()
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, True)
+        return True
 
 
 if __name__ == '__main__':
