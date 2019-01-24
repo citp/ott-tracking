@@ -15,6 +15,7 @@ import sys
 import time
 import requests
 import os
+import platform
 
 
 class AmazonRemoteControl(object):
@@ -198,7 +199,10 @@ class AmazonRemoteControl(object):
 
         filename = os.path.join('screenshots', filename)
 
-        cmd = "adb shell screencap -p > %s" % filename
+        if 'Ubuntu-18.04' in platform.platform():
+            cmd = "adb shell screencap -p > %s" % filename
+        else:
+            cmd = "adb shell screencap -p | sed 's/\r$//' > %s" % filename
         sp.call(cmd, shell=True)
 
 
