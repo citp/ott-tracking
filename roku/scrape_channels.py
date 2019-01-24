@@ -142,11 +142,9 @@ def main():
                 t.join(timeout=SCRAPE_TO)
                 scrape_success= que.get()
                 if scrape_success:
-                    log("Scarping Successful!")
+                    log('Scraping of channel %s successful!' % str(channel['id']))
                 else:
-                    log("Scarping Unsuccessful!")
-
-
+                    log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
             except Exception:
                 log('Crashed:', channel['id'])
                 log(traceback.format_exc())
