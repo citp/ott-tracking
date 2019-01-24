@@ -227,6 +227,8 @@ class MITMRunner(object):
 
     def run_mitmdump(self, dump_filename, data_dir, channel_id, dump_prefix):
         from mitmproxy.tools import dump
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         self.master, self.opts = prepare_master(dump.DumpMaster)
         dump_dir = str(data_dir) + str(dump_prefix)
         ARGS = MITM_CONST_ARGS.copy()
