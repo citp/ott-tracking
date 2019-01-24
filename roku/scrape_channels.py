@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import redisdl
+import shutil
 from shutil import copyfile, copyfileobj
 from os.path import join
 
@@ -29,16 +30,21 @@ LAUNCH_RETRY_CNT = 7
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
-DATA_DIR="data/"
-PCAP_PREFIX="pcaps/"
-DUMP_PREFIX="mitmdumps/"
-LOG_PREFIX="mitmlog/"
-LOG_FOLDER="logs/"
-LOG_FILE_PATH_NAME=os.getenv("LOG_OUT_FILE")
-SCREENSHOT_PREFIX="screenshots/"
-SSLKEY_PREFIX="keys/"
-CUTOFF_TRESHOLD=200
+DATA_DIR = os.getenv("DATA_DIR")
+PCAP_PREFIX = "pcaps/"
+DUMP_PREFIX = "mitmdumps/"
+LOG_PREFIX = "mitmlog/"
+LOG_FOLDER = "logs/"
+LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
+SCREENSHOT_PREFIX = "screenshots/"
+AUDIO_PREFIX="audio/"
+SSLKEY_PREFIX = "keys/"
+folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX]
 
+MITMPROXY_ENABLED = True
+
+
+CUTOFF_TRESHOLD=200
 
 #repeat = {}
 # To get this list use this command:
@@ -51,7 +57,7 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 def dns_sniffer_run():
     time.sleep(2)
     p = subprocess.Popen(
-        'sudo python2 ./dns_sniffer.py ',
+        'sudo -E python3 ./dns_sniffer.py ',
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
@@ -150,12 +156,9 @@ def log(*args):
     with open('scrape_channels.log', 'a') as fp:
         print(s, file=fp)
 
-
-
 def check_folders():
-    folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER]
     for f in folders:
-        fullpath = str(DATA_DIR) + str(f)
+        fullpath = str(DATA_DIR) + "/" +str(f)
         if not os.path.exists(fullpath):
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
@@ -205,18 +208,21 @@ def truncate_file(path):
 def scrape(channel_id, crawl_folder, output_file_desc):
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder)
-    cleanup_sslkey_file(global_keylog_file)
-    mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
+    if MITMPROXY_ENABLED:
+        cleanup_sslkey_file(global_keylog_file)
+        mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
 
     try:
-        mitmrunner.clean_iptables()
-        mitmrunner.kill_existing_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.clean_iptables()
+            mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
         surfer.install_channel()
 
-        mitmrunner.run_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.run_mitmproxy()
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
@@ -227,6 +233,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             time.sleep(4)
             iter += 1
 
+        surfer.start_audio_recording(40)
         time.sleep(SLEEP_TIMER)
 
         for okay_ix in range(0, 3):
@@ -235,28 +242,33 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             timestamps['select-{}'.format(okay_ix)] = int(time.time())
             surfer.press_select()
             surfer.capture_screenshots(20)
+
+        surfer.complete_audio_recording()
         surfer.go_home()
     except SurferAborted as e:
-        print('Error!')
-        traceback.print_exc()
+        log('Channel not installed! Aborting scarping of channel')
+        #traceback.print_exc()
     except Exception as e:
         print('Error!')
         traceback.print_exc()
     finally:
-        mitmrunner.kill_mitmproxy()
+        if MITMPROXY_ENABLED:
+            mitmrunner.kill_mitmproxy()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
         dump_redis(DATA_DIR)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        copy_log_file(channel_id, output_file_desc, False)
+        if output_file_desc is not None:
+            copy_log_file(channel_id, output_file_desc, False)
         surfer.rsync()
-        copy_log_file(channel_id, output_file_desc, True)
+        if output_file_desc is not None:
+            copy_log_file(channel_id, output_file_desc, True)
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         channel_id = sys.argv[1]
-        scrape(channel_id, "TEST")
+        scrape(channel_id, "/tmp/scrape-crawl", None)
     else:
         main()

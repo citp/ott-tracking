@@ -20,9 +20,6 @@ class InterceptionResult(Enum):
     failure = False
     skipped = None
 
-mitmable = set()
-unMitmable = set()
-
 class _TlsStrategy:
     """
     Abstract base class for interception strategies.
@@ -30,15 +27,16 @@ class _TlsStrategy:
 
     def __init__(self):
         # A server_address -> interception results mapping
-        self.history = collections.defaultdict(lambda: collections.deque(maxlen=200))
-        self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0)
-        self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1)
+        self.historyIP = collections.defaultdict(lambda: collections.deque(maxlen=200))
+        self.historyDomain = collections.defaultdict(lambda: collections.deque(maxlen=200))
+        self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
+        self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
         hostname = self.rIP2NameDic.get(IPAddress)
         if hostname and hostname in self.rName2IPDic:
-            IPList = IPList.union(self.rName2IPDic.get(hostname))
+            IPList = IPList.union(self.rName2IPDic.smembers(hostname))
         return list(IPList)
     def getAssociatedDomain(self, IPAddress):
         hostname = ""
@@ -57,33 +55,27 @@ class _TlsStrategy:
         raise NotImplementedError()
 
     def record_success(self, server_address):
-        portNum = server_address[1]
-        self.history[server_address].append(InterceptionResult.success)
+        self.historyIP[server_address].append(InterceptionResult.success)
+
+        hostname = self.getAssociatedDomain(str(server_address[0]))
+        if hostname:
+            self.historyDomain[hostname].append(InterceptionResult.success)
+
         with open(mitmableFileName, 'a') as the_file:
-            the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
-            hostname = self.getAssociatedDomain(str(server_address[0]))
-            if hostname:
-                server_address = (hostname, portNum)
-            mitmable.add(server_address)
+            the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
 
     def record_failure(self, server_address):
-        portNum = server_address[1]
-        serverList = self.getAssocitatedIPs(str(server_address[0]))
-        for server in serverList:
-            server_address_tuple = (server, portNum)
-            self.history[server_address_tuple].append(InterceptionResult.failure)
-            unMitmable.add(server_address_tuple)
+        hostname = str(self.getAssociatedDomain(server_address[0]))
+        self.historyIP[server_address].append(InterceptionResult.failure)
+        if hostname:
+            self.historyDomain[hostname].append(InterceptionResult.failure)
 
         with open(unMitmableFileName, 'a') as the_file:
-            hostname = self.getAssociatedDomain(str(server_address[0]))
-            if hostname:
-                server_address = (hostname, portNum)
-            the_file.write("\"%s\":%s\n" % (str(channel_id), str(server_address)))
-
+            the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
-        self.history[server_address].append(InterceptionResult.skipped)
+        self.historyIP[server_address].append(InterceptionResult.skipped)
 
 
 class ConservativeStrategy(_TlsStrategy):
@@ -93,7 +85,10 @@ class ConservativeStrategy(_TlsStrategy):
     """
 
     def should_intercept(self, server_address):
-        if InterceptionResult.failure in self.history[server_address]:
+        hostname = self.getAssociatedDomain(str(server_address[0]))
+        if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
+            return False
+        if InterceptionResult.failure in self.historyIP[server_address]:
             return False
         return True
 
@@ -108,11 +103,7 @@ class TlsFeedback(TlsLayer):
         server_address = self.server_conn.address
 
         try:
-            with open('my.log', 'a') as the_file:
-                the_file.write("Connecting to %s\n" % str(server_address))
             super(TlsFeedback, self)._establish_tls_with_client()
-            with open('my.log', 'a') as the_file:
-                the_file.write("Done connecting to %s\n" % str(server_address))
         except TlsProtocolException as e:
             tls_strategy.record_failure(server_address)
             raise e

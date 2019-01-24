@@ -10,8 +10,6 @@ Prerequisites:
  - Run this script!
 
 """
-
-
 import subprocess as sp
 import sys
 import time
@@ -200,7 +198,7 @@ class AmazonRemoteControl(object):
 
         filename = os.path.join('screenshots', filename)
 
-        cmd = "adb shell screencap -p | sed 's/\r$//' > %s" % filename
+        cmd = "adb shell screencap -p > %s" % filename
         sp.call(cmd, shell=True)
 
 

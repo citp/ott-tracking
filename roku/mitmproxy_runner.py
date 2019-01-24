@@ -14,6 +14,8 @@ import os
 import signal  # noqa
 import argparse  # noqa
 import shutil
+import traceback
+
 
 from mitmproxy.tools import cmdline  # noqa
 from mitmproxy import exceptions, master  # noqa
@@ -27,13 +29,14 @@ import multiprocessing
 from threading import Thread
 
 OPTIONS_FILE_NAME = "config.yaml"
-MITMPROXY_PORT_NO=str(8080)
+MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
-ADDN_DIR='/home/pi/.mitmproxy/scripts/smart-strip.py'
+ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
 MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
+MITMPROXY_NET_SET = False
 
 class MITMRunnerAborted(Exception):
     """Raised when we encounter an error while running this instance."""
@@ -111,6 +114,7 @@ def my_run(
             opts,
             os.path.join(opts.confdir, OPTIONS_FILE_NAME),
         )
+
         pconf = process_options(parser, opts, args)
         #server: typing.Any = None
         if pconf.options.server:
@@ -121,7 +125,6 @@ def my_run(
                 sys.exit(1)
         else:
             server = proxy.server.DummyServer(pconf)
-
         master.server = server
         if args.options:
             print(optmanager.dump_defaults(opts))
@@ -132,7 +135,6 @@ def my_run(
         opts.set(*args.setoptions, defer=True)
         if extra:
             opts.update(**extra(args))
-
         loop = asyncio.get_event_loop()
         for signame in ('SIGINT', 'SIGTERM'):
             try:
@@ -173,6 +175,17 @@ class MITMRunner(object):
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
         self.p = None
+
+        global MITMPROXY_NET_SET
+        if not MITMPROXY_NET_SET:
+            self.set_global_net_settings()
+
+    def set_global_net_settings(self):
+        self.log("Setting global network settings")
+        cmd = "sudo -E ./ip_forwarding.sh"
+
+        self.log(cmd)
+        subprocess.call(cmd, shell=True, stderr=open(os.devnull, 'wb'))
 
     def log(self, *args):
 
@@ -219,7 +232,7 @@ class MITMRunner(object):
         ARGS.append('--set')
         ARGS.append('data_dir=' + str(data_dir))
         #print(ARGS)
-        #print(os.environ)
+        #
         self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
         self.p.start()
 
@@ -236,6 +249,7 @@ class MITMRunner(object):
         self.log("Killing existing mitmproxy")
         self.log(command)
         subprocess.call(command, shell=True, stderr=open(os.devnull, 'wb'))
+
     def kill_mitmproxy(self):
         self.log("Killing MITM proxy!!!")
         try:
@@ -243,14 +257,16 @@ class MITMRunner(object):
             t.start()
         except Exception as e:
             self.log('Error in killing the proxy!')
-            traceback.print_exc()
+            traceback.print_tb(e.__traceback__)
         
         self.log("Sleeping for 5 seconds before forcing manual termination!!!")
         time.sleep(5)
         self.log("Forcing manual termination!!!")
-        self.p.terminate()
+        if self.p is not None:
+            self.p.terminate()
         time.sleep(2)
         subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
+        self.kill_existing_mitmproxy()
         self.clean_iptables()
         move_keylog_file(self.global_keylog_file, self.keylog_file)
 
