@@ -14,6 +14,7 @@ import binascii
 import sounddevice as sd
 import soundfile as sf
 import threading
+from shutil import copy2
 
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
@@ -176,17 +177,17 @@ class ChannelSurfer(object):
     def capture_screenshots(self, timeout):
 
         start_time = time.time()
-
+        FFMPEG_SCREENSHOT_NAME = 'continuous_screenshot.png'
         while time.time() - start_time <= timeout:
+            t0 = time.time()
             screenshot_filename = self.screenshot_folder + '{}-{}'.format(self.pcap_filename, int(time.time()))
             #self.log('Taking screenshot to:', screenshot_filename)
 
             # capture_screenshot.sh continuously writes the latest screenshot
             # images to continuous_screenshot
-            subprocess.call([
-                'cp', 'continuous_screenshot.png', screenshot_filename
-            ])
+            copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
             self.deduplicate_screenshots(screenshot_filename)
+            time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
 
     def deduplicate_screenshots(self, screenshot_filename):
         if os.path.exists(screenshot_filename):
