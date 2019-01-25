@@ -226,6 +226,7 @@ class ChannelSurfer(object):
         subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         time.sleep(5)
         subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        time.sleep(5)
 
     def rsync(self):
         time.sleep(3)
@@ -241,3 +242,5 @@ class ChannelSurfer(object):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.log("rsync return code: " + str(p.returncode))
+        if p.returncode != 0:
+            self.log("rsync failed!")
