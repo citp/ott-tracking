@@ -43,6 +43,7 @@ SSLKEY_PREFIX = "keys/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX]
 
 MITMPROXY_ENABLED = True
+RSYNC_EN = True
 
 
 CUTOFF_TRESHOLD=200
@@ -271,7 +272,9 @@ def scrape(channel_id, crawl_folder, output_file_desc):
                                       "%s_timestamps.json" % channel_id))
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, False)
-        surfer.rsync()
+
+        if RSYNC_EN:
+            surfer.rsync()
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, True)
         return True
