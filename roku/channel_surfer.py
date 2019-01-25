@@ -44,6 +44,10 @@ class ChannelSurfer(object):
         self.last_screenshot_crc = 0
         self.recording = None
 
+        # Start a background process that continuously captures screenshots to
+        # the same file: continuous_screenshot.png
+        subprocess.call('./capture_screenshot.sh', shell=True)
+
     def log(self, *args):
 
         current_time = '[{}]'.format(datetime.datetime.today())
@@ -176,10 +180,12 @@ class ChannelSurfer(object):
         while time.time() - start_time <= timeout:
             screenshot_filename = self.screenshot_folder + '{}-{}'.format(self.pcap_filename, int(time.time()))
             #self.log('Taking screenshot to:', screenshot_filename)
-            subprocess.call(
-                './capture_screenshot.sh {}'.format(screenshot_filename),
-                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+
+            # capture_screenshot.sh continuously writes the latest screenshot
+            # images to continuous_screenshot
+            subprocess.call([
+                'cp', 'continuous_screenshot.png', screenshot_filename
+            ])
             self.deduplicate_screenshots(screenshot_filename)
 
     def deduplicate_screenshots(self, screenshot_filename):
