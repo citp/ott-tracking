@@ -24,7 +24,7 @@ import redisdl
 import threading
 import queue
 from shutil import copyfile, copyfileobj
-from os.path import join
+from os.path import join, isfile
 
 LAUNCH_RETRY_CNT = 7
 #TV_IP_ADDR = '172.24.1.135'
@@ -85,14 +85,16 @@ def dump_redis(PREFIX):
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
 
-def main():
+ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
+
+def main(channel_list=ALL_CHANNELS_TXT):
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
     channel_dict = {}
 
-    with open('channel_list.txt') as fp:
+    with open(channel_list) as fp:
         for line in fp:
             record = json.loads(line)
             channel_dict.setdefault(record['_category'], []).append(record)
@@ -277,7 +279,10 @@ def scrape(channel_id, crawl_folder, output_file_desc):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        channel_id = sys.argv[1]
-        scrape(channel_id, "/tmp/scrape-crawl", None)
+        if isfile(sys.argv[1]):
+            main(sys.argv[1])
+        else:
+            channel_id = sys.argv[1]
+            scrape(channel_id, "/tmp/scrape-crawl", None)
     else:
         main()
