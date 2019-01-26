@@ -202,7 +202,7 @@ class ChannelSurfer(object):
     def start_audio_recording(self, seconds):
         if LOG_AUD_EN:
             self.log('Starting audio recording!')
-        self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+        self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=1)
         if LOG_AUD_EN:
             self.log('Audio recording started with value', str(self.recording))
 
@@ -216,10 +216,13 @@ class ChannelSurfer(object):
 
         if LOG_AUD_EN:
             self.log('Finished writing audio file:', audio_name)
+
     def complete_audio_recording(self, seconds):
-        t = threading.Thread(target=self.audio_rec_worker)
-        t.start()
-        t.join(timeout=seconds)
+        if 0:
+            t = threading.Thread(target=self.audio_rec_worker)
+            t.start()
+            t.join(timeout=seconds)
+        self.audio_rec_worker()
 
     def kill_all_tcpdump(self):
 
