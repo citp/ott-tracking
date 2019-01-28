@@ -239,7 +239,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             time.sleep(4)
             iter += 1
 
-        surfer.start_audio_recording(40)
+        surfer.start_audio_recording(60)
         time.sleep(SLEEP_TIMER)
 
         for okay_ix in range(0, 3):
@@ -249,7 +249,6 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             surfer.press_select()
             surfer.capture_screenshots(20)
 
-        surfer.complete_audio_recording(40)
         surfer.go_home()
     except SurferAborted as e:
         log('Channel not installed! Aborting scarping of channel')

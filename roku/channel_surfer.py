@@ -43,7 +43,6 @@ class ChannelSurfer(object):
         self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
-        self.recording = None
 
         # Start a background process that continuously captures screenshots to
         # the same file: continuous_screenshot.png
@@ -200,29 +199,30 @@ class ChannelSurfer(object):
             self.last_screenshot_crc = screenshot_crc
 
     def start_audio_recording(self, seconds):
-        if LOG_AUD_EN:
-            self.log('Starting audio recording!')
-        self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=1)
-        if LOG_AUD_EN:
-            self.log('Audio recording started with value', str(self.recording))
+        def record(seconds):
+            print seconds
+            if LOG_AUD_EN:
+                self.log('Starting audio recording!')
 
-    def audio_rec_worker(self):
-        audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
-        if LOG_AUD_EN:
-            self.log('Writing audio file to:', audio_name)
+            recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
 
-        sd.wait()
-        sf.write(self.audio_dir + audio_name, self.recording, RECORD_FS)
+            if LOG_AUD_EN:
+                self.log('Audio recording started with value', str(recording))
 
-        if LOG_AUD_EN:
-            self.log('Finished writing audio file:', audio_name)
+            sd.wait()
 
-    def complete_audio_recording(self, seconds):
-        if 0:
-            t = threading.Thread(target=self.audio_rec_worker)
-            t.start()
-            t.join(timeout=seconds)
-        self.audio_rec_worker()
+            audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
+
+            if LOG_AUD_EN:
+                self.log('Writing audio file to:', audio_name)
+
+            sf.write(self.audio_dir + audio_name, recording, RECORD_FS)
+
+            if LOG_AUD_EN:
+                self.log('Finished writing audio file:', audio_name)
+
+        thread = threading.Thread(target=record, args=[40])
+        thread.start()
 
     def kill_all_tcpdump(self):
 
