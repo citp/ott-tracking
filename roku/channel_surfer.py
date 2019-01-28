@@ -13,11 +13,14 @@ import os
 import binascii
 import sounddevice as sd
 import soundfile as sf
+import threading
+from shutil import copy2
 
 LOG_FILE = 'channel_surfer.log'
-INSTALL_RETRY_CNT = 10
+INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
-
+LOG_CRC_EN = False
+LOG_AUD_EN = True
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -40,7 +43,10 @@ class ChannelSurfer(object):
         self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
-        self.recording = None
+
+        # Start a background process that continuously captures screenshots to
+        # the same file: continuous_screenshot.png
+        subprocess.call('./capture_screenshot.sh', shell=True)
 
     def log(self, *args):
 
@@ -81,6 +87,7 @@ class ChannelSurfer(object):
 
         iter = 0
         while iter < INSTALL_RETRY_CNT:
+            self.log('Installing channel. Attempt %s' % str(iter+1))
             if self.channel_is_installed():
                 break
             self.go_home()
@@ -169,37 +176,71 @@ class ChannelSurfer(object):
     def capture_screenshots(self, timeout):
 
         start_time = time.time()
-
+        FFMPEG_SCREENSHOT_NAME = 'continuous_screenshot.png'
         while time.time() - start_time <= timeout:
+            t0 = time.time()
             screenshot_filename = self.screenshot_folder + '{}-{}'.format(self.pcap_filename, int(time.time()))
             #self.log('Taking screenshot to:', screenshot_filename)
-            subprocess.call(
-                './capture_screenshot.sh {}'.format(screenshot_filename),
-                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+
+            # capture_screenshot.sh continuously writes the latest screenshot
+            # images to continuous_screenshot
+            copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
             self.deduplicate_screenshots(screenshot_filename)
+            time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
 
     def deduplicate_screenshots(self, screenshot_filename):
         if os.path.exists(screenshot_filename):
             screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
             if screenshot_crc == self.last_screenshot_crc:
-                self.log('Will remove duplicate screenshot:', screenshot_filename)
+                if LOG_CRC_EN:
+                    self.log('Will remove duplicate screenshot:', screenshot_filename)
                 os.remove(screenshot_filename)
 
             self.last_screenshot_crc = screenshot_crc
 
     def start_audio_recording(self, seconds):
-        self.recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+        def record(seconds):
+            if LOG_AUD_EN:
+                self.log('Starting audio recording!')
 
-    def complete_audio_recording(self):
-        sd.wait()
-        sf.write(self.audio_dir + '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time())), self.recording, RECORD_FS)
+            try:
+                recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+            except:
+                self.log('Exception while beginning audio recording.')
+                return
+
+            if LOG_AUD_EN:
+                self.log('Audio recording started with value', str(recording))
+
+            try:
+                sd.wait()
+            except:
+                self.log('Exception while waiting for audio recording.')
+                return
+
+            audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
+
+            if LOG_AUD_EN:
+                self.log('Writing audio file to:', audio_name)
+
+            try:
+                sf.write(self.audio_dir + audio_name, recording, RECORD_FS)
+            except:
+                self.log('Exception while writing audio recording to file.')
+                return
+
+            if LOG_AUD_EN:
+                self.log('Finished writing audio file: ', audio_name)
+
+        thread = threading.Thread(target=record, args=[seconds])
+        thread.start()
 
     def kill_all_tcpdump(self):
 
         subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         time.sleep(5)
         subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        time.sleep(5)
 
     def rsync(self):
         time.sleep(3)
@@ -215,3 +256,5 @@ class ChannelSurfer(object):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.log("rsync return code: " + str(p.returncode))
+        if p.returncode != 0:
+            self.log("rsync failed!")

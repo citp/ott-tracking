@@ -1,3 +1,7 @@
 #!/bin/bash
 
-sudo -E fswebcam -d /dev/video0 -r 1280x720 --no-banner -F 5 --png --save $1
+# Terminate existing ffmpeg captures
+pkill -2 -f ffmpeg
+
+# Capture screenshot continuously and write to same file
+ffmpeg -loglevel quiet -i /dev/video0 -vf scale=1280:720,fps=1,eq=brightness=-0.1 -r 1 -hide_banner -updatefirst 1 -y continuous_screenshot.png &

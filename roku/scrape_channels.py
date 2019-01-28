@@ -21,9 +21,10 @@ import os
 import subprocess
 import sys
 import redisdl
-import shutil
+import threading
+import queue
 from shutil import copyfile, copyfileobj
-from os.path import join
+from os.path import join, isfile
 
 LAUNCH_RETRY_CNT = 7
 #TV_IP_ADDR = '172.24.1.135'
@@ -42,9 +43,11 @@ SSLKEY_PREFIX = "keys/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX]
 
 MITMPROXY_ENABLED = True
+RSYNC_EN = True
 
 
 CUTOFF_TRESHOLD=200
+SCRAPE_TO = 900
 
 #repeat = {}
 # To get this list use this command:
@@ -83,14 +86,16 @@ def dump_redis(PREFIX):
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
 
-def main():
+ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
+
+def main(channel_list=ALL_CHANNELS_TXT):
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
     channel_dict = {}
 
-    with open('channel_list.txt') as fp:
+    with open(channel_list) as fp:
         for line in fp:
             record = json.loads(line)
             channel_dict.setdefault(record['_category'], []).append(record)
@@ -98,16 +103,6 @@ def main():
     # Check what channels we have already scraped
     scraped_channel_ids = set()
     scraped_channel_ids.update(channels_done)
-    if remove_dup:
-        file_list = subprocess.check_output(
-            'sudo ssh yuxingh@wash.cs.princeton.edu "ls ~/iot-house/public_html/pcaps/roku-channel-surfer/2018-09-27/pcaps"',
-            shell=True
-        ).split()
-        for filename in file_list:
-            if not filename.endswith('.pcap'):
-                continue
-            channel_id = filename.split('-', 1)[0]
-            scraped_channel_ids.add(int(channel_id))
 
     print('Skipping channels:', scraped_channel_ids)
 
@@ -140,8 +135,19 @@ def main():
             #if channel['id'] not in repeat:
             #    continue
             try:
-                scrape(channel['id'], crawl_folder, output_file_desc)
+                que = queue.Queue()
+                scrape_success = False
+                #t = threading.Thread(target=scrape,args=(channel['id'], crawl_folder, output_file_desc,))
+                t = threading.Thread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
+                                     args=(que, channel['id'], crawl_folder, output_file_desc,))
 
+                t.start()
+                t.join(timeout=SCRAPE_TO)
+                scrape_success= que.get()
+                if scrape_success:
+                    log('Scraping of channel %s successful!' % str(channel['id']))
+                else:
+                    log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
             except Exception:
                 log('Crashed:', channel['id'])
                 log(traceback.format_exc())
@@ -233,7 +239,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             time.sleep(4)
             iter += 1
 
-        surfer.start_audio_recording(40)
+        surfer.start_audio_recording(60)
         time.sleep(SLEEP_TIMER)
 
         for okay_ix in range(0, 3):
@@ -243,7 +249,6 @@ def scrape(channel_id, crawl_folder, output_file_desc):
             surfer.press_select()
             surfer.capture_screenshots(20)
 
-        surfer.complete_audio_recording()
         surfer.go_home()
     except SurferAborted as e:
         log('Channel not installed! Aborting scarping of channel')
@@ -251,9 +256,14 @@ def scrape(channel_id, crawl_folder, output_file_desc):
     except Exception as e:
         print('Error!')
         traceback.print_exc()
+        return False
     finally:
         if MITMPROXY_ENABLED:
-            mitmrunner.kill_mitmproxy()
+            try:
+                mitmrunner.kill_mitmproxy()
+            except Exception as e:
+                print('Error killing MTIM!')
+                traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
         dump_redis(DATA_DIR)
@@ -261,14 +271,20 @@ def scrape(channel_id, crawl_folder, output_file_desc):
                                       "%s_timestamps.json" % channel_id))
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, False)
-        surfer.rsync()
+
+        if RSYNC_EN:
+            surfer.rsync()
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, True)
+        return True
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        channel_id = sys.argv[1]
-        scrape(channel_id, "/tmp/scrape-crawl", None)
+        if isfile(sys.argv[1]):
+            main(sys.argv[1])
+        else:
+            channel_id = sys.argv[1]
+            scrape(channel_id, "/tmp/scrape-crawl", None)
     else:
         main()

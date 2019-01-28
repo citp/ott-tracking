@@ -15,6 +15,7 @@ import sys
 import time
 import requests
 import os
+import platform
 
 
 class AmazonRemoteControl(object):
@@ -133,7 +134,7 @@ class AmazonRemoteControl(object):
         """
         self.adb('uninstall', apk_id)
 
-    def get_installed_channels(self):
+    def get_installed_channels(self, check_all_channels=False):
         """Returns a dictionary that maps APK ID to the APK's path."""
 
         ret = self.adb('shell', 'pm', 'list', 'packages', '-f')[1]
@@ -142,10 +143,14 @@ class AmazonRemoteControl(object):
 
         for line in ret.split('\n'):
             line = line.strip()
-            if not line.startswith('package:/data/app/'):
+            if not line:
                 continue
-            if line.startswith('package:/data/app/com.amazon'):
-                continue
+            if not check_all_channels:
+                if not line.startswith('package:/data/app/'):
+                    continue
+                if line.startswith('package:/data/app/com.amazon'):
+                    if 'com.amazon.rialto' not in line:
+                        continue
             line = line.replace('package:', '')
             apk_path, apk_id = line.split('=')
             apk_dict[apk_id] = apk_path
@@ -195,7 +200,10 @@ class AmazonRemoteControl(object):
 
         filename = os.path.join('screenshots', filename)
 
-        cmd = "adb shell screencap -p > %s" % filename
+        if 'Ubuntu-18.04' in platform.platform():
+            cmd = "adb shell screencap -p > %s" % filename
+        else:
+            cmd = "adb shell screencap -p | sed 's/\r$//' > %s" % filename
         sp.call(cmd, shell=True)
 
 
