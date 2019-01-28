@@ -200,28 +200,39 @@ class ChannelSurfer(object):
 
     def start_audio_recording(self, seconds):
         def record(seconds):
-            print seconds
             if LOG_AUD_EN:
                 self.log('Starting audio recording!')
 
-            recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+            try:
+                recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+            except:
+                self.log('Exception while beginning audio recording.')
+                return
 
             if LOG_AUD_EN:
                 self.log('Audio recording started with value', str(recording))
 
-            sd.wait()
+            try:
+                sd.wait()
+            except:
+                self.log('Exception while waiting for audio recording.')
+                return
 
             audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
 
             if LOG_AUD_EN:
                 self.log('Writing audio file to:', audio_name)
 
-            sf.write(self.audio_dir + audio_name, recording, RECORD_FS)
+            try:
+                sf.write(self.audio_dir + audio_name, recording, RECORD_FS)
+            except:
+                self.log('Exception while writing audio recording to file.')
+                return
 
             if LOG_AUD_EN:
-                self.log('Finished writing audio file:', audio_name)
+                self.log('Finished writing audio file: ', audio_name)
 
-        thread = threading.Thread(target=record, args=[40])
+        thread = threading.Thread(target=record, args=[seconds])
         thread.start()
 
     def kill_all_tcpdump(self):
