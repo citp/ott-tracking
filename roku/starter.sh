@@ -4,7 +4,7 @@ source roku.config
 
 echo 'Clearing Data Folder!'
 mkdir ${DATA_DIR} 2> /dev/null
-rm -rf ${DATA_DIR}/*
+#rm -rf ${DATA_DIR}/*
 
 
 touch $LOG_OUT_FILE
