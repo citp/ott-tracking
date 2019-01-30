@@ -1,6 +1,9 @@
 """
 Simulates the installation of Amazon Fire TV apps using Selenium.
 
+When running this script, also run pull_apks.py to simultaneously pull the APKs
+to local disk in the order in which the respective channels are installed.
+
 """
 
 from selenium import webdriver
@@ -20,6 +23,8 @@ SUCCESS_PATH = "//span[@id='install-text']"
 
 LOG_PATH = 'install_from_app_store.log'
 
+PAGE_SOURCE_PATH = 'install_from_app_store.page_source.txt'
+
 
 def main():
 
@@ -33,27 +38,30 @@ def main():
             for line in fp:
                 line = line.strip()
                 try:
-                    success = line.split()[3] == 'successful'
-                    asin = line.split()[2]
+                    success = line.split()[6] == 'successful'
+                    asin = line.split()[5]
                 except Exception:
                     continue
                 if success:
                     previously_installed_asins.add(asin)
 
     # Install each ASIN
+    counter = 0
     with open(ASIN_PATH) as fp:
         for asin in fp:
             asin = asin.strip()
             if asin and asin not in previously_installed_asins:
-                status = browse_page(driver, asin)
-                log_status(asin, status)
+                counter += 1
+                if counter > 300:
+                    status = browse_page(driver, asin)
+                    log_status(asin, status)
 
     driver.quit()
 
 
 def browse_page(driver, asin):
 
-    time.sleep(random.randint(2, 10))
+    time.sleep(random.randint(1, 5))
 
     driver.get('https://www.amazon.com/dp/{}'.format(asin))
 
@@ -62,11 +70,20 @@ def browse_page(driver, asin):
     if buy_button is None:
         return False
 
-    time.sleep(random.randint(2, 10))
+    html_source = driver.page_source
+
+    time.sleep(random.randint(1, 5))
     buy_button.click()
 
     if find_element(driver, SUCCESS_PATH) is None:
         return False
+
+    with open(PAGE_SOURCE_PATH, 'a') as fp:
+        print >> fp, repr({
+            'asin': asin,
+            'timestamp': int(time.time()),
+            'html_source': html_source
+        })
 
     return True
 
@@ -86,7 +103,8 @@ def log_status(asin, success):
     success_str = 'successful' if success else 'failed'
 
     with open(LOG_PATH, 'a') as fp:
-        print >> fp, datetime.datetime.today(), asin, success_str
+        print >> fp, datetime.datetime.today(), '@', int(time.time()),
+        print >> fp, '-', asin, success_str
 
     print asin, success_str
 
