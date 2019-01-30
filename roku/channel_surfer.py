@@ -21,6 +21,7 @@ INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
+RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -247,7 +248,7 @@ class ChannelSurfer(object):
 
         rsync_command = str('rsync -rlptDv --remove-source-files ' +
                             str(self.data_dir) +
-                            ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/' +
+                            RSYNC_DIR +
                             self.crawl_folder)
         print (rsync_command)
         #p = subprocess.Popen(
@@ -258,3 +259,4 @@ class ChannelSurfer(object):
         self.log("rsync return code: " + str(p.returncode))
         if p.returncode != 0:
             self.log("rsync failed!")
+

