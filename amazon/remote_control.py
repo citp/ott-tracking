@@ -12,10 +12,6 @@ import sys
 import time
 import os
 import platform
-import re
-
-
-APK_NAME_REGEX = re.compile(r"label='([^']+)'")
 
 
 class AmazonRemoteControl(object):
