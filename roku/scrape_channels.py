@@ -26,8 +26,7 @@ import queue
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 
-LAUNCH_RETRY_CNT = 7
-#TV_IP_ADDR = '172.24.1.135'
+LAUNCH_RETRY_CNT = 5
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
@@ -40,13 +39,16 @@ LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX = "screenshots/"
 AUDIO_PREFIX="audio/"
 SSLKEY_PREFIX = "keys/"
-folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX]
+DB_PREFIX = "db/"
+#Each channel will have a file with the result of crawl of that channel in this folder
+FIN_CHL_PREFIX = "finished/"
+folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 
 MITMPROXY_ENABLED = True
-RSYNC_EN = True
+RSYNC_EN = False
 
 
-CUTOFF_TRESHOLD=200
+CUTOFF_TRESHOLD=100000
 SCRAPE_TO = 900
 
 #repeat = {}
@@ -70,17 +72,17 @@ def dump_as_json(obj, json_path):
         json.dump(obj, f, indent=2)
 
 
-def dump_redis(PREFIX):
+def dump_redis(PREFIX, date_prefix):
     full_path = os.path.abspath(PREFIX)
     log("Dumping Redis DBs in " + full_path)
 
-    rName2IPDB_path = full_path + '/rName2IPDB.json'
+    rName2IPDB_path = join(full_path , date_prefix + '-rName2IPDB.json')
     #log("writing to " + rName2IPDB_path)
     with open(rName2IPDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=0)
 
 
-    rIP2NameDB_path =  full_path + '/rIP2NameDB.json'
+    rIP2NameDB_path =  join(full_path, date_prefix + '-rIP2NameDB.json')
     #log("writing to " + rIP2NameDB_path)
     with open(rIP2NameDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
@@ -91,7 +93,7 @@ ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
 def main(channel_list=ALL_CHANNELS_TXT):
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
-    crawl_folder = datetime.now().strftime("%Y%m%d-%H%M%S")
+    date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
     channel_dict = {}
 
@@ -130,6 +132,11 @@ def main(channel_list=ALL_CHANNELS_TXT):
                 log('Skipping', channel['id'])
                 continue
 
+            channel_res_file  = join(DATA_DIR, FIN_CHL_PREFIX, str(channel['id'])) + ".txt"
+            if os.path.isfile(channel_res_file) :
+                log('Skipping', channel['id'], ' due to:', channel_res_file)
+                continue
+
             log('Scraping', channel['_category'], '-', channel['id'])
 
             #if channel['id'] not in repeat:
@@ -137,9 +144,8 @@ def main(channel_list=ALL_CHANNELS_TXT):
             try:
                 que = queue.Queue()
                 scrape_success = False
-                #t = threading.Thread(target=scrape,args=(channel['id'], crawl_folder, output_file_desc,))
                 t = threading.Thread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
-                                     args=(que, channel['id'], crawl_folder, output_file_desc,))
+                                     args=(que, channel['id'], date_prefix, output_file_desc,))
 
                 t.start()
                 t.join(timeout=SCRAPE_TO)
@@ -148,6 +154,9 @@ def main(channel_list=ALL_CHANNELS_TXT):
                     log('Scraping of channel %s successful!' % str(channel['id']))
                 else:
                     log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
+                #Write result to file
+                with open(channel_res_file, "w") as tfile:
+                    print(str(scrape_success), file=tfile)
             except Exception:
                 log('Crashed:', channel['id'])
                 log(traceback.format_exc())
@@ -168,10 +177,6 @@ def check_folders():
         if not os.path.exists(fullpath):
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
-
-def cleanup_sslkey_file(fileAddr):
-    log('Erasing content of file '+ fileAddr)
-    open(fileAddr, 'w').close()
 
 def strip_null_chr(output_path):
     from_file = open(output_path)
@@ -211,12 +216,11 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel_id, crawl_folder, output_file_desc):
+def scrape(channel_id, date_prefix, output_file_desc):
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), crawl_folder, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
     if MITMPROXY_ENABLED:
-        cleanup_sslkey_file(global_keylog_file)
         mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
 
@@ -266,7 +270,7 @@ def scrape(channel_id, crawl_folder, output_file_desc):
                 traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
-        dump_redis(DATA_DIR)
+        dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
         if output_file_desc is not None:
@@ -274,8 +278,8 @@ def scrape(channel_id, crawl_folder, output_file_desc):
 
         if RSYNC_EN:
             surfer.rsync()
-        if output_file_desc is not None:
-            copy_log_file(channel_id, output_file_desc, True)
+            if output_file_desc is not None:
+                copy_log_file(channel_id, output_file_desc, True)
         return True
 
 
@@ -288,3 +292,4 @@ if __name__ == '__main__':
             scrape(channel_id, "/tmp/scrape-crawl", None)
     else:
         main()
+

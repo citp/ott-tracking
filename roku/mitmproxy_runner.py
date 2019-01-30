@@ -17,7 +17,7 @@ import shutil
 import traceback
 
 
-from mitmproxy.tools import cmdline  # noqa
+from mitmproxy.tools import cmdline, dump  # noqa
 from mitmproxy import exceptions, master  # noqa
 from mitmproxy import options  # noqa
 from mitmproxy import optmanager  # noqa
@@ -226,7 +226,7 @@ class MITMRunner(object):
         self.log('Dumping MITMing flows to:', self.dump_filename)
 
     def run_mitmdump(self, dump_filename, data_dir, channel_id, dump_prefix):
-        from mitmproxy.tools import dump
+        self.clean_global_keylog_file()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.master, self.opts = prepare_master(dump.DumpMaster)
@@ -242,6 +242,11 @@ class MITMRunner(object):
         #
         self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
         self.p.start()
+
+    def clean_global_keylog_file(self):
+        #Clear the original log file
+        self.log("Cleaning up global SSL_KEYLOG_FILE")
+        open(self.global_keylog_file, 'w').close()
 
     def clean_iptables(self):
         self.log("Flushing iptables")
