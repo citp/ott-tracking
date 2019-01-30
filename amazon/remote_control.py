@@ -4,18 +4,18 @@ Amazon Remote Control emulator.
 Prerequisites:
 
  - Install adb
- - Test adb connection to your Amazon device:
-     adb connect [ip_addr]
-     adb devices
  - Run this script!
 
 """
 import subprocess as sp
 import sys
 import time
-import requests
 import os
 import platform
+import re
+
+
+APK_NAME_REGEX = re.compile(r"label='([^']+)'")
 
 
 class AmazonRemoteControl(object):
@@ -26,15 +26,38 @@ class AmazonRemoteControl(object):
         # Test whether prerequisite software has been installed
         assert sp.call(['which', 'adb']) == 0
 
-        # Connect to device
-        ret = self.adb('connect', ip_address)[1]
-        assert ret.startswith('connected') or \
-            ret.startswith('already connected')
+        self._fire_tv_ip_address = ip_address
+        self.connect()
 
-        print 'Initialized:', ret.strip()
+    def is_connected(self):
+        """Check if we're connected to the Fire device."""
+
+        return self._fire_tv_ip_address in self.adb('devices')[1]
+
+    def connect(self, max_attempt=5):
+        """
+        Should be called frequently to make sure we're still connected to the
+        Fire TV, which has a tendancy to break off connection once in a while.
+
+        """
+        for _ in range(max_attempt):
+
+            if self.is_connected():
+                return
+
+            # Kill adb server and connect
+            self.adb('kill-server')
+            self.adb('connect', self._fire_tv_ip_address)
+
+            time.sleep(1)
+
+        raise RuntimeError('Unable to connect to Fire TV. Restart Fire TV!')
 
     def press_key(self, key_name):
         """Sends a key to Fire TV via ADB. May not be reliable."""
+
+        # Maintain connection
+        self.connect()
 
         if key_name == 'Select':
             key_number = 66
@@ -62,18 +85,19 @@ class AmazonRemoteControl(object):
 
         channel_list = {}
 
-        apk_list = requests.get(
-            'https://iot-inspector.princeton.edu/fire-tv/apk_list.txt'
-        ).text
-
-        for apk_id in apk_list.split():
-            channel_list[apk_id] = {
-                'id': apk_id,
-                'type': 'Unknown',
-                'subtype': 'Unknown',
-                'version': 'Unknown',
-                'name': apk_id
-            }
+        with open('channel_names.csv') as fp:
+            for (line_index, line) in enumerate(fp):
+                if line_index == 0:
+                    continue
+                ranking, channel_name, apk_id = line.strip().split(',')
+                channel_list[apk_id] = {
+                    'id': apk_id,
+                    'type': 'Unknown',
+                    'subtype': 'Unknown',
+                    'version': 'Unknown',
+                    'name': channel_name,
+                    'ranking': int(ranking)
+                }
 
         return channel_list
 
@@ -103,6 +127,9 @@ class AmazonRemoteControl(object):
         self._download_apk(apk_id)
 
         if not self.is_installed(apk_id):
+            # Maintain connection
+            self.connect()
+
             self.adb(
                 'install', '-r', os.path.join('apk_cache', apk_id + '.apk')
             )
@@ -120,6 +147,9 @@ class AmazonRemoteControl(object):
         the channel is open.
 
         """
+        # Maintain connection
+        self.connect()
+
         self.adb(
             'shell', 'monkey', '-p', apk_id,
             '-c', 'android.intent.category.LAUNCHER', '1'
@@ -132,10 +162,16 @@ class AmazonRemoteControl(object):
         Please run is_installed(apk_id) to confirm the channel is uninstalled.
 
         """
+        # Maintain connection
+        self.connect()
+
         self.adb('uninstall', apk_id)
 
     def get_installed_channels(self, check_all_channels=False):
         """Returns a dictionary that maps APK ID to the APK's path."""
+
+        # Maintain connection
+        self.connect()
 
         ret = self.adb('shell', 'pm', 'list', 'packages', '-f')[1]
 
@@ -172,6 +208,9 @@ class AmazonRemoteControl(object):
 
     def _get_current_window_helper(self):
 
+        # Maintain connection
+        self.connect()
+
         _, ret = self.adb('shell', 'dumpsys', 'window', 'windows')
         for line in ret.split('\n'):
             if 'mCurrentFocus' in line:
@@ -189,12 +228,15 @@ class AmazonRemoteControl(object):
         """Returns (ret_code, stdout)."""
 
         cmd = ['adb'] + list(command_list)
-        proc = sp.Popen(cmd, stdout=sp.PIPE)
+        proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
         stdout = proc.communicate()[0]
 
         return (proc.returncode, stdout)
 
     def take_screenshot(self, filename):
+
+        # Maintain connection
+        self.connect()
 
         sp.call(['mkdir', '-p', 'screenshots'])
 
@@ -213,6 +255,7 @@ def test():
         fire_stick_ip = sys.argv[1]
     except Exception:
         print 'Enter the IP address of the Fire Stick in the argument.'
+        print 'For example: momo-pi-1.princeton.edu (where the Fire TV is located.)' # noqa
         return
 
     rc = AmazonRemoteControl(fire_stick_ip)
@@ -221,9 +264,13 @@ def test():
     print rc.get_current_window()
 
     print 'All available channels:'
-    print rc.get_channel_list().keys()
+    channel_list = rc.get_channel_list().values()
+    channel_list.sort(key=lambda c: c['ranking'])
+    print channel_list
 
-    for apk_id in rc.get_channel_list():
+    for channel in channel_list:
+
+        apk_id = channel['id']
 
         print 'Installing channel:', apk_id
         rc.install_channel(apk_id)
