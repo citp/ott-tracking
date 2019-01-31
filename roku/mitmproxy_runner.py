@@ -36,6 +36,12 @@ MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/sma
 ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
 MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
+DUMP_HAR = False
+if DUMP_HAR:
+    HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
+    MITM_CONST_ARGS = ['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '-s', HAR_EXPORT_ADDON, '--ssl-insecure',
+                       '--flow-detail', '3']
+
 MITMPROXY_NET_SET = False
 
 class MITMRunnerAborted(Exception):
