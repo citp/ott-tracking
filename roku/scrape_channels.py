@@ -46,6 +46,7 @@ folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFI
 
 MITMPROXY_ENABLED = True
 RSYNC_EN = False
+RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
 
 CUTOFF_TRESHOLD=100000
@@ -87,6 +88,21 @@ def dump_redis(PREFIX, date_prefix):
     with open(rIP2NameDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
+def rsync(date_prefix):
+    time.sleep(3)
+
+    rsync_command = str('rsync -rlptDv --remove-source-files ' +
+                        str(DATA_DIR) +
+                        RSYNC_DIR +
+                        date_prefix)
+    log(rsync_command)
+    p = subprocess.run(
+        rsync_command,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    log("rsync return code: " + str(p.returncode))
+    if p.returncode != 0:
+        log("rsync failed!")
 
 ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
 
@@ -154,6 +170,16 @@ def main(channel_list=ALL_CHANNELS_TXT):
                     log('Scraping of channel %s successful!' % str(channel['id']))
                 else:
                     log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
+
+                #Write logs
+                if output_file_desc is not None:
+                    copy_log_file(channel['id'], output_file_desc, False)
+
+                if RSYNC_EN:
+                    rsync()
+                    if output_file_desc is not None:
+                        copy_log_file(channel['id'], output_file_desc, True)
+
                 #Write result to file
                 with open(channel_res_file, "w") as tfile:
                     print(str(scrape_success), file=tfile)
@@ -273,13 +299,6 @@ def scrape(channel_id, date_prefix, output_file_desc):
         dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
         dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        if output_file_desc is not None:
-            copy_log_file(channel_id, output_file_desc, False)
-
-        if RSYNC_EN:
-            surfer.rsync()
-            if output_file_desc is not None:
-                copy_log_file(channel_id, output_file_desc, True)
         return True
 
 

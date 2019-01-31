@@ -21,7 +21,6 @@ INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
-RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -30,7 +29,7 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, crawl_folder, screenshot_folder, audio_prefix):
+    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder, audio_prefix):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
@@ -40,7 +39,7 @@ class ChannelSurfer(object):
         self.screenshot_folder = self.data_dir + str(screenshot_folder)
         self.go_home()
         self.log('Initialized', channel_id)
-        self.crawl_folder = crawl_folder
+        self.date_prefix = date_prefix
         self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
@@ -242,21 +241,4 @@ class ChannelSurfer(object):
         time.sleep(5)
         subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         time.sleep(5)
-
-    def rsync(self):
-        time.sleep(3)
-
-        rsync_command = str('rsync -rlptDv --remove-source-files ' +
-                            str(self.data_dir) +
-                            RSYNC_DIR +
-                            self.crawl_folder)
-        print (rsync_command)
-        #p = subprocess.Popen(
-        p = subprocess.run(
-            rsync_command,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
-        self.log("rsync return code: " + str(p.returncode))
-        if p.returncode != 0:
-            self.log("rsync failed!")
 
