@@ -71,7 +71,10 @@ def move_keylog_file(src, dest):
     src_full_path = os.path.abspath(src)
     dest_full_path = os.path.abspath(dest)
     print('Moving '+ src_full_path + " to " + dest_full_path)
-    shutil.move(src_full_path, dest_full_path)
+    if os.path.exists(src_full_path):
+        shutil.move(src_full_path, dest_full_path)
+    else:
+        print(src_full_path + " doesn't exist!")
 
 def shutdown_master(master, event_handler):
     event_handler.wait()
