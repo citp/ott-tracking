@@ -6,7 +6,7 @@ import urllib.parse
 import typing  # noqa
 import mitmproxy
 import logging
-import os
+from os.path import isfile
 
 
 from enum import Enum
@@ -20,17 +20,65 @@ class InterceptionResult(Enum):
     failure = False
     skipped = None
 
+
+def append_to_file(file_path, text):
+    with open(file_path, 'a') as f:
+        f.write(text)
+
+"""
+
+gunes: it is quite difficult parse the existing format
+# we switched to flat format instead
+EOL = "\n"
+def convert_unmitmable(filename, outdir):
+    tuples = set()
+    for l in open(filename):
+        l = l.rstrip()
+        if not l:
+            continue
+        parts = l.split(" ", 2)
+        ch_id = parts[1].replace('"', '').strip(":")
+        b = json.loads(parts[2])
+        assert len(b) == 1
+        domain = b.keys()[0]
+        ip_port = b.values()[0]
+        ip = ip_port.split(" ")[0].split("'")[1]
+        # port = ip_port.split(" ")[1].rstrip(")")
+        if not ip:
+            raise ValueError("convert_unmitmable: No IP address")
+        tuples.add((ch_id, ip, domain))
+    f_basename = basename(filename)
+    with open(join(outdir, f_basename), "w") as f:
+        for _tuple in tuples:
+            f.write("\t".join(_tuple) + EOL)
+"""
+
+def loadUnMitmableHostsAndIps(filename):
+    hosts = set()
+    ips = set()
+    if isfile(filename):
+        for line in open(filename):
+            line = line.rstrip("\n")
+            _, ip, host = line.split("\t")
+            if host:
+                hosts.add(host)
+            if ip:
+                ips.add(ip)
+    return hosts, ips
+
+
 class _TlsStrategy:
     """
     Abstract base class for interception strategies.
     """
 
-    def __init__(self):
+    def __init__(self, unMitmableFileName):
         # A server_address -> interception results mapping
         self.historyIP = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.historyDomain = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
         self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
+        self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileName)
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
@@ -61,8 +109,9 @@ class _TlsStrategy:
         if hostname:
             self.historyDomain[hostname].append(InterceptionResult.success)
 
-        with open(mitmableFileName, 'a') as the_file:
-            the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
+        append_to_file(mitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
+        # with open(mitmableFileName, 'a') as the_file:
+        #    the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
 
     def record_failure(self, server_address):
         hostname = str(self.getAssociatedDomain(server_address[0]))
@@ -70,8 +119,9 @@ class _TlsStrategy:
         if hostname:
             self.historyDomain[hostname].append(InterceptionResult.failure)
 
-        with open(unMitmableFileName, 'a') as the_file:
-            the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
+        append_to_file(unMitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
+        # with open(unMitmableFileName, 'a') as the_file:
+        #    the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
@@ -89,6 +139,10 @@ class ConservativeStrategy(_TlsStrategy):
         if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
             return False
         if InterceptionResult.failure in self.historyIP[server_address]:
+            return False
+        if hostname in self.unMitmableHosts:
+            return False
+        if server_address in self.unMitmableIps:
             return False
         return True
 
@@ -141,7 +195,6 @@ def configure(updated):
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
     #    tls_strategy = ConservativeStrategy()
-    tls_strategy = ConservativeStrategy()
     channel_id = ctx.options.channel_id
     data_dir = ctx.options.data_dir
 
@@ -153,6 +206,7 @@ def configure(updated):
     unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
     LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
     logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
+    tls_strategy = ConservativeStrategy(unMitmableFileName)
 
     #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
 
