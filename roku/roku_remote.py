@@ -30,6 +30,7 @@ class RokuRemoteControl(object):
             print((r.status_code, r.reason))
         except Exception as e:
             traceback.print_tb(e.__traceback__)
+            return None
         return r
 
     def send_get_request(self, url):
@@ -42,6 +43,7 @@ class RokuRemoteControl(object):
             print((r.status_code, r.reason))
         except Exception as e:
             traceback.print_tb(e.__traceback__)
+            return None
         return r
 
     def press_key(self, key):
@@ -79,6 +81,9 @@ class RokuRemoteControl(object):
     def get_channel_list(self):
         channel_list = {}
         r = self.send_get_request("%s/query/apps" % self.api_url)
+        if r == None:
+            print("Request for get_channel_list failed!")
+            return None
         apps = ET.fromstring(r.text)
         for app in apps:
             app_id = app.get("id")
@@ -94,6 +99,9 @@ class RokuRemoteControl(object):
 
     def get_active_channel(self):
         r = self.send_get_request("%s/query/active-app" % self.api_url)
+        if r == None:
+            print("Request for get_active_channel failed!")
+            return None
         apps = ET.fromstring(r.text)
         for app in apps:
             app_id = app.get("id")

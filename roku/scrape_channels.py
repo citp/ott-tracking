@@ -74,17 +74,17 @@ def dump_as_json(obj, json_path):
 
 
 def dump_redis(PREFIX, date_prefix):
-    full_path = os.path.abspath(PREFIX)
+    #full_path = os.path.abspath(PREFIX)
     log("Dumping Redis DBs in " + full_path)
 
     rName2IPDB_path = join(full_path , date_prefix + '-rName2IPDB.json')
-    #log("writing to " + rName2IPDB_path)
+    log("writing to " + rName2IPDB_path)
     with open(rName2IPDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=0)
 
 
     rIP2NameDB_path =  join(full_path, date_prefix + '-rIP2NameDB.json')
-    #log("writing to " + rIP2NameDB_path)
+    log("writing to " + rIP2NameDB_path)
     with open(rIP2NameDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
 

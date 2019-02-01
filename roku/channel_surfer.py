@@ -70,10 +70,16 @@ class ChannelSurfer(object):
     def channel_is_installed(self):
 
         channel_dict = self.rrc.get_channel_list()
+        if channel_dict == None:
+            print("Channel list did not return!")
+            return False
         return self.channel_id in channel_dict
 
     def channel_is_active(self):
         active_channel = self.rrc.get_active_channel()
+        if active_channel == None:
+            print("Active channel did not return!")
+            return False
         print("Active Channel is " + str(active_channel))
         return self.channel_id == str(active_channel)
 
