@@ -205,10 +205,10 @@ def main(channel_list=ALL_CHANNELS_TXT):
                 else:
                     log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
             except Exception as e:
-                log('Crawl crashed for channel:', channel['id'])
+                log('Crawl crashed for channel:', str(channel['id']))
                 log(traceback.format_exc())
             finally:
-                write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success)
+                write_log_files(output_file_desc, str(channel['id']), channel_res_file, scrape_success)
 
 
 def log(*args):
