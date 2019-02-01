@@ -127,7 +127,7 @@ ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
 def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
     # Write logs
     if output_file_desc is not None:
-        log('Writing logs to ', output_file_desc)
+        log('Writing logs for channel ', channel_id)
         copy_log_file(channel_id, output_file_desc, False)
 
     if RSYNC_EN:
