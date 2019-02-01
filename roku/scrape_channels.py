@@ -60,6 +60,23 @@ channels_done = {}
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
 
 
+
+class PropagatingThread(threading.Thread):
+    def run(self):
+        self.exc = None
+        try:
+            self.ret = self._target(*self._args, **self._kwargs)
+        except BaseException as e:
+            self.exc = e
+
+    def join(self, timeout):
+        super(PropagatingThread, self).join(timeout)
+        if self.exc:
+            raise self.exc
+        return self.ret
+
+
+
 def dns_sniffer_run():
     time.sleep(2)
     p = subprocess.Popen(
@@ -78,13 +95,13 @@ def dump_redis(PREFIX, date_prefix):
     log("Dumping Redis DBs in " + full_path)
 
     rName2IPDB_path = join(full_path , date_prefix + '-rName2IPDB.json')
-    #log("writing to " + rName2IPDB_path)
+    log("writing to " + rName2IPDB_path)
     with open(rName2IPDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=0)
 
 
     rIP2NameDB_path =  join(full_path, date_prefix + '-rIP2NameDB.json')
-    #log("writing to " + rIP2NameDB_path)
+    log("writing to " + rIP2NameDB_path)
     with open(rIP2NameDB_path, 'a') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
@@ -160,7 +177,7 @@ def main(channel_list=ALL_CHANNELS_TXT):
             try:
                 que = queue.Queue()
                 scrape_success = False
-                t = threading.Thread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
+                t = PropagatingThread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
                                      args=(que, channel['id'], date_prefix, output_file_desc,))
 
                 t.start()
@@ -183,7 +200,7 @@ def main(channel_list=ALL_CHANNELS_TXT):
                 #Write result to file
                 with open(channel_res_file, "w") as tfile:
                     print(str(scrape_success), file=tfile)
-            except Exception:
+            except Exception as e:
                 log('Crashed:', channel['id'])
                 log(traceback.format_exc())
 
@@ -282,7 +299,15 @@ def scrape(channel_id, date_prefix, output_file_desc):
         surfer.go_home()
     except SurferAborted as e:
         log('Channel not installed! Aborting scarping of channel')
-        #traceback.print_exc()
+        if MITMPROXY_ENABLED:
+            try:
+                mitmrunner.kill_mitmproxy()
+            except Exception as e:
+                print('Error killing MTIM!')
+                traceback.print_exc()
+        surfer.uninstall_channel()
+        surfer.kill_all_tcpdump()
+        return False
     except Exception as e:
         print('Error!')
         traceback.print_exc()
