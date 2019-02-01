@@ -123,6 +123,23 @@ def rsync(date_prefix):
 
 ALL_CHANNELS_TXT = 'channel_list.txt'  # file that includes all channel details
 
+
+def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
+    # Write logs
+    if output_file_desc is not None:
+        log('Writing logs to ', output_file_desc)
+        copy_log_file(channel_id, output_file_desc, False)
+
+    if RSYNC_EN:
+        rsync()
+        if output_file_desc is not None:
+            copy_log_file(channel_id, output_file_desc, True)
+
+    # Write result to file
+    log('Writing result of crawl to ', channel_res_file)
+    with open(channel_res_file, "w") as tfile:
+        print(str(scrape_success), file=tfile)
+
 def main(channel_list=ALL_CHANNELS_TXT):
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
@@ -139,7 +156,7 @@ def main(channel_list=ALL_CHANNELS_TXT):
     scraped_channel_ids = set()
     scraped_channel_ids.update(channels_done)
 
-    print('Skipping channels:', scraped_channel_ids)
+    log('Skipping channels:', scraped_channel_ids)
 
     # Scrape from the top channels of each category
 
@@ -187,22 +204,11 @@ def main(channel_list=ALL_CHANNELS_TXT):
                     log('Scraping of channel %s successful!' % str(channel['id']))
                 else:
                     log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
-
-                #Write logs
-                if output_file_desc is not None:
-                    copy_log_file(channel['id'], output_file_desc, False)
-
-                if RSYNC_EN:
-                    rsync()
-                    if output_file_desc is not None:
-                        copy_log_file(channel['id'], output_file_desc, True)
-
-                #Write result to file
-                with open(channel_res_file, "w") as tfile:
-                    print(str(scrape_success), file=tfile)
             except Exception as e:
-                log('Crashed:', channel['id'])
+                log('Crawl crashed for channel:', channel['id'])
                 log(traceback.format_exc())
+            finally:
+                write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success)
 
 
 def log(*args):
@@ -303,13 +309,13 @@ def scrape(channel_id, date_prefix, output_file_desc):
             try:
                 mitmrunner.kill_mitmproxy()
             except Exception as e:
-                print('Error killing MTIM!')
+                log('Error killing MTIM!')
                 traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
         return False
     except Exception as e:
-        print('Error!')
+        log('Error!')
         traceback.print_exc()
         return False
     finally:
@@ -317,7 +323,7 @@ def scrape(channel_id, date_prefix, output_file_desc):
             try:
                 mitmrunner.kill_mitmproxy()
             except Exception as e:
-                print('Error killing MTIM!')
+                log('Error killing MTIM!')
                 traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
