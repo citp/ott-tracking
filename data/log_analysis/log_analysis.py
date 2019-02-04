@@ -76,7 +76,8 @@ class LogFileReader(object):
         if 'POST' in req_line:
             return 'POST'
     def get_url(self, req_line):
-        return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
+        #return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
+        return req_line.split()[2]
 
     def get_host(self, url):
         return urlparse(url).netloc
@@ -137,12 +138,15 @@ class LogFileReader(object):
 
 def test():
     channels = load_roku_channel_details()
-    log_file_name = sys.argv[1]
-    log_reader = LogFileReader(log_file_name, channels)
-    #print('---HTTPS---')
-    log_reader.https_urls()
-    #print('---HTTP---')
-    log_reader.http_urls()
+    log_folder_name = sys.argv[1]
+    for root, dirs, files in os.walk(log_folder_name):
+        for file in files:
+            if file.endswith(".log"):
+                log_reader = LogFileReader(os.path.join(root, file), channels)
+                #print('---HTTPS---')
+                log_reader.https_urls()
+                #print('---HTTP---')
+                log_reader.http_urls()
 
 
 if __name__ == '__main__':
