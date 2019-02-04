@@ -73,7 +73,10 @@ class PropagatingThread(threading.Thread):
         super(PropagatingThread, self).join(timeout)
         if self.exc:
             raise self.exc
-        return self.ret
+        if self.ret:
+            return self.ret
+        else:
+            return None
 
 
 

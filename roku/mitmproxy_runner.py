@@ -27,6 +27,8 @@ from mitmproxy.tools.main import assert_utf8_env, process_options
 
 import multiprocessing
 from threading import Thread
+from os.path import join
+
 
 OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
@@ -36,11 +38,8 @@ MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/sma
 ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
 MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 
-DUMP_HAR = False
-if DUMP_HAR:
-    HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
-    MITM_CONST_ARGS = ['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '-s', HAR_EXPORT_ADDON, '--ssl-insecure',
-                       '--flow-detail', '3']
+DUMP_HAR = True
+HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 
 MITMPROXY_NET_SET = False
 
@@ -239,16 +238,20 @@ class MITMRunner(object):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.master, self.opts = prepare_master(dump.DumpMaster)
-        dump_dir = str(data_dir) + str(dump_prefix)
+        dump_dir = join(str(data_dir) , str(dump_prefix))
         ARGS = MITM_CONST_ARGS.copy()
         ARGS.append('-w')
-        ARGS.append(str(data_dir) + '/' + str(dump_prefix) + '/' + str(dump_filename)) 
+        ARGS.append(dump_dir + '/' + str(dump_filename))
         ARGS.append('--set')
         ARGS.append('channel_id=' + str(channel_id))
         ARGS.append('--set')
         ARGS.append('data_dir=' + str(data_dir))
-        #print(ARGS)
-        #
+        if DUMP_HAR:
+            ARGS.append('-s')
+            ARGS.append(HAR_EXPORT_ADDON)
+            ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' + str(int(time.time()))+ '.har')
+        print(ARGS)
+
         self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
         self.p.start()
 
