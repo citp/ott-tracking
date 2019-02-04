@@ -82,12 +82,13 @@ class LogFileReader(object):
         return urlparse(url).netloc
 
     def get_tld(self, url):
-        tld_list = parse_tld(url)
-        if len(tld_list) > 1:
-            res = tld_list[1] + tld_list[0]
-        else:
-            res = tld_list[0]
+        hostname = self.get_host(url)
+        tokens = hostname.split('.')[::-1]
+        res = tokens[0]
+        if len(tokens) > 1:
+            res = tokens[1] + '.' + res
         return res
+
     def get_dst_ip(self, url):
         return ''
 
