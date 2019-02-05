@@ -8,6 +8,7 @@ import ntpath
 import re
 import time
 import os
+import ipaddress
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
@@ -84,11 +85,15 @@ class LogFileReader(object):
 
     def get_tld(self, url):
         hostname = self.get_host(url)
-        tokens = hostname.split('.')[::-1]
-        res = tokens[0]
-        if len(tokens) > 1:
-            res = tokens[1] + '.' + res
-        return res
+        try:
+            ipaddress.ip_address(hostname)
+            return hostname
+        except (ValueError, TypeError):
+            tokens = hostname.split('.')[::-1]
+            res = tokens[0]
+            if len(tokens) > 1:
+                res = tokens[1] + '.' + res
+            return res
 
     def get_dst_ip(self, url):
         return ''
