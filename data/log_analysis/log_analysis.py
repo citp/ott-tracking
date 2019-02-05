@@ -76,6 +76,13 @@ class LogFileReader(object):
             return 'GET'
         if 'POST' in req_line:
             return 'POST'
+
+    def get_proto(self, url):
+        if 'https' in url:
+            return 'https'
+        if 'http' in url:
+            return 'http'
+
     def get_url(self, req_line):
         #return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
         return req_line.split()[2]
@@ -99,6 +106,7 @@ class LogFileReader(object):
         return ''
 
     def format_csv(self, request_line):
+        req_url = self.get_url(request_line)
         res = ''
         res += str(self.channel_id) + '\t'
         res += str(self.start_ts) + '\t'
@@ -106,13 +114,14 @@ class LogFileReader(object):
         res += str(self.select_idx) + '\t'
         res += str(self.eth_src) + '\t'
         res += str(self.get_dst_ip(request_line)) + '\t'
-        res += str(self.get_method(request_line)) + '\t'
-        res += str(self.get_url(request_line)) + '\t'
+        res += str(self.get_method(req_url)) + '\t'
+        res += str(self.get_proto(req_url)) + '\t'
+        res += str('"' + req_url + '"') + '\t'
         res += str(self.channel_name) + '\t'
-        res += str(self.get_tld(self.get_url(request_line))) + '\t'
-        res += str(self.get_host(self.get_url(request_line))) + '\t'
+        res += str(self.get_tld(req_url)) + '\t'
+        res += str(self.get_host(req_url)) + '\t'
         res += str(self.rankByWatched) + '\t'
-        res += str(self.category) + '\t'
+        res += str(self.category)
         #res += request_line
         return res
 
@@ -141,7 +150,9 @@ class LogFileReader(object):
         return
 
 
+BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
 def test():
+    print(BANNER)
     channels = load_roku_channel_details()
     log_folder_name = sys.argv[1]
     for root, dirs, files in os.walk(log_folder_name):
