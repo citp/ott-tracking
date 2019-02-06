@@ -219,7 +219,9 @@ def next_layer(next_layer):
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
         #cert = next_layer._find_cert()
-
+        if not tls_strategy:
+             mitmproxy.ctx.log("tls_strategy is None for %s" % repr(next_layer.server_conn.address), "info")
+             return
         if tls_strategy.should_intercept(server_address):
             # We try to intercept.
             # Monkey-Patch the layer to get feedback from the TLSLayer if interception worked.
