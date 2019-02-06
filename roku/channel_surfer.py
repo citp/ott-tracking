@@ -99,8 +99,8 @@ class ChannelSurfer(object):
             self.go_home()
             self.rrc.install_channel(self.channel_id)
 
-            for _ in range(60):
-                time.sleep(1)
+            for _ in range(12):
+                time.sleep(5)
                 if self.channel_is_installed():
                     break
 
