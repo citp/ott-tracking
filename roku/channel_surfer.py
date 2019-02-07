@@ -46,6 +46,7 @@ class ChannelSurfer(object):
         self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
+        self.tcpdump_proc = None
 
         # Start a background process that continuously captures screenshots to
         # the same file: continuous_screenshot.png
@@ -250,6 +251,8 @@ class ChannelSurfer(object):
         thread.start()
 
     def kill_all_tcpdump(self):
+        if not self.tcpdump_proc:
+            return
         self.tcpdump_proc.terminate()
         try:
             self.tcpdump_proc.wait(60)
