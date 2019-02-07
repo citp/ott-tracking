@@ -258,11 +258,14 @@ class MITMRunner(object):
             ARGS.append(HAR_EXPORT_ADDON)
             ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' + str(int(time.time()))+ '.har')
         print(ARGS)
+        mitm_stdout = join(dump_dir, "%s_mitm_std_out.log" % str(channel_id))
+        mitm_stderr = join(dump_dir, "%s_mitm_std_err.log" % str(channel_id))
         if RUN_MITM_IN_SUBPROCESS:
-            self.mitm_proc = subprocess.Popen(['mitmdump'] + ARGS,
+            with open(mitm_stdout, "a") as fout, open(mitm_stderr, "a") as ferr:
+                self.mitm_proc = subprocess.Popen(['mitmdump'] + ARGS,
                                               preexec_fn=os.setsid,
-                                              stdout=subprocess.DEVNULL,
-                                              stderr=subprocess.DEVNULL
+                                              stdout=fout,
+                                              stderr=ferr
                                               )
         else:
             self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
@@ -292,7 +295,10 @@ class MITMRunner(object):
         if RUN_MITM_IN_SUBPROCESS:
             self.log("Will terminate MITM proxy!!!")
             self.mitm_proc.terminate()
-            self.mitm_proc.wait(30)
+            try:
+                self.mitm_proc.wait(60)
+            except Exception as exc:
+                self.log("Error while  waiting to terminate mitmdump %s" % exc)
             # pgrp = os.getpgid(self.mitm_proc.pid)
             # os.killpg(pgrp, signal.SIGINT)
             # self.mitm_proc.send_signal(1)
