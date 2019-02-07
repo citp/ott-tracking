@@ -30,15 +30,21 @@ from threading import Thread
 from os.path import join
 
 
+RUN_MITM_IN_SUBPROCESS = True
+
 OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX="keys/"
 LOG_FILE = 'mitmproxy_runner.log'
 MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
 ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
-MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
+# MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
+MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure'
+                 #, '--flow-detail' , '3'
+                 ]
+# MITM_CONST_ARGS=['--showhost', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure']
 
-DUMP_HAR = True
+DUMP_HAR = False
 HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 
 MITMPROXY_NET_SET = False
@@ -187,6 +193,7 @@ class MITMRunner(object):
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
         self.p = None
+        self.mitm_proc = None
 
         global MITMPROXY_NET_SET
         if not MITMPROXY_NET_SET:
@@ -251,9 +258,15 @@ class MITMRunner(object):
             ARGS.append(HAR_EXPORT_ADDON)
             ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' + str(int(time.time()))+ '.har')
         print(ARGS)
-
-        self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
-        self.p.start()
+        if RUN_MITM_IN_SUBPROCESS:
+            self.mitm_proc = subprocess.Popen(['mitmdump'] + ARGS,
+                                              preexec_fn=os.setsid,
+                                              stdout=subprocess.DEVNULL,
+                                              stderr=subprocess.DEVNULL
+                                              )
+        else:
+            self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
+            self.p.start()
 
     def clean_global_keylog_file(self):
         #Clear the original log file
@@ -276,21 +289,31 @@ class MITMRunner(object):
 
     def kill_mitmproxy(self):
         self.log("Killing MITM proxy!!!")
-        try:
-            t = Thread(target=set_event_handler, args=(self.event_handler,))
-            t.start()
-        except Exception as e:
-            self.log('Error in killing the proxy!')
-            traceback.print_tb(e.__traceback__)
-        
-        self.log("Sleeping for 5 seconds before forcing manual termination!!!")
-        time.sleep(5)
-        self.log("Forcing manual termination!!!")
-        if self.p is not None:
-            self.p.terminate()
+        if RUN_MITM_IN_SUBPROCESS:
+            self.log("Will terminate MITM proxy!!!")
+            self.mitm_proc.terminate()
+            self.mitm_proc.wait(30)
+            # pgrp = os.getpgid(self.mitm_proc.pid)
+            # os.killpg(pgrp, signal.SIGINT)
+            # self.mitm_proc.send_signal(1)
+
+            self.log("Successfully terminated MITM proxy!!!")
+        else:
+            try:
+                t = Thread(target=set_event_handler, args=(self.event_handler,))
+                t.start()
+            except Exception as e:
+                self.log('Error in killing the proxy!')
+                traceback.print_tb(e.__traceback__)
+
+            self.log("Sleeping for 5 seconds before forcing manual termination!!!")
+            time.sleep(5)
+            self.log("Forcing manual termination!!!")
+            if self.p is not None:
+                self.p.terminate()
+                time.sleep(2)
+                subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
             time.sleep(2)
-            subprocess.call('kill -9 -f ' + str(self.p.pid), shell=True, stderr=open(os.devnull, 'wb'))
-        time.sleep(2)
-        self.kill_existing_mitmproxy()
+            self.kill_existing_mitmproxy()
         self.clean_iptables()
         move_keylog_file(self.global_keylog_file, self.keylog_file)
