@@ -225,7 +225,7 @@ class MITMRunner(object):
         self.set_iptables()
         time.sleep(2)
 
-        self.dump_filename = '{}-{}-{}'.format(
+        self.dump_filename = '{}-{}-{}.flow'.format(
             self.channel_id,
             int(time.time()),
             self.selector
@@ -258,8 +258,8 @@ class MITMRunner(object):
             ARGS.append(HAR_EXPORT_ADDON)
             ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' + str(int(time.time()))+ '.har')
         print(ARGS)
-        mitm_stdout = join(dump_dir, "%s_mitm_std_out.log" % str(channel_id))
-        mitm_stderr = join(dump_dir, "%s_mitm_std_err.log" % str(channel_id))
+        mitm_stdout = join(dump_dir, "%s_mitm_std.out" % str(channel_id))
+        mitm_stderr = join(dump_dir, "%s_mitm_std.err" % str(channel_id))
         if RUN_MITM_IN_SUBPROCESS:
             with open(mitm_stdout, "a") as fout, open(mitm_stderr, "a") as ferr:
                 self.mitm_proc = subprocess.Popen(['mitmdump'] + ARGS,

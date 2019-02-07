@@ -21,6 +21,9 @@ INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
+ETH_MAC_ADDRESS = os.environ['ETH_MAC_ADDRESS']
+WLANIF = os.environ['WLANIF']
+
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -166,16 +169,21 @@ class ChannelSurfer(object):
 
         time.sleep(3)
 
-        self.pcap_filename = '{}-{}'.format(
+        self.pcap_filename = '{}-{}.pcap'.format(
             self.channel_id,
             int(timestamp)
         )
+        pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
+        # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
+        self.tcpdump_proc = subprocess.Popen(
+            ['tcpdump', '-w', pcap_path, '-i', WLANIF, 'ether',  'host',
+            ETH_MAC_ADDRESS, 'and not arp and port not ssh'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         #self.log('./start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename))
-        subprocess.Popen(
-            './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
+        #subprocess.Popen(
+        #    './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
+        #    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         self.log('Capturing packets:', self.pcap_filename)
 
@@ -242,9 +250,17 @@ class ChannelSurfer(object):
         thread.start()
 
     def kill_all_tcpdump(self):
+        self.tcpdump_proc.terminate()
+        try:
+            self.tcpdump_proc.wait(60)
+        except Exception as exc:
+            self.log("Error while waiting to terminate tcpdump %s" % exc)
+            self.tcpdump_proc.kill()
+        else:
+            self.log("Successfully terminated tcpdump %s" % exc)
 
-        subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
-        time.sleep(5)
-        subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
-        time.sleep(5)
+        # subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        # time.sleep(5)
+        # subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        # time.sleep(5)
 
