@@ -15,12 +15,14 @@ import sounddevice as sd
 import soundfile as sf
 import threading
 from shutil import copy2
+from os.path import join
 
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
+
 ETH_MAC_ADDRESS = os.environ['ETH_MAC_ADDRESS']
 WLANIF = os.environ['WLANIF']
 
@@ -260,7 +262,7 @@ class ChannelSurfer(object):
             self.log("Error while waiting to terminate tcpdump %s" % exc)
             self.tcpdump_proc.kill()
         else:
-            self.log("Successfully terminated tcpdump %s" % exc)
+            self.log("Successfully terminated tcpdump")
 
         # subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)

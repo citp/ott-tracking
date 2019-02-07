@@ -273,7 +273,7 @@ def scrape(channel_id, date_prefix, output_file_desc):
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
     if MITMPROXY_ENABLED:
-        mitmrunner = MITMRunner(channel_id, 0, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
+        mitmrunner = MITMRunner(channel_id, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}
 
     try:

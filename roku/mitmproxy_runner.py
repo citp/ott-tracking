@@ -182,14 +182,13 @@ def set_event_handler(e):
 
 class MITMRunner(object):
 
-    def __init__(self, channel_id ,selector, data_dir, dump_prefix, global_keylog_file):
+    def __init__(self, channel_id, data_dir, dump_prefix, global_keylog_file):
         self.channel_id = str(channel_id)
-        self.selector = str(selector)
         self.data_dir = str(data_dir)
         self.dump_prefix = dump_prefix
         self.dump_dir = str(data_dir) + str(dump_prefix)
         self.event_handler = multiprocessing.Event()
-        self.log('Initialized MITMRunner', channel_id ,selector)
+        self.log('Initialized MITMRunner', channel_id)
         self.global_keylog_file = global_keylog_file
         self.keylog_file = self.data_dir + "/" + SSLKEY_PREFIX + "/"+ str(channel_id)+ ".txt"
         self.p = None
@@ -225,10 +224,9 @@ class MITMRunner(object):
         self.set_iptables()
         time.sleep(2)
 
-        self.dump_filename = '{}-{}-{}.flow'.format(
+        self.dump_filename = '{}-{}.flow'.format(
             self.channel_id,
-            int(time.time()),
-            self.selector
+            int(time.time())
         )
 
         #CMD = str(MITMPRXY_CMD % ( str(str(self.dump_dir) + str(self.dump_filename)) , str(self.channel_id), str(self.data_dir)))
