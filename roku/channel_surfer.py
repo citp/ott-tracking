@@ -16,15 +16,13 @@ import soundfile as sf
 import threading
 from shutil import copy2
 from os.path import join
+from shlex import split
 
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
-
-ETH_MAC_ADDRESS = os.environ['ETH_MAC_ADDRESS']
-WLANIF = os.environ['WLANIF']
 
 
 class SurferAborted(Exception):
@@ -176,11 +174,14 @@ class ChannelSurfer(object):
             self.channel_id,
             int(timestamp)
         )
+        eth_mac = os.environ['ETH_MAC_ADDRESS']
+        lan_if_name = os.environ['LANIF']
+
         pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
         self.tcpdump_proc = subprocess.Popen(
-            ['tcpdump', '-w', pcap_path, '-i', WLANIF, 'ether',  'host',
-            ETH_MAC_ADDRESS, 'and not arp and port not ssh'],
+            ['tcpdump', '-w', pcap_path, '-i', lan_if_name, 'ether',  'host',
+            eth_mac] + split('and not arp and port not ssh'),
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         #self.log('./start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename))
@@ -196,7 +197,9 @@ class ChannelSurfer(object):
         FFMPEG_SCREENSHOT_NAME = 'continuous_screenshot.png'
         while time.time() - start_time <= timeout:
             t0 = time.time()
-            screenshot_filename = self.screenshot_folder + '{}-{}'.format(self.pcap_filename, int(time.time()))
+            screenshot_filename = join(
+                self.screenshot_folder,
+                '{}-{}.png'.format(self.channel_id, int(t0)))
             #self.log('Taking screenshot to:', screenshot_filename)
 
             # capture_screenshot.sh continuously writes the latest screenshot
