@@ -6,7 +6,7 @@ import urllib.parse
 import typing  # noqa
 import mitmproxy
 import logging
-from os.path import isfile
+from os.path import isfile, join
 
 
 from enum import Enum
@@ -14,6 +14,10 @@ from mitmproxy import ctx
 from mitmproxy.exceptions import TlsProtocolException
 from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
+
+
+UNMITMABLE_HOST_DIR = "/smart-tv-data/roku-unmitmable-hosts/"
+
 
 class InterceptionResult(Enum):
     success = True
@@ -72,13 +76,15 @@ class _TlsStrategy:
     Abstract base class for interception strategies.
     """
 
-    def __init__(self, unMitmableFileName):
+    def __init__(self, unMitmableFileNameIn):
         # A server_address -> interception results mapping
         self.historyIP = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.historyDomain = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
         self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
-        self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileName)
+        self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileNameIn)
+        logging.info("Loaded %d unmitmable hosts, %d unmitmable IPs from %s" % (
+            len(self.unMitmableHosts), len(self.unMitmableIps), unMitmableFileNameIn))
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
@@ -119,7 +125,7 @@ class _TlsStrategy:
         if hostname:
             self.historyDomain[hostname].append(InterceptionResult.failure)
 
-        append_to_file(unMitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
+        append_to_file(unMitmableFileNameOut, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
         # with open(unMitmableFileName, 'a') as the_file:
         #    the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
@@ -190,7 +196,7 @@ def load(l):
 
 
 def configure(updated):
-    global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileName
+    global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut
     #if ctx.options.tlsstrat > 0:
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
@@ -203,10 +209,12 @@ def configure(updated):
         int(time.time())
     )
     mitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.mitmable'
-    unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+    unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
+    unMitmableFileNameOut = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+    # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
     LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
     logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
-    tls_strategy = ConservativeStrategy(unMitmableFileName)
+    tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
 
     #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
 
