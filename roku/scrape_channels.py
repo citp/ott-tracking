@@ -26,7 +26,12 @@ import queue
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 
-LAUNCH_RETRY_CNT = 5
+WARM_UP_CRAWL = False
+
+if WARM_UP_CRAWL:
+    LAUNCH_RETRY_CNT = 5  # detect  and store unmitmable domains and IPs
+else:
+    LAUNCH_RETRY_CNT = 1  # load unmitmable domains and IPs from files
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
