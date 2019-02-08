@@ -9,7 +9,7 @@ source ${PLATFORM_DIR}/config.txt
 
 #Global log folder/file
 mkdir -p ${MainDir}/logs 2> /dev/null
-LogDir=${MainDir}/logs
+export LogDir=${MainDir}/logs
 export LOG_OUT_FILE="${LogDir}/output.txt"
 
 #echo 'Clearing Data Folder!'
