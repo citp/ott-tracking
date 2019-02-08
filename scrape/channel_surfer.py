@@ -6,6 +6,7 @@ Captures packets at every stage.
 """
 from __future__ import print_function
 from platforms.roku.roku_remote import RokuRemoteControl
+from platforms.amazon.remote_control import AmazonRemoteControl
 import time
 import subprocess
 import datetime
@@ -42,6 +43,7 @@ class ChannelSurfer(object):
 
         self.pcap_filename = None
         self.rrc = RokuRemoteControl(roku_ip)
+        #self.rrc = AmazonRemoteControl(roku_ip)
         self.channel_id = str(channel_id)
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)
