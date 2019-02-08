@@ -41,6 +41,8 @@ PCAP_PREFIX = "pcaps/"
 DUMP_PREFIX = "mitmdumps/"
 LOG_PREFIX = "mitmlog/"
 LOG_FOLDER = "logs/"
+LOG_FILE = 'scrape_channels.log'
+LOG_DIR = os.getenv("LogDir")
 LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX = "screenshots/"
 AUDIO_PREFIX="audio/"
@@ -226,7 +228,7 @@ def log(*args):
     s += ' '.join([str(v) for v in args])
 
     print(s)
-    with open('scrape_channels.log', 'a') as fp:
+    with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
 def check_folders():

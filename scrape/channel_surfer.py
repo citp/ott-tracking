@@ -18,6 +18,7 @@ from shlex import split
 import wave
 import pyaudio
 
+LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = False
@@ -61,7 +62,7 @@ class ChannelSurfer(object):
 
         current_time = '[{}]'.format(datetime.datetime.today())
 
-        with open(LOG_FILE, 'a') as fp:
+        with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
             print(current_time, end=' ', file=fp)
             print(current_time, end=' ')
             for arg in args:

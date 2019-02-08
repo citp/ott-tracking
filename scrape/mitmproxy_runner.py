@@ -32,6 +32,7 @@ from os.path import join
 
 RUN_MITM_IN_SUBPROCESS = True
 
+LOG_DIR = os.getenv("LogDir")
 OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX = "keys/"
@@ -215,7 +216,7 @@ class MITMRunner(object):
 
         current_time = '[{}]'.format(datetime.datetime.today())
 
-        with open(LOG_FILE, 'a') as fp:
+        with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
             print(current_time, end=' ', file=fp)
             print(current_time, end=' ')
             for arg in args:
