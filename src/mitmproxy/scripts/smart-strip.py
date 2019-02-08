@@ -210,7 +210,7 @@ def configure(updated):
     )
     mitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.mitmable'
     unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
-    unMitmableFileNameOut = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+    unMitmableFileNameOut = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
     # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
     LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
     logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
