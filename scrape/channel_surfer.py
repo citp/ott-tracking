@@ -55,7 +55,7 @@ class ChannelSurfer(object):
         self.tcpdump_proc = None
 
         # Start a background process that continuously captures screenshots to
-        # the same file: continuous_screenshot.png
+        # the same file: ${LogDir}/continuous_screenshot.png
         subprocess.call(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
 
     def log(self, *args):
@@ -200,7 +200,7 @@ class ChannelSurfer(object):
     def capture_screenshots(self, timeout):
 
         start_time = time.time()
-        FFMPEG_SCREENSHOT_NAME = 'continuous_screenshot.png'
+        FFMPEG_SCREENSHOT_NAME = os.path.join(LOG_DIR, 'continuous_screenshot.png')
         while time.time() - start_time <= timeout:
             t0 = time.time()
             screenshot_filename = join(
