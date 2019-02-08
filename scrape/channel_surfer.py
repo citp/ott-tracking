@@ -25,7 +25,7 @@ INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = False
 LOG_AUD_EN = True
 
-CHUNK = 1024
+CHUNK = 256
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
@@ -244,16 +244,26 @@ class ChannelSurfer(object):
                 self.log('Exception while opening audio stream.')
                 return
 
+            if LOG_AUD_EN:
+                self.log('Successfully opened audio stream.')
+
             try:
                 frames = []
 
                 for i in range(0, int(RATE / CHUNK * seconds)):
+                    stream.get_output_latency() #No-op but please do not remove this
                     data = stream.read(CHUNK)
                     frames.append(data)
+
+                if LOG_AUD_EN:
+                    self.log('Completed reading audio data.')
 
                 stream.stop_stream()
                 stream.close()
                 p.terminate()
+
+                if LOG_AUD_EN:
+                    self.log('Successfully closed audio stream.')
 
             except:
                 self.log('Exception while reading the audio stream.')
