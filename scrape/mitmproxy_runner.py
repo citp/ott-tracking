@@ -34,14 +34,16 @@ RUN_MITM_IN_SUBPROCESS = True
 
 OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
-SSLKEY_PREFIX="keys/"
+SSLKEY_PREFIX = "keys/"
 LOG_FILE = 'mitmproxy_runner.log'
-MITMPRXY_CMD="mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
-ADDN_DIR='../src/mitmproxy/scripts/smart-strip.py'
+# MITMPRXY_CMD = "mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
+ADDN_DIR = '../src/mitmproxy/scripts/smart-strip.py'
 # MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
-MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure'
-                 #, '--flow-detail' , '3'
-                 ]
+MITM_CONST_ARGS = [
+    '--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO,
+    '-s', ADDN_DIR, '--ssl-insecure'
+    # , '--flow-detail' , '3'
+    ]
 # MITM_CONST_ARGS=['--showhost', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure']
 
 DUMP_HAR = False
@@ -81,18 +83,19 @@ def mitmdump_run(master, opts, event_handler, args=None) -> typing.Optional[int]
 def move_keylog_file(src, dest):
     src_full_path = os.path.abspath(src)
     dest_full_path = os.path.abspath(dest)
-    print('Moving '+ src_full_path + " to " + dest_full_path)
+    print('Moving ' + src_full_path + " to " + dest_full_path)
     if os.path.exists(src_full_path):
         shutil.move(src_full_path, dest_full_path)
     else:
         print(src_full_path + " doesn't exist!")
+
 
 def shutdown_master(master, event_handler):
     event_handler.wait()
     print("Shutting down DumpMaster!")
     try:
         master.addons.get("save").done()
-    except Exception as e:
+    except Exception:
         print('Error in saving MITM flows before exit!')
         traceback.print_exc()
 
@@ -177,8 +180,10 @@ def my_run(
         pass
     return master
 
+
 def set_event_handler(e):
     e.set()
+
 
 class MITMRunner(object):
 
@@ -235,7 +240,8 @@ class MITMRunner(object):
         #    CMD,
         #    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         #)
-        self.run_mitmdump(self.dump_filename, self.data_dir, self.channel_id, self.dump_prefix)
+        self.run_mitmdump(self.dump_filename, self.data_dir,
+                          self.channel_id, self.dump_prefix)
         self.log('Dumping MITMing flows to:', self.dump_filename)
 
     def run_mitmdump(self, dump_filename, data_dir, channel_id, dump_prefix):
@@ -243,7 +249,7 @@ class MITMRunner(object):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self.master, self.opts = prepare_master(dump.DumpMaster)
-        dump_dir = join(str(data_dir) , str(dump_prefix))
+        dump_dir = join(str(data_dir), str(dump_prefix))
         ARGS = MITM_CONST_ARGS.copy()
         ARGS.append('-w')
         ARGS.append(dump_dir + '/' + str(dump_filename))
@@ -254,17 +260,16 @@ class MITMRunner(object):
         if DUMP_HAR:
             ARGS.append('-s')
             ARGS.append(HAR_EXPORT_ADDON)
-            ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' + str(int(time.time()))+ '.har')
+            ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' +
+                        str(int(time.time())) + '.har')
         print(ARGS)
         mitm_stdout = join(dump_dir, "%s_mitm_std.out" % str(channel_id))
         mitm_stderr = join(dump_dir, "%s_mitm_std.err" % str(channel_id))
         if RUN_MITM_IN_SUBPROCESS:
             with open(mitm_stdout, "a") as fout, open(mitm_stderr, "a") as ferr:
-                self.mitm_proc = subprocess.Popen(['mitmdump'] + ARGS,
-                                              preexec_fn=os.setsid,
-                                              stdout=fout,
-                                              stderr=ferr
-                                              )
+                self.mitm_proc = subprocess.Popen(
+                    ['mitmdump'] + ARGS,
+                    stdout=fout, stderr=ferr)
         else:
             self.p = multiprocessing.Process(target=mitmdump_run, args=(self.master, self.opts, self.event_handler, ARGS,))
             self.p.start()
