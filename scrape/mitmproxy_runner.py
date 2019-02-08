@@ -206,7 +206,7 @@ class MITMRunner(object):
 
     def set_global_net_settings(self):
         self.log("Setting global network settings")
-        cmd = "sudo -E ./ip_forwarding.sh"
+        cmd = "sudo -E ./scripts/ip_forwarding.sh"
 
         self.log(cmd)
         subprocess.call(cmd, shell=True, stderr=open(os.devnull, 'wb'))
@@ -281,11 +281,11 @@ class MITMRunner(object):
 
     def clean_iptables(self):
         self.log("Flushing iptables")
-        subprocess.call('./iptables_flush.sh', shell=True)
+        subprocess.call('./scripts/iptables_flush.sh', shell=True)
 
     def set_iptables(self):
         self.log("Setting up iptables")
-        subprocess.call('./iptables.sh', shell=True)
+        subprocess.call('./scripts/iptables.sh', shell=True)
 
     def kill_existing_mitmproxy(self):
         command = "sudo kill -9 `sudo lsof -Pni  | grep \"\\*\\:"+ MITMPROXY_PORT_NO + "\" | awk '{print $2}'`"

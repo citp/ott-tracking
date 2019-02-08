@@ -11,19 +11,24 @@ import subprocess
 import datetime
 import os
 import binascii
-import sounddevice as sd
-import soundfile as sf
 import threading
 from shutil import copy2
 from os.path import join
 from shlex import split
+import wave
+import pyaudio
 
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
-RECORD_FS = 44100
 LOG_CRC_EN = False
 LOG_AUD_EN = True
 
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
+
+PLATFORM_DIR = os.getenv("PLATFORM_DIR")
 
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
@@ -50,7 +55,7 @@ class ChannelSurfer(object):
 
         # Start a background process that continuously captures screenshots to
         # the same file: continuous_screenshot.png
-        subprocess.call('./capture_screenshot.sh', shell=True)
+        subprocess.call(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
 
     def log(self, *args):
 
@@ -222,20 +227,33 @@ class ChannelSurfer(object):
         def record(seconds):
             if LOG_AUD_EN:
                 self.log('Starting audio recording!')
+                self.log('Opening audio stream.')
+
+            p = None
+            stream = None
+            frames = None
 
             try:
-                recording = sd.rec(int(seconds * RECORD_FS), samplerate=RECORD_FS, channels=2)
+                p = pyaudio.PyAudio()
+                SPEAKERS = p.get_default_output_device_info()['hostApi']
+                stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK, input_host_api_specific_stream_info=SPEAKERS)
             except:
-                self.log('Exception while beginning audio recording.')
+                self.log('Exception while opening audio stream.')
                 return
 
-            if LOG_AUD_EN:
-                self.log('Audio recording started with value', str(recording))
-
             try:
-                sd.wait()
+                frames = []
+
+                for i in range(0, int(RATE / CHUNK * seconds)):
+                    data = stream.read(CHUNK)
+                    frames.append(data)
+
+                stream.stop_stream()
+                stream.close()
+                p.terminate()
+
             except:
-                self.log('Exception while waiting for audio recording.')
+                self.log('Exception while reading the audio stream.')
                 return
 
             audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
@@ -244,7 +262,12 @@ class ChannelSurfer(object):
                 self.log('Writing audio file to:', audio_name)
 
             try:
-                sf.write(self.audio_dir + audio_name, recording, RECORD_FS)
+                wf = wave.open(self.audio_dir + audio_name, 'wb')
+                wf.setnchannels(CHANNELS)
+                wf.setsampwidth(p.get_sample_size(FORMAT))
+                wf.setframerate(RATE)
+                wf.writeframes(b''.join(frames))
+                wf.close()
             except:
                 self.log('Exception while writing audio recording to file.')
                 return
@@ -271,4 +294,3 @@ class ChannelSurfer(object):
         # time.sleep(5)
         # subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)
-

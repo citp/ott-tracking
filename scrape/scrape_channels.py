@@ -344,7 +344,7 @@ def scrape(channel_id, date_prefix, output_file_desc):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        if isfile(sys.argv[1]):
+        if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
         else:
             channel_id = sys.argv[1]
