@@ -109,3 +109,7 @@ venv.bak/
 
 roku/data/*
 roku/output.txt
+
+
+scrape/logs/*
+scrape/apk_cache/*
