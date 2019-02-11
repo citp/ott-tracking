@@ -13,6 +13,7 @@ TODO:
 from __future__ import print_function
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
+
 import json
 from datetime import datetime
 import traceback
@@ -59,6 +60,14 @@ RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/
 
 CUTOFF_TRESHOLD=100000
 SCRAPE_TO = 900
+
+PLAT = os.getenv("PLATFORM")
+
+if PLAT == "ROKU":
+    from platforms.roku.get_all_channels import get_channel_list
+elif PLAT == "AMAZON":
+    from platforms.amazon.get_all_channels import get_channel_list
+
 
 #repeat = {}
 # To get this list use this command:
@@ -132,7 +141,6 @@ def rsync(date_prefix):
     if p.returncode != 0:
         log("rsync failed!")
 
-ALL_CHANNELS_TXT = 'platforms/roku/channel_list.txt'  # file that includes all channel details
 
 
 def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
@@ -151,17 +159,14 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
     with open(channel_res_file, "w") as tfile:
         print(str(scrape_success), file=tfile)
 
-def main(channel_list=ALL_CHANNELS_TXT):
+def main():
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
-    channel_dict = {}
+    channel_dict = get_channel_list()
 
-    with open(channel_list) as fp:
-        for line in fp:
-            record = json.loads(line)
-            channel_dict.setdefault(record['_category'], []).append(record)
+
 
     # Check what channels we have already scraped
     scraped_channel_ids = set()
@@ -175,9 +180,13 @@ def main(channel_list=ALL_CHANNELS_TXT):
 
         next_channels = []
 
-        for channel_list in channel_dict.values():
-            if channel_list:
-                next_channels.append(channel_list.pop(0))
+        if PLAT == "ROKU":
+            for channel_list in channel_dict.values():
+                if channel_list:
+                    next_channels.append(channel_list.pop(0))
+        elif PLAT == "AMAZON":
+            for channel in channel_dict:
+                next_channels.append(channel)
 
         if not next_channels:
             break

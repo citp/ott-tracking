@@ -30,6 +30,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
 
+PLAT = os.getenv("PLATFORM")
 PLATFORM_DIR = os.getenv("PLATFORM_DIR")
 
 class SurferAborted(Exception):
@@ -39,11 +40,13 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, roku_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder, audio_prefix):
+    def __init__(self, tv_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder, audio_prefix):
 
         self.pcap_filename = None
-        self.rrc = RokuRemoteControl(roku_ip)
-        #self.rrc = AmazonRemoteControl(roku_ip)
+        if PLAT == "ROKU":
+            self.rrc = RokuRemoteControl(tv_ip)
+        elif PLAT == "AMAZON":
+            self.rrc = AmazonRemoteControl(tv_ip)
         self.channel_id = str(channel_id)
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)

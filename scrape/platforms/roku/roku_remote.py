@@ -5,6 +5,7 @@ import sys
 #sys.setdefaultencoding('utf8')
 
 import requests
+from platforms.tvplatform import TVRemoteController
 import xml.etree.ElementTree as ET
 import traceback
 from time import sleep
@@ -14,7 +15,7 @@ HTTP_OK = 200
 DEBUG_HTTP = False
 
 
-class RokuRemoteControl(object):
+class RokuRemoteControl(TVRemoteController):
 
     def __init__(self, ip_address, port=8060):
         self.api_url = "http://%s:%s" % (ip_address, port)
