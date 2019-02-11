@@ -161,12 +161,15 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
     with open(channel_res_file, "w") as tfile:
         print(str(scrape_success), file=tfile)
 
-def main():
+def main(channel_list=None):
     output_file_desc = open(LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
-    channel_dict = get_channel_list()
+    if channel_list is not None:
+        channel_dict = get_channel_list(channel_list)
+    else:
+        channel_dict = get_channel_list()
 
 
 
@@ -183,9 +186,9 @@ def main():
         next_channels = []
 
         if PLAT == "ROKU":
-            for channel_list in channel_dict.values():
-                if channel_list:
-                    next_channels.append(channel_list.pop(0))
+            for channel_l in channel_dict.values():
+                if channel_l:
+                    next_channels.append(channel_l.pop(0))
         elif PLAT == "AMAZON":
             for channel in channel_dict:
                 next_channels.append(channel)

@@ -1,4 +1,4 @@
-ALL_CHANNELS_TXT = 'platforms/amazon/channel_names.csv'  # file that includes all channel details
+ALL_CHANNELS_TXT = 'platforms/amazon/channel_lists/channel_names.csv'  # file that includes all channel details
 
 def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
     """Returns a dictionary of all available channels for install."""
@@ -7,7 +7,7 @@ def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
 
     with open(channel_csv) as fp:
         for (line_index, line) in enumerate(fp):
-            if line_index == 0:
+            if line_index <= 1 :
                 continue
             ranking, channel_name, apk_id = line.strip().split(',')
             record = {

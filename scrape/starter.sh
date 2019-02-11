@@ -1,6 +1,10 @@
 #!/bin/bash
 set -x
+
+# Change platform if needed
 export PLATFORM=amazon
+#export PLATFORM=roku
+
 export PLATFORM_DIR=`realpath ./platforms/${PLATFORM}`
 export ScriptDir=`realpath ./scripts/`
 export MainDir=`realpath $PWD`

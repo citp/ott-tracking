@@ -1,0 +1,102 @@
+# Random sample of channels using command `shuf -n 100`
+amazon_ranking,channel_name,apk_id
+43,ID GO,com.discovery.firetv.idsgo
+14,AMC,com.amctve.amcfiretv
+662,Good Parent,com.gtv.goodparent
+713,Xcluded,com.xcluded
+387,LA STV Channel,com.amazon.rialto.cordova.webapp.webappc26b1d7af6384338abb44be81eb06e56
+721,Hamilton STV Channel,com.amazon.rialto.cordova.webapp.webapp41c347c1241943aea9c0273f0276be38
+636,21Frames,com.ventuno.tv.firetv.frames21
+360,FlixFling,com.amazon.rialto.cordova.webapp.webapp34dca137666446debdd4fb9c376f5a28
+91,Netflix,com.netflix.ninja
+331,Documentary Films by Fawesometv,com.future.documentarybyfawesome
+385,People Are Awesome,com.viewlift.peopleawesome
+172,AHC GO,com.discovery.firetv.ahcgo
+408,Elevate TV,com.elevatetv.tv.platform
+250,ARTE,tv.arte.plus7
+444,GINIKO USA TV for FireTV,com.tulix.ginikousafiretv
+597,WorldEqualitytv,firetv.bigstartv.equality
+330,AtresPlayer,com.antena3.atresplayer.tv
+804,3re Souls TV,com.amazon.rialto.webapp.A1ad7745609925c0784704d332c4db0e015576c71
+332,Nortex TV,com.nortextv.tv.platform
+656,MUXXtv,de.edv_medien.muxxtv
+607,SAFE Network,com.gtv.safenetwork
+754,Toms River STV Channel,com.amazon.rialto.cordova.webapp.webapp61704e97000940daa1592b7194a9f7f5
+31,DC Universe,com.wb.amzn.dcuniverse
+519,TPG Around The World in 80 Screams,com.amazon.rialto.webapp.Acc14485d632ce529444895b6e00d815bd911e59a
+751,Banjara Media,com.amazon.rialto.webapp.A0166410f4578b4c09471c8a72d90142158edd4f0
+766,R2KLA,com.amazon.rialto.cordova.webapp.webappeef9e59c6a3844a6b12bc4e7d784cfe3
+501,Movie Talkies,com.amazon.rialto.cordova.webapp.webappe7a61635ffe64b97a38f4073b8e0f872
+537,Synimatica,com.startechplus.Synimatica
+431,ATL Grind Television Channel,com.amazon.rialto.cordova.webapp.webapp54d7046897c6457996cd1686844b1b14
+111,Christmas Zone,com.amazon.rialto.cordova.webapp.webapp16803e6c9e294e42883e237f1f387716
+276,VidLink,com.dalton.tv.platform
+200,CarbonTV,com.amazon.rialto.cordova.webapp.webappc3e29ff47b27451cb99029faf522aa3e
+341,Clikia,com.clikia.live
+343,The Sentinel Project,com.amazon.rialto.cordova.webapp.webappf6ba1e5bf16744aca1f5f9f2e270bf3e
+410,American Beauty Star,com.dotstudioz.dotstudioPRO.abstv
+180,247 Love Stories,firetv.bigstartv.love
+584,ANOINTED SOUND TV,com.amazon.rialto.webapp.A2bc27258cb7f0aabdf3a1a01229d73e4266c6c3a
+630,Urban Exploration Tv,com.amazon.rialto.webapp.A7aff98a5c98bdf2b8f45a12e4e7ef3a963750381
+347,ChinaBlueTV,com.amazon.rialto.cordova.webapp.webappf718669c75c6443faed5ce950fe84f54
+227,THIRTEEN Explore,com.amazon.rialto.cordova.webapp.webapp2c0ba09f0bea464c984932db170cdafc
+96,Shudder,com.onemainstream.shudderprod.android
+799,Elizabeth STV Channel,com.amazon.rialto.cordova.webapp.webapp57d268caa0c342f288ed2e932e87b9ee
+212,Discovery Life,com.discovery.firetv.dlfgo
+690,Radio Pushers TV,com.amazon.rialto.cordova.webapp.webapp7289b4a8a63b4c92b5c58e1eda1c25d0
+707,Ruby Wilson,com.amazon.rialto.webapp.Aecf97c6236028b805d3173d6043b510c7e156256
+218,Steve Wilkos Show,com.amazon.rialto.cordova.webapp.webappa54eae912bb344479bb421756a21d8f6
+238,Expat Prime,tv.expatprime.player
+333,dream Player TV for TVheadend,de.cyberdream.dreamepg.tvh.tv.player
+156,Cartoon Lane,stormcastcinema.cartoonlane
+104,ATT Uverse,com.att.labs.uversetv.android.tablet
+637,Reno STV Channel,com.amazon.rialto.cordova.webapp.webapp0c6894c85898448da2be4bcdc6ed41ef
+44,Twitch,tv.twitch.android.viewer
+782,JETSONLIFE TV,com.amazon.rialto.cordova.webapp.webapp30df3adc3e7944549012e79573e4028f
+468,Movie Ranker,com.amazon.rialto.webapp.Ac20ad3090e933be164bcdba0408fd5d293e26ecf
+50,Travel Channel,tv.accedo.travelchannel
+351,Film Movement,com.filmmovement
+692,Union City STV Channel,com.amazon.rialto.cordova.webapp.webapp9b3307b695bc470795ae09f57f3d3732
+67,Sundance Now,com.onemainstream.docclubtes.android
+142,LocalCast on Fire,de.stefanpledl.localcastreceiver
+51,Player,com.tube8
+248,KMTV,com.dmr.kmtv.tv
+496,Influence TV Network,com.amazon.rialto.cordova.webapp.webappda85a5000c9f4824b165ba500a2731a7
+392,MobiTV Conectar,tv.ezv.client.directlink
+759,Pontiac STV Channel,com.amazon.rialto.cordova.webapp.webapp0d01eaf55d9046ceb04fac869e504596
+327,Rede iTV,com.amazon.rialto.webapp.A63a6681ff26e92917399274579a2e71250d0179c
+517,Synchrimedia How To Create Closed Captions with MovieCaptioner,com.amazon.rialto.webapp.Ae1e1dcd16922eb9449e8066f1059bfa8ff836a76
+24,SHOWTIME,com.showtime.standalone
+380,Fantasy TV,com.thefantasynetwork
+88,Telemundo,com.amazon.webapps.nbc.telemundo
+382,Huace,com.amazon.rialto.cordova.webapp.webappf2cfaca3cc134c849adb5cecf42f39e5
+38,Hallmark Channel,com.hallmarkchannel.tv
+585,Townsville STV Channel,com.amazon.rialto.cordova.webapp.webappa1f1c651f9f940449d20d5a7258a3ed7
+570,MXONETV,com.amazon.rialto.cordova.webapp.webappaf46808c30eb49278eb97668cb2f6ec0
+406,ZengaTV,com.zenga.zengatv
+540,Noize TV,tv.vhx.noizetv
+627,Melody Trice,com.amazon.rialto.webapp.A1b0940d70d703c224e4567c5d975424f98229bca
+280,VivaLive TV,com.vivalivetv.app
+509,Knoxville STV Channel,com.amazon.rialto.cordova.webapp.webappb6944171e7bf4e119067f992a0053381
+261,YouTV,com.keepinmind.youtv
+124,dailymotion,com.dailymotion.dailymotion
+731,Brick STV Channel,com.amazon.rialto.cordova.webapp.webapp45ae33cd334f477aa346f085c3e8e192
+234,Tablo Preview,com.nuvyyo.tablo
+806,TPG Nightly Terrors,com.amazon.rialto.webapp.A8302c274ec0e63feedfcf7722c23357c612356bb
+482,Northbay TV,com.outspring.northbaytv
+541,KTv,com.ktv.app
+114,NetTV Plus,vlaf.android.player.nettv
+691,Moorevision Television,com.amazon.rialto.cordova.webapp.webapp1992fa6dfb5c4b288cd55220b3d501fe
+608,Dayton STV Channel,com.amazon.rialto.cordova.webapp.webapp62eb85a30cdb4ad9bb15dabe817c74cf
+803,Harmon Group Media Partners,com.amazon.rialto.webapp.A97a39f857075ac09468b9222ff79d920f80cf054
+83,Hotstar,in.startv.hotstar
+456,Film School Shorts,com.amazon.rialto.webapp.Aa4cf27d8d02dae2a5def85805b692e65c32a4d6f
+285,TWiT Live,com.amazon.rialto.cordova.webapp.webappdc6e19829c764bbca189a977425e2126
+718,Saint Clair Shores STV Channel,com.amazon.rialto.cordova.webapp.webapp04f859e2016f470694f6b1ee16e9b42a
+224,Damai TV,com.hiveview.damaitv
+66,BlackWorldCinema,blackcinema.bigstar.tv
+107,EPIX,com.amazon.rialto.cordova.webapp.webappebaff62698e4422da601235d5a704f45
+655,Escanaba STV,com.amazon.rialto.cordova.webapp.webapp52db1e435e5a425991d7559879e0e542
+390,Open View TV,com.openvoutv.tv.platform
+773,Globalchurchtv,com.globalchurchtv
+128,Talkie TV,com.talkie.tv
