@@ -64,6 +64,8 @@ class RokuRemoteControl(TVRemoteController):
         # TODO: this will leave the confirmation (channel added) dialog on
         # send a Home key press to dismiss
 
+    def is_showing_home(self):
+        return True
 
     def uninstall_channel(self, channel_id):
         """Uninstall a given channel by simulating key presses."""

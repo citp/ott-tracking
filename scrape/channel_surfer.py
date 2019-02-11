@@ -80,7 +80,8 @@ class ChannelSurfer(object):
     def go_home(self):
 
         time.sleep(2)
-        self.rrc.press_key('Home')
+        for i in range(3):
+            self.rrc.press_key('Home')
         time.sleep(2)
 
     def channel_is_installed(self):
