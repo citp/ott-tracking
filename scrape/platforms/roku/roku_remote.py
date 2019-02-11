@@ -79,7 +79,7 @@ class RokuRemoteControl(TVRemoteController):
         sleep(0.5)
         self.press_key("Select")
 
-    def get_channel_list(self):
+    def get_installed_channels(self):
         channel_list = {}
         r = self.send_get_request("%s/query/apps" % self.api_url)
         if r == None:

@@ -59,9 +59,10 @@ class ChannelSurfer(object):
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
 
-        # Start a background process that continuously captures screenshots to
+        # On Roku: Start a background process that continuously captures screenshots to
         # the same file: ${LogDir}/continuous_screenshot.png
-        subprocess.call(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
+        if PLAT == "ROKU":
+            subprocess.call(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
 
     def log(self, *args):
 
@@ -84,7 +85,7 @@ class ChannelSurfer(object):
 
     def channel_is_installed(self):
 
-        channel_dict = self.rrc.get_channel_list()
+        channel_dict = self.rrc.get_installed_channels()
         if channel_dict == None:
             print("Channel list did not return!")
             return False
@@ -215,9 +216,14 @@ class ChannelSurfer(object):
 
             # capture_screenshot.sh continuously writes the latest screenshot
             # images to continuous_screenshot
-            copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
-            self.deduplicate_screenshots(screenshot_filename)
+            if PLAT == "ROKU":
+                copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
+                self.deduplicate_screenshots(screenshot_filename)
+            elif PLAT == "AMAZON":
+                self.rrc.take_screenshot(screenshot_filename)
+                self.deduplicate_screenshots(screenshot_filename)
             time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
+
 
     def deduplicate_screenshots(self, screenshot_filename):
         if os.path.exists(screenshot_filename):

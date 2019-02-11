@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+export PLATFORM=amazon
 export PLATFORM_DIR=`realpath ./platforms/${PLATFORM}`
 export ScriptDir=`realpath ./scripts/`
 export MainDir=`realpath $PWD`

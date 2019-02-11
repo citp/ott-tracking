@@ -33,7 +33,7 @@ if WARM_UP_CRAWL:
     LAUNCH_RETRY_CNT = 5  # detect  and store unmitmable domains and IPs
 else:
     LAUNCH_RETRY_CNT = 1  # load unmitmable domains and IPs from files
-LAUNCH_RETRY_CNT = 5
+
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 remove_dup = False
@@ -67,6 +67,8 @@ if PLAT == "ROKU":
     from platforms.roku.get_all_channels import get_channel_list
 elif PLAT == "AMAZON":
     from platforms.amazon.get_all_channels import get_channel_list
+
+REC_AUD = True
 
 
 #repeat = {}
@@ -312,7 +314,8 @@ def scrape(channel_id, date_prefix, output_file_desc):
             time.sleep(4)
             iter += 1
 
-        surfer.start_audio_recording(60)
+        if REC_AUD:
+            surfer.start_audio_recording(60)
         time.sleep(SLEEP_TIMER)
 
         for okay_ix in range(0, 3):
