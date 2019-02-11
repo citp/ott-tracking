@@ -12,7 +12,7 @@ import ipaddress
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
-channel_list = '../../roku/channel_list.txt'
+channel_list = '../../scrape/platforms/roku/channel_list.txt'
 
 def load_roku_channel_details():
     channels = []
@@ -45,9 +45,9 @@ class LogFileReader(object):
         return
 
     def init_unknown_fields(self):
-        self.command = ''
-        self.select_idx = ''
-        self.eth_src = ''
+        self.command = "\"\""
+        self.select_idx = "\"\""
+        self.eth_src = "\"\""
     def get_channel_id(self):
         self.channel_id = self.log_file_name.split('-')[0]
 
@@ -77,10 +77,12 @@ class LogFileReader(object):
         if 'POST' in req_line:
             return 'POST'
 
-    def get_proto(self, url):
-        if 'https' in url:
+    def get_proto(self, req_line):
+        regexHTTPS = re.compile('(GET|POST) https\:*')
+        regexHTTP = re.compile('(GET|POST) http\:*')
+        if regexHTTPS.search(req_line):
             return 'https'
-        if 'http' in url:
+        if regexHTTP.search(req_line):
             return 'http'
 
     def get_url(self, req_line):
@@ -103,9 +105,10 @@ class LogFileReader(object):
             return res
 
     def get_dst_ip(self, url):
-        return ''
+        return "\"\""
 
     def format_csv(self, request_line):
+        #print(request_line)
         req_url = self.get_url(request_line)
         res = ''
         res += str(self.channel_id) + '\t'
@@ -114,15 +117,15 @@ class LogFileReader(object):
         res += str(self.select_idx) + '\t'
         res += str(self.eth_src) + '\t'
         res += str(self.get_dst_ip(request_line)) + '\t'
-        res += str(self.get_method(req_url)) + '\t'
-        res += str(self.get_proto(req_url)) + '\t'
+        res += str(self.get_method(request_line)) + '\t'
+        res += str(self.get_proto(request_line)) + '\t'
         res += str('"' + req_url + '"') + '\t'
         res += str(self.channel_name) + '\t'
         res += str(self.get_tld(req_url)) + '\t'
         res += str(self.get_host(req_url)) + '\t'
         res += str(self.rankByWatched) + '\t'
         res += str(self.category)
-        #res += request_line
+        #print(res)
         return res
 
     def find_regex(self, regex):
