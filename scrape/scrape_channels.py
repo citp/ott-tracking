@@ -183,9 +183,9 @@ def main(channel_list=None):
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
     if channel_list is not None:
-        channel_dict = get_channel_list(channel_list)
+        channels = get_channel_list(channel_list)
     else:
-        channel_dict = get_channel_list()
+        channels = get_channel_list()
 
 
 
@@ -202,12 +202,13 @@ def main(channel_list=None):
         next_channels = []
 
         if PLAT == "ROKU":
-            for channel_l in channel_dict.values():
+            for channel_l in channels.values():
                 if channel_l:
                     next_channels.append(channel_l.pop(0))
         elif PLAT == "AMAZON":
-            for channel in channel_dict:
+            for channel in channels:
                 next_channels.append(channel)
+                channels.remove(channel)
 
         if not next_channels:
             break
