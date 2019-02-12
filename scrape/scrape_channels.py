@@ -80,6 +80,21 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 
 
 
+class CrawlState(enum.Enum):
+    STARTING = 1
+    INSTALING = 2
+    LAUNCHING = 3
+    WRITING_DATA = 4
+    TERMINATING = 5
+    TERMINATED = 6
+    def __new__(cls, value):
+        member = object.__new__(cls)
+        member._value_ = value
+        return member
+    def __int__(self):
+        return self.value
+
+
 class PropagatingThread(threading.Thread):
     def run(self):
         self.exc = None

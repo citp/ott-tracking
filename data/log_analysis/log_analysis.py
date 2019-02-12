@@ -152,12 +152,10 @@ class LogFileReader(object):
     def pass_through(self):
         return
 
-
-BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
-def test():
+def log_analysis(root_dir):
     print(BANNER)
     channels = load_roku_channel_details()
-    log_folder_name = sys.argv[1]
+    log_folder_name = os.path.join(root_dir, "logs")
     for root, dirs, files in os.walk(log_folder_name):
         for file in files:
             if file.endswith(".log"):
@@ -167,10 +165,13 @@ def test():
                 #print('---HTTP---')
                 log_reader.http_urls()
 
+BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
+def test():
+    log_analysis(sys.argv[1])
+
 
 if __name__ == '__main__':
     test()
 
 
 #"104458-1549016122.log:10.42.0.119:60948: GET https://player.vimeo.com/external/85009516.hd.mp4?s=1112830b731d1291ae084647833a0af5"
-
