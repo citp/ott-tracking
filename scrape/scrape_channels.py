@@ -24,6 +24,7 @@ import sys
 import redisdl
 import threading
 import queue
+import enum
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 
