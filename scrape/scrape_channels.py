@@ -28,7 +28,12 @@ import enum
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 
-WARM_UP_CRAWL = False
+
+MITMPROXY_ENABLED = False
+
+WARM_UP_CRAWL = True
+if not MITMPROXY_ENABLED:
+    WARM_UP_CRAWL = False
 
 if WARM_UP_CRAWL:
     LAUNCH_RETRY_CNT = 5  # detect  and store unmitmable domains and IPs
@@ -54,7 +59,7 @@ DB_PREFIX = "db/"
 FIN_CHL_PREFIX = "finished/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 
-MITMPROXY_ENABLED = True
+
 RSYNC_EN = False
 RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
@@ -83,17 +88,21 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 
 class CrawlState(enum.Enum):
     STARTING = 1
-    INSTALING = 2
+    INSTALLING = 2
     LAUNCHING = 3
-    WRITING_DATA = 4
-    TERMINATING = 5
-    TERMINATED = 6
+    TERMINATING = 4
+    TERMINATED = 5
+
     def __new__(cls, value):
         member = object.__new__(cls)
         member._value_ = value
         return member
+
     def __int__(self):
         return self.value
+
+    def __str__(self):
+        return self.name
 
 
 class PropagatingThread(threading.Thread):
@@ -223,6 +232,7 @@ def main(channel_list=None):
             if channel['id'] in scraped_channel_ids:
                 log('Skipping', channel['id'])
                 continue
+            channel_state = CrawlState.STARTING
 
             channel_res_file  = join(DATA_DIR, FIN_CHL_PREFIX, str(channel['id'])) + ".txt"
             if os.path.isfile(channel_res_file) :
@@ -236,12 +246,15 @@ def main(channel_list=None):
             try:
                 que = queue.Queue()
                 scrape_success = False
-                t = PropagatingThread(target=lambda q, arg1, arg2, arg3: q.put(scrape(arg1, arg2, arg3)),
-                                     args=(que, channel['id'], date_prefix, output_file_desc,))
+                t = PropagatingThread(target=lambda q, arg1, arg2: q.put(scrape(arg1, arg2)),
+                                     args=(que, channel['id'], date_prefix,))
 
                 t.start()
                 t.join(timeout=SCRAPE_TO)
-                scrape_success= que.get()
+                channel_state = que.get()
+                log("Crawl result: " + str(channel_state))
+                if channel_state == channel_state.TERMINATED:
+                    scrape_success = True
                 if scrape_success:
                     log('Scraping of channel %s successful!' % str(channel['id']))
                 else:
@@ -250,7 +263,7 @@ def main(channel_list=None):
                 log('Crawl crashed for channel:', str(channel['id']))
                 log(traceback.format_exc())
             finally:
-                write_log_files(output_file_desc, str(channel['id']), channel_res_file, scrape_success)
+                write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
 
 
 def log(*args):
@@ -307,7 +320,7 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
-def scrape(channel_id, date_prefix, output_file_desc):
+def scrape(channel_id, date_prefix):
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
@@ -320,6 +333,7 @@ def scrape(channel_id, date_prefix, output_file_desc):
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
+        channel_state = CrawlState.INSTALLING
         surfer.install_channel()
 
         if MITMPROXY_ENABLED:
@@ -328,6 +342,7 @@ def scrape(channel_id, date_prefix, output_file_desc):
         surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
 
+        channel_state = CrawlState.LAUNCHING
         iter = 0
         while iter < LAUNCH_RETRY_CNT:
             surfer.launch_channel()
@@ -356,24 +371,29 @@ def scrape(channel_id, date_prefix, output_file_desc):
                 traceback.print_exc()
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
-        return False
     except Exception as e:
         log('Error!')
         traceback.print_exc()
-        return False
     finally:
-        if MITMPROXY_ENABLED:
-            try:
-                mitmrunner.kill_mitmproxy()
-            except Exception as e:
-                log('Error killing MTIM!')
-                traceback.print_exc()
-        surfer.uninstall_channel()
-        surfer.kill_all_tcpdump()
-        dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
-        dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
-                                      "%s_timestamps.json" % channel_id))
-        return True
+        channel_state = CrawlState.TERMINATING
+        try:
+            if MITMPROXY_ENABLED:
+                try:
+                    mitmrunner.kill_mitmproxy()
+                except Exception as e:
+                    log('Error killing MTIM!')
+                    traceback.print_exc()
+            surfer.uninstall_channel()
+            surfer.kill_all_tcpdump()
+            dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
+            dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
+                                          "%s_timestamps.json" % channel_id))
+            channel_state = CrawlState.TERMINATED
+        except Exception as e:
+            log('Error!')
+            traceback.print_exc()
+
+    return channel_state
 
 
 if __name__ == '__main__':
