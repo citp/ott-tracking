@@ -219,10 +219,10 @@ class ChannelSurfer(object):
             # images to continuous_screenshot
             if PLAT == "ROKU":
                 copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
-                self.deduplicate_screenshots(screenshot_filename)
             elif PLAT == "AMAZON":
                 self.rrc.take_screenshot(screenshot_filename)
-                self.deduplicate_screenshots(screenshot_filename)
+
+            self.deduplicate_screenshots(screenshot_filename)
             time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
 
 

@@ -37,15 +37,13 @@ OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX = "keys/"
 LOG_FILE = 'mitmproxy_runner.log'
-# MITMPRXY_CMD = "mitmdump --showhost --mode transparent -s ~/.mitmproxy/scripts/smart-strip.py --ssl-insecure -w %s --set channel_id=%s --set data_dir=%s"
-ADDN_DIR = '../src/mitmproxy/scripts/smart-strip.py'
+ADDN_DIR = './scripts/mitmproxy/smart-strip.py'
 # MITM_CONST_ARGS=['--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure', '--flow-detail' , '3']
 MITM_CONST_ARGS = [
     '--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO,
     '-s', ADDN_DIR, '--ssl-insecure'
-    # , '--flow-detail' , '3'
+    , '--flow-detail' , '3'
     ]
-# MITM_CONST_ARGS=['--showhost', '-p', MITMPROXY_PORT_NO, '-s', ADDN_DIR, '--ssl-insecure']
 
 DUMP_HAR = False
 HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
