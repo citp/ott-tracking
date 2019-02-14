@@ -88,10 +88,11 @@ global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLO
 
 class CrawlState(enum.Enum):
     STARTING = 1
-    INSTALLING = 2
-    LAUNCHING = 3
-    TERMINATING = 4
-    TERMINATED = 5
+    PREINSTALL = 2
+    INSTALLING = 3
+    LAUNCHING = 4
+    TERMINATING = 5
+    TERMINATED = 6
 
     def __new__(cls, value):
         member = object.__new__(cls)
@@ -321,6 +322,8 @@ def truncate_file(path):
 
 
 def scrape(channel_id, date_prefix):
+    channel_state = CrawlState.PREINSTALL
+    err_occurred = False
     check_folders()
 
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
@@ -360,8 +363,10 @@ def scrape(channel_id, date_prefix):
             surfer.press_select()
             surfer.capture_screenshots(20)
 
+        channel_state = CrawlState.TERMINATING
         surfer.go_home()
     except SurferAborted as e:
+        err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
         if MITMPROXY_ENABLED:
             try:
@@ -372,10 +377,10 @@ def scrape(channel_id, date_prefix):
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
     except Exception as e:
+        err_occurred = True
         log('Error!')
         traceback.print_exc()
     finally:
-        channel_state = CrawlState.TERMINATING
         try:
             if MITMPROXY_ENABLED:
                 try:
@@ -388,7 +393,8 @@ def scrape(channel_id, date_prefix):
             dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
             dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                           "%s_timestamps.json" % channel_id))
-            channel_state = CrawlState.TERMINATED
+            if not err_occurred:
+                channel_state = CrawlState.TERMINATED
         except Exception as e:
             log('Error!')
             traceback.print_exc()
