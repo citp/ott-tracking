@@ -407,8 +407,8 @@ if __name__ == '__main__':
         if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
         else:
-            channel_id = sys.argv[1]
-            scrape(channel_id, "/tmp/scrape-crawl", None)
+            channel_id = int(sys.argv[1])
+            scrape(channel_id, "/tmp/scrape-crawl")
     else:
         main()
 
