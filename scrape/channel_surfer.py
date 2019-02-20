@@ -187,14 +187,16 @@ class ChannelSurfer(object):
             self.channel_id,
             int(timestamp)
         )
-        eth_mac = os.environ['ETH_MAC_ADDRESS']
-        lan_if_name = os.environ['LANIF']
+        #eth_mac = os.environ['ETH_MAC_ADDRESS']
+        #lan_if_name = os.environ['LANIF']
+        wlan_eth_mac = os.environ['WLAN_ETH_MAC_ADDRESS']
+        wlan_if_name = os.environ['WLANIF']
 
         pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
         self.tcpdump_proc = subprocess.Popen(
-            ['tcpdump', '-w', pcap_path, '-i', lan_if_name, 'ether',  'host',
-            eth_mac] + split('and not arp and port not ssh'),
+            ['tcpdump', '-w', pcap_path, '-i', wlan_if_name, 'ether',  'host',
+            wlan_eth_mac] + split('and not arp and port not ssh'),
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         #self.log('./start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename))
@@ -248,7 +250,9 @@ class ChannelSurfer(object):
 
             try:
                 p = pyaudio.PyAudio()
+                print('Arunesh:')
                 SPEAKERS = p.get_default_output_device_info()['hostApi']
+                print('Arunesh1:')
                 stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK, input_host_api_specific_stream_info=SPEAKERS)
             except:
                 self.log('Exception while opening audio stream.')
