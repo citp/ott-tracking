@@ -339,10 +339,10 @@ def is_video_playing(surfer):
 
 
 KEY_SEQUENCES = {
-    "roku": [
+    "ROKU": [
         ["Select", "Select", "Select"],
         ["Down", "Down", "Select"]],
-    "amazon": [
+    "AMAZON": [
         ["Select", "Select", "Select"],
         ["Down", "Down", "Select"]]
 }
@@ -403,7 +403,7 @@ def scrape(channel_id, date_prefix):
         time.sleep(SLEEP_TIMER)
         if ENABLE_SMART_CRAWLER:
             playback_detected = False
-            for key_sequence in KEY_SEQUENCES:
+            for key_sequence in KEY_SEQUENCES[PLAT]:
                 playback_detected = play_key_sequence(surfer, key_sequence,
                                                       timestamps_arr)
                 if playback_detected:
