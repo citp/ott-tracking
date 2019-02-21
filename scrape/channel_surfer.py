@@ -343,3 +343,6 @@ class ChannelSurfer(object):
         # time.sleep(5)
         # subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)
+
+    def terminate_rrc(self):
+        self.rrc.terminate()

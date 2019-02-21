@@ -117,3 +117,6 @@ class RokuRemoteControl():
             # print "App", app.get("id"), app.get("type"), app.get("subtype"),\
             #    app.get("version"), app.text
         return app_id
+
+    def terminate(self):
+        pass

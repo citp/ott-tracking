@@ -390,6 +390,7 @@ def scrape(channel_id, date_prefix):
                     traceback.print_exc()
             surfer.uninstall_channel()
             surfer.kill_all_tcpdump()
+            surfer.terminate_rrc()
             dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
             dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
                                           "%s_timestamps.json" % channel_id))
