@@ -403,6 +403,7 @@ def scrape(channel_id, date_prefix):
         time.sleep(SLEEP_TIMER)
         if ENABLE_SMART_CRAWLER:
             playback_detected = False
+            surfer.launch_channel()   # make sure we start from the homepage
             for key_sequence in KEY_SEQUENCES[PLAT]:
                 playback_detected = play_key_sequence(surfer, key_sequence,
                                                       timestamps_arr)
@@ -410,7 +411,7 @@ def scrape(channel_id, date_prefix):
                     log('Playback detected on channel: %d' % channel_id)
                     fast_forward(surfer)
                     break
-                surfer.launch_channel()
+
                 time.sleep(4)
                 # TODO: should we restart audio recording here?
             else:
