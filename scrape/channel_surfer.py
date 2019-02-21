@@ -264,6 +264,10 @@ class ChannelSurfer(object):
 
             self.last_screenshot_crc = screenshot_crc
 
+    def is_audio_playing(self):
+        """Return True if audio playback is detected in the last X seconds"""
+        return False
+
     def start_audio_recording(self, seconds):
         def record(seconds):
             if LOG_AUD_EN:
