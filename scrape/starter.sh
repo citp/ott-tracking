@@ -2,8 +2,11 @@
 set -x
 
 # Change platform if needed
-export PLATFORM=amazon
-#export PLATFORM=roku
+#export PLATFORM=amazon
+export PLATFORM=roku
+
+export MITMPROXY_ENABLED=0
+export MITMABLE_DOMAINS_WARM_UP_CRAWL=0  # if 1 it'll launch each channel 5times
 
 export PLATFORM_DIR=`realpath ./platforms/${PLATFORM}`
 export ScriptDir=`realpath ./scripts/`

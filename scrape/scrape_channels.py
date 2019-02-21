@@ -28,15 +28,15 @@ import enum
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 
+ENABLE_SMART_CRAWLER = True  # remove after testing
 
-MITMPROXY_ENABLED = False
 
-WARM_UP_CRAWL = True
-if not MITMPROXY_ENABLED:
-    WARM_UP_CRAWL = False
+MITMPROXY_ENABLED = int(os.environ['MITMPROXY_ENABLED'])
+MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])
 
-if WARM_UP_CRAWL:
-    LAUNCH_RETRY_CNT = 5  # detect  and store unmitmable domains and IPs
+
+if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
+    LAUNCH_RETRY_CNT = 5  # detect and store unmitmable domains and IPs
 else:
     LAUNCH_RETRY_CNT = 1  # load unmitmable domains and IPs from files
 
@@ -321,6 +321,51 @@ def truncate_file(path):
     open(path, 'w').close()
 
 
+def detect_playback_using_screenshots(surfer):
+    """TODO: process screenshots to detect video playback
+       return True if playback is detected, False otherwise
+    """
+    return False
+
+
+def detect_playback_using_audio(surfer):
+    return surfer.is_audio_playing()
+
+
+def is_video_playing(surfer):
+    """Return True if playback is detected by either audio or screenshots"""
+    return detect_playback_using_audio(surfer) or \
+        detect_playback_using_screenshots(surfer)
+
+
+KEY_SEQUENCES = {
+    "roku": [
+        ["Select", "Select", "Select"],
+        ["Down", "Down", "Select"]],
+    "amazon": [
+        ["Select", "Select", "Select"],
+        ["Down", "Down", "Select"]]
+}
+
+
+
+def play_key_sequence(surfer, key_sequence, timestamps_arr):
+    for key in key_sequence:
+        timestamps_arr.append((key, int(time.time())))
+        surfer.press_key(key)
+        if key == "Select":  # check for playback only after Select
+            surfer.capture_screenshots(20)
+            if is_video_playing(surfer):
+                return True
+    else:
+        return False
+
+
+def fast_forward(surfer):
+    """Press FWD to trigger more ads"""
+    pass
+
+
 def scrape(channel_id, date_prefix):
     channel_state = CrawlState.PREINSTALL
     err_occurred = False
@@ -329,7 +374,8 @@ def scrape(channel_id, date_prefix):
     surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
     if MITMPROXY_ENABLED:
         mitmrunner = MITMRunner(channel_id, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
-    timestamps = {}
+    timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
+    timestamps_arr = []  # list of tuples in the form of (key, timestamp)
 
     try:
         if MITMPROXY_ENABLED:
@@ -355,13 +401,29 @@ def scrape(channel_id, date_prefix):
         if REC_AUD:
             surfer.start_audio_recording(60)
         time.sleep(SLEEP_TIMER)
-
-        for okay_ix in range(0, 3):
-            if not surfer.channel_is_active():
+        if ENABLE_SMART_CRAWLER:
+            playback_detected = False
+            for key_sequence in KEY_SEQUENCES:
+                playback_detected = play_key_sequence(surfer, key_sequence,
+                                                      timestamps_arr)
+                if playback_detected:
+                    log('Playback detected on channel: %d' % channel_id)
+                    fast_forward(surfer)
+                    break
                 surfer.launch_channel()
-            timestamps['select-{}'.format(okay_ix)] = int(time.time())
-            surfer.press_select()
-            surfer.capture_screenshots(20)
+                time.sleep(4)
+                # TODO: should we restart audio recording here?
+            else:
+                log('Cannot detect playback on channel: %d' % channel_id)
+
+
+        else:
+            for okay_ix in range(0, 3):
+                if not surfer.channel_is_active():
+                    surfer.launch_channel()
+                timestamps['select-{}'.format(okay_ix)] = int(time.time())
+                surfer.press_select()
+                surfer.capture_screenshots(20)
 
         channel_state = CrawlState.TERMINATING
         surfer.go_home()

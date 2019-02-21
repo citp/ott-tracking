@@ -184,6 +184,10 @@ class ChannelSurfer(object):
 
         self.rrc.press_key('Select')
 
+    def press_key(self, key):
+        self.log('Pressing %s' % key)
+        self.rrc.press_key(key)
+
     def capture_packets(self, timestamp):
 
         self.kill_all_tcpdump()
