@@ -366,6 +366,12 @@ def fast_forward(surfer):
     pass
 
 
+def launch_channel_for_mitm_warmup(surfer, retry_count):
+    for _ in range(retry_count):
+        surfer.launch_channel()
+        time.sleep(4)
+
+
 def scrape(channel_id, date_prefix):
     channel_state = CrawlState.PREINSTALL
     err_occurred = False
@@ -392,11 +398,9 @@ def scrape(channel_id, date_prefix):
         timestamps["launch"] = timestamp
 
         channel_state = CrawlState.LAUNCHING
-        iter = 0
-        while iter < LAUNCH_RETRY_CNT:
-            surfer.launch_channel()
-            time.sleep(4)
-            iter += 1
+
+        if MITMABLE_DOMAINS_WARM_UP_CRAWL:
+            launch_channel_for_mitm_warmup(surfer, LAUNCH_RETRY_CNT)
 
         if REC_AUD:
             surfer.start_audio_recording(60)
@@ -405,8 +409,8 @@ def scrape(channel_id, date_prefix):
             playback_detected = False
             surfer.launch_channel()   # make sure we start from the homepage
             for key_sequence in KEY_SEQUENCES[PLAT]:
-                playback_detected = play_key_sequence(surfer, key_sequence,
-                                                      timestamps_arr)
+                playback_detected = play_key_sequence(
+                    surfer, key_sequence, timestamps_arr)
                 if playback_detected:
                     log('Playback detected on channel: %d' % channel_id)
                     fast_forward(surfer)
