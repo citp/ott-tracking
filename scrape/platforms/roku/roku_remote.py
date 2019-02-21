@@ -15,7 +15,7 @@ HTTP_OK = 200
 DEBUG_HTTP = False
 
 
-class RokuRemoteControl(TVRemoteController):
+class RokuRemoteControl():
 
     def __init__(self, ip_address, port=8060):
         self.api_url = "http://%s:%s" % (ip_address, port)
