@@ -198,7 +198,11 @@ class ChannelSurfer(object):
         #lan_if_name = os.environ['LANIF']
 
         wlan_if_name = os.environ['WLANIF']
-        wlan_eth_mac = getHwAddr(wlan_if_name)
+        try:
+            wlan_eth_mac = getHwAddr(wlan_if_name)
+        except:
+            self.log("Error! Getting MAC Addr failed for interface " + str(wlan_if_name))
+            wlan_if_name = ""
 
         pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
