@@ -184,6 +184,10 @@ class ChannelSurfer(object):
 
         self.rrc.press_key('Select')
 
+    def press_key(self, key):
+        self.log('Pressing %s' % key)
+        self.rrc.press_key(key)
+
     def capture_packets(self, timestamp):
 
         self.kill_all_tcpdump()
@@ -259,6 +263,10 @@ class ChannelSurfer(object):
                 os.remove(screenshot_filename)
 
             self.last_screenshot_crc = screenshot_crc
+
+    def is_audio_playing(self):
+        """Return True if audio playback is detected in the last X seconds"""
+        return False
 
     def start_audio_recording(self, seconds):
         def record(seconds):
