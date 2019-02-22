@@ -309,6 +309,21 @@ def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     #move the read file descriptor to the end of the file
     output_file_desc.seek(0,2)
 
+    if PLAT == "AMAZON":
+        copy_adb_logs(channel_id)
+
+
+def copy_adb_logs(channel_id):
+    filename = '{}-{}'.format(
+        channel_id,
+        int(time.time())
+    )
+
+    output_path = join(str(DATA_DIR), LOG_FOLDER , str(filename) + ".adblog")
+    input_path = os.path.join(LOG_DIR , "adb.log")
+    print("Copy ADB from" + input_path + " to " + str(output_path))
+
+    copyfile(input_path, output_path)
 
 def concat(src, dst):
     with open(src) as src:
