@@ -321,7 +321,7 @@ def copy_adb_logs(channel_id):
 
     output_path = join(str(DATA_DIR), LOG_FOLDER , str(filename) + ".adblog")
     input_path = os.path.join(LOG_DIR , "adb.log")
-    print("Copy ADB from" + input_path + " to " + str(output_path))
+    print("Copying ADB log from " + input_path + " to " + str(output_path))
 
     copyfile(input_path, output_path)
 
