@@ -12,24 +12,15 @@ import subprocess
 import datetime
 import os
 import binascii
-import threading
 from shutil import copy2
 from os.path import join
 from shlex import split
-import wave
-import pyaudio
 import fcntl, socket, struct
 
 LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = False
-LOG_AUD_EN = True
-
-CHUNK = 256
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
 
 PLAT = os.getenv("PLATFORM")
 PLATFORM_DIR = os.getenv("PLATFORM_DIR")
@@ -44,10 +35,9 @@ class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
     pass
 
-
 class ChannelSurfer(object):
 
-    def __init__(self, tv_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder, audio_prefix):
+    def __init__(self, tv_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder):
 
         self.pcap_filename = None
         if PLAT == "ROKU":
@@ -61,7 +51,6 @@ class ChannelSurfer(object):
         self.go_home()
         self.log('Initialized', channel_id)
         self.date_prefix = date_prefix
-        self.audio_dir = self.data_dir + str(audio_prefix)
         self.launch_iter = 1
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
@@ -264,77 +253,6 @@ class ChannelSurfer(object):
 
             self.last_screenshot_crc = screenshot_crc
 
-    def is_audio_playing(self):
-        """Return True if audio playback is detected in the last X seconds"""
-        return False
-
-    def start_audio_recording(self, seconds):
-        def record(seconds):
-            if LOG_AUD_EN:
-                self.log('Starting audio recording!')
-                self.log('Opening audio stream.')
-
-            p = None
-            stream = None
-            frames = None
-
-            try:
-                p = pyaudio.PyAudio()
-                print('Arunesh:')
-                SPEAKERS = p.get_default_output_device_info()['hostApi']
-                print('Arunesh1:')
-                stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK, input_host_api_specific_stream_info=SPEAKERS)
-            except:
-                self.log('Exception while opening audio stream.')
-                return
-
-            if LOG_AUD_EN:
-                self.log('Successfully opened audio stream.')
-
-            try:
-                frames = []
-
-                for i in range(0, int(RATE / CHUNK * seconds)):
-                    stream.get_output_latency() #No-op but please do not remove this
-                    data = stream.read(CHUNK)
-                    frames.append(data)
-
-                if LOG_AUD_EN:
-                    self.log('Completed reading audio data.')
-
-                stream.stop_stream()
-                stream.close()
-                p.terminate()
-
-                if LOG_AUD_EN:
-                    self.log('Successfully closed audio stream.')
-
-            except:
-                self.log('Exception while reading the audio stream.')
-                return
-
-            audio_name = '%s.wav' % '{}-{}'.format(self.channel_id, int(time.time()))
-
-            if LOG_AUD_EN:
-                self.log('Writing audio file to:', audio_name)
-
-            try:
-                wf = wave.open(self.audio_dir + audio_name, 'wb')
-                wf.setnchannels(CHANNELS)
-                wf.setsampwidth(p.get_sample_size(FORMAT))
-                wf.setframerate(RATE)
-                wf.writeframes(b''.join(frames))
-                wf.close()
-            except:
-                self.log('Exception while writing audio recording to file.')
-                return
-
-            if LOG_AUD_EN:
-                self.log('Finished writing audio file: ', audio_name)
-
-        thread = threading.Thread(target=record, args=[seconds])
-        thread.start()
-
     def kill_all_tcpdump(self):
         if not self.tcpdump_proc:
             return
@@ -354,3 +272,4 @@ class ChannelSurfer(object):
 
     def terminate_rrc(self):
         self.rrc.terminate()
+
