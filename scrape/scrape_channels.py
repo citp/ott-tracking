@@ -27,6 +27,9 @@ import queue
 import enum
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
+import wave
+import pyaudio
+import numpy as np
 
 ENABLE_SMART_CRAWLER = True  # remove after testing
 
@@ -75,7 +78,6 @@ elif PLAT == "AMAZON":
     from platforms.amazon.get_all_channels import get_channel_list
 
 REC_AUD = True
-
 
 #repeat = {}
 # To get this list use this command:
@@ -221,6 +223,8 @@ def main(channel_list=None):
                 channels.remove(channel)
 
         if not next_channels:
+            if REC_AUD:
+                recorder.complete_audio_recording()
             break
 
         cntr = 0
@@ -266,7 +270,6 @@ def main(channel_list=None):
             finally:
                 write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
 
-
 def log(*args):
 
     s = '[{}] '.format(datetime.today())
@@ -275,6 +278,109 @@ def log(*args):
     print(s)
     with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
         print(s, file=fp)
+
+
+class AudioRecorder(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.pyaudio = pyaudio.PyAudio()
+        self.speaker_device = self.pyaudio.get_default_output_device_info()['hostApi']
+        self.recorded_message = []
+        self.record = False
+        self.seconds = 0
+        self.active = True
+        self.chunk = 1024
+        self.format = pyaudio.paInt16
+        self.channels = 2
+        self.rate = 44100
+        log('Audio: Opening audio stream.')
+        self.stream = self.pyaudio.open(format=self.format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk, input_host_api_specific_stream_info=self.speaker_device)
+        log('Audio: Audio stream opened.')
+
+    def run(self):
+        log('Audio: Starting audio thread.')
+        while True:
+            # Recording has been asked to stop completely
+            if not self.active:
+                break
+
+            # Asked to record
+            if self.record:
+                # Read from the stream
+                for i in range(0, int(self.rate / self.chunk * self.seconds)):
+                    # Stop recording immediately if flag switches
+                    if self.record:
+                        data = self.stream.read(self.chunk, exception_on_overflow=False)
+                        self.recorded_message.append(data)
+                    else:
+                        break
+
+                # Done recording for time seconds so end recording
+                self.record = False
+
+        log('Audio: Exiting audio thread.')
+        return
+
+    def start_recording(self, seconds, channel_id):
+        log('Audio: Started audio recording for channel %s' % str(channel_id))
+        # Stop the current recording immediately
+        self.record = False
+        # Make the current recording empty, adn set the seconds to record
+        self.recorded_message = []
+        self.seconds = seconds
+        # Start recording
+        self.record = True
+        return
+
+
+    def dump(self, filename_path):
+        self.record = False
+        wf = wave.open(filename_path, 'wb')
+        wf.setnchannels(self.channels)
+        wf.setsampwidth(self.pyaudio.get_sample_size(self.format))
+        wf.setframerate(self.rate)
+        wf.writeframes(b''.join(self.recorded_message))
+        wf.close()
+        log('Audio: Dumped audio to file %s' % filename_path)
+        self.recorded_message = []
+
+    def complete_audio_recording(self):
+        self.recorded_message = []
+        self.record = False
+        self.active = False
+        self.stream.stop_stream()
+        self.stream.close()
+        self.pyaudio.terminate()
+        log('Audio: Exited audio thread.')
+
+        return
+
+    def is_audio_playing(self, seconds):
+        if len(self.recorded_message) < seconds:
+            return False
+
+        '''data = self.recorded_message[-int(seconds):]
+        frames = []
+        for d in data:
+            frames.append(np.fromstring(d, dtype=np.int16))
+
+        npdata = np.hstack(frames)
+        mat = npdata.reshape(npdata.shape[0]//2, self.channels)
+        print(mat.shape)
+
+        baseline = np.zeros(shape=(mat.shape[0], self.channels))
+        print(baseline.shape)
+        for i in range(0, seconds):
+            second = mat[self.rate*i:self.rate*(i+1), :]
+            dist = np.sqrt(np.sum((second - baseline)**2, axis=1))
+            print(i, np.mean(dist), np.max(dist))'''
+
+        return False
+
+if REC_AUD:
+    # Starting audio thread
+    recorder = AudioRecorder()
+    recorder.start()
 
 def check_folders():
     for f in folders:
@@ -343,13 +449,16 @@ def detect_playback_using_screenshots(surfer):
     return False
 
 
-def detect_playback_using_audio(surfer):
-    return surfer.is_audio_playing()
+def detect_playback_using_audio(seconds):
+    if REC_AUD:
+        return recorder.is_audio_playing(seconds)
+    else:
+        return False
 
 
-def is_video_playing(surfer):
+def is_video_playing(surfer, seconds=5):
     """Return True if playback is detected by either audio or screenshots"""
-    return detect_playback_using_audio(surfer) or \
+    return detect_playback_using_audio(seconds) or \
         detect_playback_using_screenshots(surfer)
 
 
@@ -388,11 +497,14 @@ def launch_channel_for_mitm_warmup(surfer, retry_count):
 
 
 def scrape(channel_id, date_prefix):
+    if REC_AUD:
+        recorder.start_recording(SCRAPE_TO, channel_id)
+
     channel_state = CrawlState.PREINSTALL
     err_occurred = False
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX), str(AUDIO_PREFIX))
+    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX))
     if MITMPROXY_ENABLED:
         mitmrunner = MITMRunner(channel_id, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
     timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
@@ -417,8 +529,6 @@ def scrape(channel_id, date_prefix):
         if MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, LAUNCH_RETRY_CNT)
 
-        if REC_AUD:
-            surfer.start_audio_recording(60)
         time.sleep(SLEEP_TIMER)
         if ENABLE_SMART_CRAWLER:
             playback_detected = False
@@ -456,6 +566,10 @@ def scrape(channel_id, date_prefix):
             except Exception as e:
                 log('Error killing MTIM!')
                 traceback.print_exc()
+
+        if REC_AUD:
+            recorder.dump(str(DATA_DIR) + str(AUDIO_PREFIX) + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
     except Exception as e:
@@ -470,6 +584,10 @@ def scrape(channel_id, date_prefix):
                 except Exception as e:
                     log('Error killing MTIM!')
                     traceback.print_exc()
+
+            if REC_AUD:
+                recorder.dump(str(DATA_DIR) + str(AUDIO_PREFIX) + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+
             surfer.uninstall_channel()
             surfer.kill_all_tcpdump()
             surfer.terminate_rrc()
@@ -494,4 +612,3 @@ if __name__ == '__main__':
             scrape(channel_id, "/tmp/scrape-crawl")
     else:
         main()
-
