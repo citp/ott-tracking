@@ -146,13 +146,13 @@ def dump_redis(PREFIX, date_prefix):
 
     rName2IPDB_path = join(full_path , date_prefix + '-rName2IPDB.json')
     log("writing to " + rName2IPDB_path)
-    with open(rName2IPDB_path, 'a') as f:
+    with open(rName2IPDB_path, 'w') as f:
         redisdl.dump(f, host='localhost', port=6379, db=0)
 
 
     rIP2NameDB_path =  join(full_path, date_prefix + '-rIP2NameDB.json')
     log("writing to " + rIP2NameDB_path)
-    with open(rIP2NameDB_path, 'a') as f:
+    with open(rIP2NameDB_path, 'w') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
 def rsync(date_prefix):
