@@ -1,3 +1,4 @@
+import sys
 import json
 import curses
 import roku_remote
@@ -74,9 +75,6 @@ def record_channel(chn_id, remote, stdscr):
                 key_seq.append(ch)
 
 
-OUT_FILE = "roku_key_seqs.csv"
-
-
 def append_to_file(file_path, text):
     with open(file_path, 'a') as f:
         f.write(text)
@@ -90,11 +88,16 @@ def read_roku_channel_list(ch_file):
     return ch_dict
 
 
-def main():
-    ch_dict = read_roku_channel_list("random_channels_15.txt")
+def main(username):
+    channel_file = "%s_channels_smart_crawl.txt" % username
+    out_key_seq_csv = "%s_roku_key_seqs.csv" % username
+    print("Will install channels from %s" % channel_file)
+    print("Will write output to %s" % out_key_seq_csv)
+    ch_dict = read_roku_channel_list(channel_file)
     remote = roku_remote.RokuRemoteControl(ROKU_IP)
+    print("Will retrieve channel list from Roku at IP %s" % ROKU_IP)
     channel_list = remote.get_channel_list()
-    # print "channel_list", channel_list
+    print("Retrieved %d channels from Roku" % len(channel_list))
     stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
@@ -120,7 +123,7 @@ def main():
             continue
         print("Will write to file %s" % key_seq)
         seq_str = ','.join(key_seq)
-        append_to_file(OUT_FILE, "%s,%s\n" % (chn_id, seq_str))
+        append_to_file(out_key_seq_csv, "%s,%s\n" % (chn_id, seq_str))
     remote.press_key(KEY_HOME)
     curses.nocbreak()
     stdscr.keypad(0)
@@ -128,5 +131,16 @@ def main():
     curses.endwin()
 
 
+USERS = ["arunesh", "ben", "danny", "gunes", "hooman"]
+
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) < 2:
+        print("Usage python record_rc.py %s" % USERS)
+        sys.exit(1)
+
+    username = sys.argv[1]
+    if username not in USERS:
+        print("Usage python record_rc.py %s" % USERS)
+        sys.exit(1)
+
+    main(username)
