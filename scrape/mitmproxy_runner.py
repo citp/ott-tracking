@@ -30,7 +30,10 @@ from threading import Thread
 from os.path import join
 
 
-RUN_MITM_IN_SUBPROCESS = True
+RUN_MITM_IN_SUBPROCESS = False
+DUMP_HAR = False
+HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
+MITMPROXY_NET_SET = False
 
 LOG_DIR = os.getenv("LogDir")
 OPTIONS_FILE_NAME = "config.yaml"
@@ -45,10 +48,7 @@ MITM_CONST_ARGS = [
     , '--flow-detail' , '3'
     ]
 
-DUMP_HAR = False
-HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 
-MITMPROXY_NET_SET = False
 
 class MITMRunnerAborted(Exception):
     """Raised when we encounter an error while running this instance."""

@@ -31,10 +31,17 @@ import wave
 import pyaudio
 import numpy as np
 
-ENABLE_SMART_CRAWLER = True  # remove after testing
+'''
+Crawl settings
+'''
 
-
+ENABLE_SMART_CRAWLER = False  # remove after testing
 MITMPROXY_ENABLED = int(os.environ['MITMPROXY_ENABLED'])
+remove_dup = False
+RSYNC_EN = False
+REC_AUD = True
+
+
 MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])
 
 
@@ -45,7 +52,6 @@ else:
 
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
-remove_dup = False
 DATA_DIR = os.getenv("DATA_DIR")
 PCAP_PREFIX = "pcaps/"
 DUMP_PREFIX = "mitmdumps/"
@@ -63,7 +69,6 @@ FIN_CHL_PREFIX = "finished/"
 folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 
 
-RSYNC_EN = False
 RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
 
@@ -77,7 +82,6 @@ if PLAT == "ROKU":
 elif PLAT == "AMAZON":
     from platforms.amazon.get_all_channels import get_channel_list
 
-REC_AUD = True
 
 #repeat = {}
 # To get this list use this command:
