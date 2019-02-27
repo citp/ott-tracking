@@ -537,14 +537,14 @@ def scrape(channel_id, date_prefix):
                 playback_detected = play_key_sequence(
                     surfer, key_sequence, timestamps_arr)
                 if playback_detected:
-                    log('Playback detected on channel: %d' % channel_id)
+                    log('Playback detected on channel: %s' % channel_id)
                     fast_forward(surfer)
                     break
 
                 time.sleep(4)
                 # TODO: should we restart audio recording here?
             else:
-                log('Cannot detect playback on channel: %d' % channel_id)
+                log('Cannot detect playback on channel: %s' % channel_id)
 
 
         else:
