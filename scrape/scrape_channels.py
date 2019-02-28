@@ -482,7 +482,7 @@ def play_key_sequence(surfer, key_sequence, timestamps_arr):
         timestamps_arr.append((key, int(time.time())))
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
-            surfer.capture_screenshots(20)
+            surfer.capture_screenshots(10)
             if is_video_playing(surfer):
                 return True
     else:
