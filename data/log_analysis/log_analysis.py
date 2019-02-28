@@ -12,7 +12,7 @@ import ipaddress
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
-channel_list = '../../scrape/platforms/roku/channel_list.txt'
+channel_list = '../../scrape/platforms/roku/channel_lists/all_channel_list.txt'
 
 def load_roku_channel_details():
     channels = []
