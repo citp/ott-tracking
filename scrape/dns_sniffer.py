@@ -4,32 +4,10 @@ import os
 import sys
 from scapy.all import *
 
-if len(sys.argv) > 1:
-    interface = str(sys.argv[1])
-else:
-    interface = os.getenv('WLANIF', "wlan0")
-print(interface)
 
-Name2IPDic = {}
-IP2NameDic = {}
-
-rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
-rName2IPDic.flushdb()
-rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
-rIP2NameDic.flushdb()
-
-
-
-'''
-try:
-    interface = raw_input("[*] Enter Desired Interface: ")
-except KeyboardInterrupt:
-    print "[*] User Requested Shutdown..."
-    print "[*] Exiting..."
-    sys.exit(1)
-'''
 
 def querysniff(pkt):
+    global Name2IPDic, IP2NameDic, rName2IPDic, rIP2NameDic
     if IP in pkt:
         ip_src = pkt[IP].src
         ip_dst = pkt[IP].dst
@@ -50,9 +28,39 @@ def querysniff(pkt):
                             IP2NameDic[IPAddr] = set()
                         IP2NameDic[IPAddr].add(DomainName)
                         rIP2NameDic.set(IPAddr, DomainName)
-                        print(DomainName + " IP:" + IPAddr + ":" + str(p[DNSRR][x].type))
+                        print(DomainName + " mapped to IP address " + IPAddr + ":" + str(p[DNSRR][x].type))
                     #name = p.an.rdata
                     #print(name)
 
-sniff(iface = interface,filter = "port 53", prn = querysniff, store = 0)
 
+def dns_sniffer_call(interface):
+    global Name2IPDic, IP2NameDic, rName2IPDic, rIP2NameDic
+    Name2IPDic = {}
+    IP2NameDic = {}
+
+    rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
+    rName2IPDic.flushdb()
+    rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
+    rIP2NameDic.flushdb()
+
+
+
+    '''
+    try:
+        interface = raw_input("[*] Enter Desired Interface: ")
+    except KeyboardInterrupt:
+        print "[*] User Requested Shutdown..."
+        print "[*] Exiting..."
+        sys.exit(1)
+    '''
+
+    print("Sniffing on " + str(interface))
+    sniff(iface = interface,filter = "port 53", prn = querysniff, store = 0)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        interface = str(sys.argv[1])
+    else:
+        interface = os.getenv('WLANIF', "wlan0")
+    dns_sniffer_call(interface)

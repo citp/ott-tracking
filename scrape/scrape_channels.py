@@ -13,6 +13,8 @@ TODO:
 from __future__ import print_function
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
+from dns_sniffer import dns_sniffer_call
+from multiprocessing import Process
 
 import json
 from datetime import datetime
@@ -137,6 +139,10 @@ def dns_sniffer_run():
         'sudo -E python3 ./dns_sniffer.py ',
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
+    wlan_if_name = os.environ['WLANIF']
+    log("Starting DNS Sniff")
+    p = Process(target=dns_sniffer_call, args=(wlan_if_name,))
+    p.start()
 
 
 def dump_as_json(obj, json_path):
