@@ -2,6 +2,7 @@ from __future__ import print_function
 import redis
 import os
 import sys
+import subprocess
 from scapy.all import *
 
 
@@ -33,8 +34,16 @@ def querysniff(pkt):
                     #print(name)
 
 
+def clear_dns_cache():
+    print("Clearing DNS cache")
+    plat = subprocess.check_output(['uname', '-a']).decode("utf-8")
+    if 'Ubuntu' in plat:
+        cmd = "sudo systemd-resolve --flush-caches"
+        p = subprocess.Popen(cmd, shell=True)
+
 def dns_sniffer_call(interface):
     global Name2IPDic, IP2NameDic, rName2IPDic, rIP2NameDic
+    clear_dns_cache()
     Name2IPDic = {}
     IP2NameDic = {}
 
