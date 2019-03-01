@@ -398,8 +398,15 @@ class AudioRecorder(threading.Thread):
         return False
 
 if REC_AUD:
+    # Create recorder object
+    try:
+        recorder = AudioRecorder()
+    except:
+        log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
+        REC_AUD = False
+
+if REC_AUD:
     # Starting audio thread
-    recorder = AudioRecorder()
     recorder.start()
 
 def check_folders():
