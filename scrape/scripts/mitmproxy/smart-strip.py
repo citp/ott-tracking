@@ -213,7 +213,7 @@ def configure(updated):
     unMitmableFileNameOut = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
     # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
     LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
-    logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
+    #logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
     tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
 
     #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
