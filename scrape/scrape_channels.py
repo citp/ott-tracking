@@ -134,15 +134,23 @@ class PropagatingThread(threading.Thread):
 
 
 def dns_sniffer_run():
-    time.sleep(2)
-    p = subprocess.Popen(
-        'sudo -E python3 ./dns_sniffer.py ',
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
+    #time.sleep(2)
+    #p = subprocess.Popen(
+    #    'sudo -E python3 ./dns_sniffer.py ',
+    #    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    #)
+    global dns_sniff_process
     wlan_if_name = os.environ['WLANIF']
     log("Starting DNS Sniff")
-    p = Process(target=dns_sniffer_call, args=(wlan_if_name,))
-    p.start()
+    dns_sniff_process = Process(target=dns_sniffer_call, args=(wlan_if_name,))
+    dns_sniff_process.start()
+
+def dns_sniffer_stop():
+    global dns_sniff_process
+    if dns_sniff_process is not None:
+        dns_sniff_process.terminate()
+    else:
+        log("Error stopping DNS sniffer! Process not found")
 
 
 def dump_as_json(obj, json_path):
@@ -235,6 +243,8 @@ def main(channel_list=None):
         if not next_channels:
             if REC_AUD:
                 recorder.complete_audio_recording()
+            dns_sniffer_stop()
+            log("Scrapping finished. Terminating the crawl")
             break
 
         cntr = 0

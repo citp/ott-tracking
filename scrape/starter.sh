@@ -17,6 +17,7 @@ source ${PLATFORM_DIR}/config.txt
 #Global log folder/file
 mkdir -p ${MainDir}/logs 2> /dev/null
 export LogDir=${MainDir}/logs
+rm -rf ${LogDir}/*
 export LOG_OUT_FILE="${LogDir}/output.txt"
 
 #echo 'Clearing Data Folder!'
