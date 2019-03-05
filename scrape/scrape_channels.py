@@ -32,57 +32,7 @@ from os.path import join, isfile
 import wave
 import pyaudio
 import numpy as np
-
-'''
-Crawl settings
-'''
-
-ENABLE_SMART_CRAWLER = False  # remove after testing
-MITMPROXY_ENABLED = int(os.environ['MITMPROXY_ENABLED'])
-remove_dup = False
-RSYNC_EN = False
-REC_AUD = True
-
-
-MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])
-
-
-if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
-    LAUNCH_RETRY_CNT = 5  # detect and store unmitmable domains and IPs
-else:
-    LAUNCH_RETRY_CNT = 1  # load unmitmable domains and IPs from files
-
-TV_IP_ADDR = os.environ['TV_IP_ADDR']
-SLEEP_TIMER = 20
-DATA_DIR = os.getenv("DATA_DIR")
-PCAP_PREFIX = "pcaps/"
-DUMP_PREFIX = "mitmdumps/"
-LOG_PREFIX = "mitmlog/"
-LOG_FOLDER = "logs/"
-LOG_FILE = 'scrape_channels.log'
-LOG_DIR = os.getenv("LogDir")
-LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
-SCREENSHOT_PREFIX = "screenshots/"
-AUDIO_PREFIX="audio/"
-SSLKEY_PREFIX = "keys/"
-DB_PREFIX = "db/"
-#Each channel will have a file with the result of crawl of that channel in this folder
-FIN_CHL_PREFIX = "finished/"
-folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
-
-
-RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
-
-
-CUTOFF_TRESHOLD=100000
-SCRAPE_TO = 900
-
-PLAT = os.getenv("PLATFORM")
-
-if PLAT == "ROKU":
-    from platforms.roku.get_all_channels import get_channel_list
-elif PLAT == "AMAZON":
-    from platforms.amazon.get_all_channels import get_channel_list
+import scrape_config
 
 
 #repeat = {}
@@ -177,8 +127,8 @@ def rsync(date_prefix):
     time.sleep(3)
 
     rsync_command = str('rsync -rlptDv --remove-source-files ' +
-                        str(DATA_DIR) +
-                        RSYNC_DIR +
+                        str(scrape_config.DATA_DIR) +
+                        scrape_config.RSYNC_DIR +
                         date_prefix)
     log(rsync_command)
     p = subprocess.run(
@@ -208,7 +158,7 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
         print(str(scrape_success), file=tfile)
 
 def main(channel_list=None):
-    output_file_desc = open(LOG_FILE_PATH_NAME)
+    output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
@@ -231,11 +181,11 @@ def main(channel_list=None):
 
         next_channels = []
 
-        if PLAT == "ROKU":
+        if scrape_config.PLAT == "ROKU":
             for channel_l in channels.values():
                 if channel_l:
                     next_channels.append(channel_l.pop(0))
-        elif PLAT == "AMAZON":
+        elif scrape_config.PLAT == "AMAZON":
             for channel in channels:
                 next_channels.append(channel)
                 channels.remove(channel)
@@ -250,7 +200,7 @@ def main(channel_list=None):
         cntr = 0
         for channel in next_channels:
 
-            if cntr == CUTOFF_TRESHOLD:
+            if cntr == scrape_config.CUTOFF_TRESHOLD:
                 break
             cntr += 1
 
@@ -259,7 +209,8 @@ def main(channel_list=None):
                 continue
             channel_state = CrawlState.STARTING
 
-            channel_res_file  = join(DATA_DIR, FIN_CHL_PREFIX, str(channel['id'])) + ".txt"
+            channel_res_file  = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
+                                     str(channel['id'])) + ".txt"
             if os.path.isfile(channel_res_file) :
                 log('Skipping', channel['id'], ' due to:', channel_res_file)
                 continue
@@ -275,7 +226,7 @@ def main(channel_list=None):
                                      args=(que, channel['id'], date_prefix,))
 
                 t.start()
-                t.join(timeout=SCRAPE_TO)
+                t.join(timeout=scrape_config.SCRAPE_TO)
                 channel_state = que.get()
                 log("Crawl result: " + str(channel_state))
                 if channel_state == channel_state.TERMINATED:
@@ -296,7 +247,7 @@ def log(*args):
     s += ' '.join([str(v) for v in args])
 
     print(s)
-    with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
+    with open(os.path.join(scrape_config.LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
 
@@ -397,7 +348,7 @@ class AudioRecorder(threading.Thread):
 
         return False
 
-if REC_AUD:
+if scrape_config.REC_AUD:
     # Create recorder object
     try:
         recorder = AudioRecorder()
@@ -405,13 +356,13 @@ if REC_AUD:
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
         REC_AUD = False
 
-if REC_AUD:
+if scrape_config.REC_AUD:
     # Starting audio thread
     recorder.start()
 
 def check_folders():
-    for f in folders:
-        fullpath = str(DATA_DIR) + "/" +str(f)
+    for f in scrape_config.folders:
+        fullpath = str(scrape_config.DATA_DIR) + "/" +str(f)
         if not os.path.exists(fullpath):
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
@@ -432,9 +383,11 @@ def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     )
 
     if not is_rsync_res:
-        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".log"
+        output_path = str(scrape_config.DATA_DIR) + "/" + \
+                      scrape_config.LOG_FOLDER +"/" + str(filename) + ".log"
     else:
-        output_path = str(DATA_DIR) + "/" + LOG_FOLDER +"/" + str(filename) + ".rsync.log"
+        output_path = str(scrape_config.DATA_DIR) + "/" + \
+                      scrape_config.LOG_FOLDER +"/" + str(filename) + ".rsync.log"
 
     #copy dest file for copying
     to_file = open(output_path,mode="w")
@@ -442,7 +395,7 @@ def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     #move the read file descriptor to the end of the file
     output_file_desc.seek(0,2)
 
-    if PLAT == "AMAZON":
+    if scrape_config.PLAT == "AMAZON":
         copy_adb_logs(channel_id)
 
 
@@ -452,8 +405,9 @@ def copy_adb_logs(channel_id):
         int(time.time())
     )
 
-    output_path = join(str(DATA_DIR), LOG_FOLDER , str(filename) + ".adblog")
-    input_path = os.path.join(LOG_DIR , "adb.log")
+    output_path = join(str(scrape_config.DATA_DIR),
+                       scrape_config.LOG_FOLDER , str(filename) + ".adblog")
+    input_path = os.path.join(scrape_config.LOG_DIR , "adb.log")
     print("Copying ADB log from " + input_path + " to " + str(output_path))
 
     copyfile(input_path, output_path)
@@ -524,28 +478,32 @@ def launch_channel_for_mitm_warmup(surfer, retry_count):
 
 
 def scrape(channel_id, date_prefix):
-    if REC_AUD:
-        recorder.start_recording(SCRAPE_TO, channel_id)
+    if scrape_config.REC_AUD:
+        recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
 
     channel_state = CrawlState.PREINSTALL
     err_occurred = False
     check_folders()
 
-    surfer = ChannelSurfer(TV_IP_ADDR, channel_id, str(DATA_DIR), str(PCAP_PREFIX), date_prefix, str(SCREENSHOT_PREFIX))
-    if MITMPROXY_ENABLED:
-        mitmrunner = MITMRunner(channel_id, str(DATA_DIR), str(DUMP_PREFIX), global_keylog_file)
+    surfer = ChannelSurfer(scrape_config.TV_IP_ADDR,
+                           channel_id, str(scrape_config.DATA_DIR),
+                           str(scrape_config.PCAP_PREFIX), date_prefix,
+                           str(scrape_config.SCREENSHOT_PREFIX))
+    if scrape_config.MITMPROXY_ENABLED:
+        mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
+                                str(scrape_config.DUMP_PREFIX), global_keylog_file)
     timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
     timestamps_arr = []  # list of tuples in the form of (key, timestamp)
 
     try:
-        if MITMPROXY_ENABLED:
+        if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
         timestamps["install_channel"] = int(time.time())
         channel_state = CrawlState.INSTALLING
         surfer.install_channel()
 
-        if MITMPROXY_ENABLED:
+        if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.run_mitmproxy()
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
@@ -553,14 +511,14 @@ def scrape(channel_id, date_prefix):
 
         channel_state = CrawlState.LAUNCHING
 
-        if MITMABLE_DOMAINS_WARM_UP_CRAWL:
-            launch_channel_for_mitm_warmup(surfer, LAUNCH_RETRY_CNT)
+        if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
+            launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
 
-        time.sleep(SLEEP_TIMER)
-        if ENABLE_SMART_CRAWLER:
+        time.sleep(scrape_config.SLEEP_TIMER)
+        if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
             surfer.launch_channel()   # make sure we start from the homepage
-            for key_sequence in KEY_SEQUENCES[PLAT]:
+            for key_sequence in KEY_SEQUENCES[scrape_config.PLAT]:
                 playback_detected = play_key_sequence(
                     surfer, key_sequence, timestamps_arr)
                 if playback_detected:
@@ -587,7 +545,7 @@ def scrape(channel_id, date_prefix):
     except SurferAborted as e:
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
-        if MITMPROXY_ENABLED:
+        if scrape_config.MITMPROXY_ENABLED:
             try:
                 mitmrunner.kill_mitmproxy()
             except Exception as e:
@@ -595,7 +553,8 @@ def scrape(channel_id, date_prefix):
                 traceback.print_exc()
 
         if REC_AUD:
-            recorder.dump(str(DATA_DIR) + str(AUDIO_PREFIX) + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
+                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -605,7 +564,7 @@ def scrape(channel_id, date_prefix):
         traceback.print_exc()
     finally:
         try:
-            if MITMPROXY_ENABLED:
+            if scrape_config.MITMPROXY_ENABLED:
                 try:
                     mitmrunner.kill_mitmproxy()
                 except Exception as e:
@@ -613,13 +572,14 @@ def scrape(channel_id, date_prefix):
                     traceback.print_exc()
 
             if REC_AUD:
-                recorder.dump(str(DATA_DIR) + str(AUDIO_PREFIX) + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+                recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
+                              + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
             surfer.uninstall_channel()
             surfer.kill_all_tcpdump()
             surfer.terminate_rrc()
-            dump_redis(join(DATA_DIR, DB_PREFIX), date_prefix)
-            dump_as_json(timestamps, join(DATA_DIR, LOG_FOLDER,
+            dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
+            dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_FOLDER,
                                           "%s_timestamps.json" % channel_id))
             if not err_occurred:
                 channel_state = CrawlState.TERMINATED
