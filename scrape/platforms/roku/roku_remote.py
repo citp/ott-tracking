@@ -5,7 +5,6 @@ import sys
 #sys.setdefaultencoding('utf8')
 
 import requests
-from platforms.tvplatform import TVRemoteController
 import xml.etree.ElementTree as ET
 import traceback
 from time import sleep
