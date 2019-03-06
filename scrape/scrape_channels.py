@@ -197,7 +197,7 @@ def main(channel_list=None):
                 channels.remove(channel)
 
         if not next_channels:
-            if REC_AUD:
+            if scrape_config.REC_AUD:
                 recorder.complete_audio_recording()
             dns_sniffer_stop()
             log("Scrapping finished. Terminating the crawl")
@@ -360,7 +360,7 @@ if scrape_config.REC_AUD:
         recorder = AudioRecorder()
     except:
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
-        REC_AUD = False
+        scrape_config.REC_AUD = False
 
 if scrape_config.REC_AUD:
     # Starting audio thread
@@ -437,7 +437,7 @@ def detect_playback_using_screenshots(surfer):
 
 
 def detect_playback_using_audio(seconds):
-    if REC_AUD:
+    if scrape_config.REC_AUD:
         return recorder.is_audio_playing(seconds)
     else:
         return False
@@ -511,7 +511,7 @@ def setup_channel(channel_id, date_prefix):
     except SurferAborted as e:
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
-        if REC_AUD:
+        if scrape_config.REC_AUD:
             recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
                           + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
