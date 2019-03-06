@@ -7,7 +7,7 @@ ENABLE_SMART_CRAWLER = False  # remove after testing
 MITMPROXY_ENABLED = int(os.environ['MITMPROXY_ENABLED'])
 remove_dup = False
 RSYNC_EN = False
-REC_AUD = False
+REC_AUD = True
 
 
 MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])

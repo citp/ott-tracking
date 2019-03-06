@@ -163,9 +163,10 @@ def main(channel_list=None):
     # Maps category to a list of channels
 
     if scrape_config.PLAT == "ROKU":
-        print("Importing Roku get all channels")
+        log("Importing Roku channels")
         from platforms.roku.get_all_channels import get_channel_list
     elif scrape_config.PLAT == "AMAZON":
+        log("Importing Amazon channels")
         from platforms.amazon.get_all_channels import get_channel_list
 
     if channel_list is not None:
@@ -484,29 +485,39 @@ def launch_channel_for_mitm_warmup(surfer, retry_count):
 
 
 def setup_channel(channel_id, date_prefix):
-    if scrape_config.REC_AUD:
-        recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
-
-    channel_state = CrawlState.PREINSTALL
     err_occurred = False
-    check_folders()
-
-    surfer = ChannelSurfer(scrape_config.TV_IP_ADDR,
-                           channel_id, str(scrape_config.DATA_DIR),
-                           str(scrape_config.PCAP_PREFIX), date_prefix,
-                           str(scrape_config.SCREENSHOT_PREFIX))
-    if scrape_config.MITMPROXY_ENABLED:
-        mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
-                                str(scrape_config.DUMP_PREFIX), global_keylog_file)
-    timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
-    timestamps_arr = []  # list of tuples in the form of (key, timestamp)
-
     try:
+        if scrape_config.REC_AUD:
+            recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
+
+        check_folders()
+
+        surfer = ChannelSurfer(scrape_config.TV_IP_ADDR,
+                               channel_id, str(scrape_config.DATA_DIR),
+                               str(scrape_config.PCAP_PREFIX), date_prefix,
+                               str(scrape_config.SCREENSHOT_PREFIX))
+        if scrape_config.MITMPROXY_ENABLED:
+            mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
+                                    str(scrape_config.DUMP_PREFIX), global_keylog_file)
+        timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
-        timestamps["install_channel"] = int(time.time())
-        channel_state = CrawlState.INSTALLING
+    except Exception as e:
+        err_occurred = True
+        log('Error!')
+        traceback.print_exc()
+    ret = [err_occurred, surfer, timestamps]
+    if scrape_config.MITMPROXY_ENABLED:
+        ret.append(mitmrunner)
+    return ret
+
+
+def install_channel(surfer, timestamps):
+    err_occurred = False
+    timestamps["install_channel"] = int(time.time())
+    try:
+
         surfer.install_channel()
     except SurferAborted as e:
         err_occurred = True
@@ -521,22 +532,21 @@ def setup_channel(channel_id, date_prefix):
         err_occurred = True
         log('Error!')
         traceback.print_exc()
-    ret = [surfer, channel_state, err_occurred, timestamps, timestamps_arr]
-    if scrape_config.MITMPROXY_ENABLED:
-        ret.append(mitmrunner)
-    return ret
+    return err_occurred
+
 
 def launch_mitm(mitmrunner):
     mitmrunner.run_mitmproxy()
 
-def launch_channel(surfer, mitmrunner, timestamps, timestamps_arr):
+
+def launch_channel(surfer, mitmrunner, timestamps):
     err_occurred = False
+    timestamps_arr = []  # list of tuples in the form of (key, timestamp)
     try:
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
 
-        channel_state = CrawlState.LAUNCHING
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
@@ -564,9 +574,6 @@ def launch_channel(surfer, mitmrunner, timestamps, timestamps_arr):
                 timestamps['select-{}'.format(okay_ix)] = int(time.time())
                 surfer.press_select()
                 surfer.capture_screenshots(20)
-
-        channel_state = CrawlState.TERMINATING
-        surfer.go_home()
     except SurferAborted as e:
         err_occurred = True
         log('Channel failed during launch! Aborting scarping of channel')
@@ -587,11 +594,13 @@ def launch_channel(surfer, mitmrunner, timestamps, timestamps_arr):
         err_occurred = True
         log('Error!')
         traceback.print_exc()
-    return (channel_state, err_occurred)
+    return err_occurred
 
 
-def collect_data(surfer, mitmrunner, timestamps, date_prefix):
+def collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_id):
+    err_occurred = False
     try:
+        surfer.go_home()
         if scrape_config.MITMPROXY_ENABLED:
             try:
                 mitmrunner.kill_mitmproxy()
@@ -609,28 +618,35 @@ def collect_data(surfer, mitmrunner, timestamps, date_prefix):
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
         dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_FOLDER,
                                       "%s_timestamps.json" % channel_id))
-        channel_state = CrawlState.TERMINATED
     except Exception as e:
+        err_occurred = True
         log('Error!')
         traceback.print_exc()
-    return channel_state
+    return err_occurred
+
 
 def scrape(channel_id, date_prefix):
+    channel_state = CrawlState.PREINSTALL
     ret = setup_channel(channel_id, date_prefix)
-    surfer = ret[0]
-    channel_state = ret[1]
-    err_occurred = ret[2]
+    err_occurred = ret[0]
     if not err_occurred:
-        timestamps = ret[3]
-        timestamps_arr = ret[4]
-        if scrape_config.MITMPROXY_ENABLED:
-            mitmrunner = ret[5]
-            launch_mitm(mitmrunner)
-        else:
-            mitmrunner = None
-        (channel_state, err_occurred) = launch_channel(surfer, mitmrunner, timestamps, timestamps_arr)
+        surfer = ret[1]
+        timestamps = ret[2]
+        channel_state = CrawlState.INSTALLING
+        err_occurred = install_channel(surfer, timestamps)
         if not err_occurred:
-            channel_state = collect_data(surfer, mitmrunner, timestamps, date_prefix)
+            channel_state = CrawlState.LAUNCHING
+            if scrape_config.MITMPROXY_ENABLED:
+                mitmrunner = ret[3]
+                launch_mitm(mitmrunner)
+            else:
+                mitmrunner = None
+            err_occurred = launch_channel(surfer, mitmrunner, timestamps)
+            if not err_occurred:
+                channel_state = CrawlState.TERMINATING
+                err_occurred = collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_id)
+                if not err_occurred:
+                    channel_state = CrawlState.TERMINATED
     return channel_state
 
 
