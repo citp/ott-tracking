@@ -13,23 +13,6 @@ import time
 # 4-SCRIPT* (COLLECT_DATA): collect pcap, (opt. mitm logs), redis-db
 # 5-SCRIPT (END_CHNL): terminate tcpdump, (opt. mitmdump), dns_sniffer
 
-START_CHNL = "Start channel"
-START_MITM = "Start MITM"
-LAUNCH_CHNL = "Launch channel"
-RESET = "Reset channel"
-COLLECT_DATA = "Collect data"
-END_CHNL = "End channel"
-QUIT = "Quit"
-
-KEY_MAP = {
-    's': START_CHNL,
-    'm': START_MITM,
-    'l': LAUNCH_CHNL,
-    'r': RESET,
-    'c': COLLECT_DATA,
-    'e': END_CHNL,
-    'q': QUIT
-}
 
 def get_key():
     with Input(keynames='curses') as ch_input:
