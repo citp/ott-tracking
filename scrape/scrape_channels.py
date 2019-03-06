@@ -483,7 +483,7 @@ def launch_channel_for_mitm_warmup(surfer, retry_count):
         time.sleep(4)
 
 
-def scrape(channel_id, date_prefix):
+def setup_channel(channel_id, date_prefix):
     if scrape_config.REC_AUD:
         recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
 
@@ -508,9 +508,30 @@ def scrape(channel_id, date_prefix):
         timestamps["install_channel"] = int(time.time())
         channel_state = CrawlState.INSTALLING
         surfer.install_channel()
+    except SurferAborted as e:
+        err_occurred = True
+        log('Channel not installed! Aborting scarping of channel')
+        if REC_AUD:
+            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
+                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
-        if scrape_config.MITMPROXY_ENABLED:
-            mitmrunner.run_mitmproxy()
+        surfer.uninstall_channel()
+        surfer.kill_all_tcpdump()
+    except Exception as e:
+        err_occurred = True
+        log('Error!')
+        traceback.print_exc()
+    ret = [surfer, channel_state, err_occurred, timestamps, timestamps_arr]
+    if scrape_config.MITMPROXY_ENABLED:
+        ret.append(mitmrunner)
+    return ret
+
+def launch_mitm(mitmrunner):
+    mitmrunner.run_mitmproxy()
+
+def launch_channel(surfer, mitmrunner, timestamps, timestamps_arr):
+    err_occurred = False
+    try:
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
@@ -523,7 +544,7 @@ def scrape(channel_id, date_prefix):
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
-            surfer.launch_channel()   # make sure we start from the homepage
+            surfer.launch_channel()  # make sure we start from the homepage
             for key_sequence in KEY_SEQUENCES[scrape_config.PLAT]:
                 playback_detected = play_key_sequence(
                     surfer, key_sequence, timestamps_arr)
@@ -536,8 +557,6 @@ def scrape(channel_id, date_prefix):
                 # TODO: should we restart audio recording here?
             else:
                 log('Cannot detect playback on channel: %s' % channel_id)
-
-
         else:
             for okay_ix in range(0, 3):
                 if not surfer.channel_is_active():
@@ -550,7 +569,7 @@ def scrape(channel_id, date_prefix):
         surfer.go_home()
     except SurferAborted as e:
         err_occurred = True
-        log('Channel not installed! Aborting scarping of channel')
+        log('Channel failed during launch! Aborting scarping of channel')
         if scrape_config.MITMPROXY_ENABLED:
             try:
                 mitmrunner.kill_mitmproxy()
@@ -558,7 +577,7 @@ def scrape(channel_id, date_prefix):
                 log('Error killing MTIM!')
                 traceback.print_exc()
 
-        if REC_AUD:
+        if scrape_config.REC_AUD:
             recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
                           + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
@@ -568,31 +587,50 @@ def scrape(channel_id, date_prefix):
         err_occurred = True
         log('Error!')
         traceback.print_exc()
-    finally:
-        try:
-            if scrape_config.MITMPROXY_ENABLED:
-                try:
-                    mitmrunner.kill_mitmproxy()
-                except Exception as e:
-                    log('Error killing MTIM!')
-                    traceback.print_exc()
+    return (channel_state, err_occurred)
 
-            if REC_AUD:
-                recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
-                              + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
 
-            surfer.uninstall_channel()
-            surfer.kill_all_tcpdump()
-            surfer.terminate_rrc()
-            dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
-            dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_FOLDER,
-                                          "%s_timestamps.json" % channel_id))
-            if not err_occurred:
-                channel_state = CrawlState.TERMINATED
-        except Exception as e:
-            log('Error!')
-            traceback.print_exc()
+def collect_data(surfer, mitmrunner, timestamps, date_prefix):
+    try:
+        if scrape_config.MITMPROXY_ENABLED:
+            try:
+                mitmrunner.kill_mitmproxy()
+            except Exception as e:
+                log('Error killing MTIM!')
+                traceback.print_exc()
 
+        if scrape_config.REC_AUD:
+            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
+                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+
+        surfer.uninstall_channel()
+        surfer.kill_all_tcpdump()
+        surfer.terminate_rrc()
+        dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
+        dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_FOLDER,
+                                      "%s_timestamps.json" % channel_id))
+        channel_state = CrawlState.TERMINATED
+    except Exception as e:
+        log('Error!')
+        traceback.print_exc()
+    return channel_state
+
+def scrape(channel_id, date_prefix):
+    ret = setup_channel(channel_id, date_prefix)
+    surfer = ret[0]
+    channel_state = ret[1]
+    err_occurred = ret[2]
+    if not err_occurred:
+        timestamps = ret[3]
+        timestamps_arr = ret[4]
+        if scrape_config.MITMPROXY_ENABLED:
+            mitmrunner = ret[5]
+            launch_mitm(mitmrunner)
+        else:
+            mitmrunner = None
+        (channel_state, err_occurred) = launch_channel(surfer, mitmrunner, timestamps, timestamps_arr)
+        if not err_occurred:
+            channel_state = collect_data(surfer, mitmrunner, timestamps, date_prefix)
     return channel_state
 
 
