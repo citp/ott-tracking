@@ -419,17 +419,6 @@ def copy_adb_logs(channel_id):
 
     copyfile(input_path, output_path)
 
-def concat(src, dst):
-    with open(src) as src:
-        with open(dst, 'a') as dst:
-            for l in src:
-                dst.write(l)
-
-def truncate_file(path):
-    #Clear the original log file
-    open(path, 'w').close()
-
-
 def detect_playback_using_screenshots(surfer):
     """TODO: process screenshots to detect video playback
        return True if playback is detected, False otherwise
@@ -632,15 +621,16 @@ def scrape(channel_id, date_prefix):
     if not err_occurred:
         surfer = ret[1]
         timestamps = ret[2]
+        if scrape_config.MITMPROXY_ENABLED:
+            mitmrunner = ret[3]
+        else:
+            mitmrunner = None
         channel_state = CrawlState.INSTALLING
         err_occurred = install_channel(surfer, timestamps)
         if not err_occurred:
             channel_state = CrawlState.LAUNCHING
             if scrape_config.MITMPROXY_ENABLED:
-                mitmrunner = ret[3]
                 launch_mitm(mitmrunner)
-            else:
-                mitmrunner = None
             err_occurred = launch_channel(surfer, mitmrunner, timestamps)
             if not err_occurred:
                 channel_state = CrawlState.TERMINATING

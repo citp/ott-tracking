@@ -1,5 +1,8 @@
 from curtsies import Input
 from scrape_channels import *
+from datetime import datetime
+import time
+
 
 # For each channel to the following (steps with * require a signal):
 # 1-SCRIPT* (START_CHNL): Cleanup, start new channel, prompt for name
@@ -34,57 +37,81 @@ def get_key():
             # print(repr(key))
             return key
 
-def setup_channel():
-    pass
-
-def launch_mitm():
-    pass
-
-def launch_channel():
-    pass
-
-def collect_data():
-    pass
-
-def end_channel():
-    pass
 
 def scrape_channel():
-    '''
-    ret = setup_channel(channel_id, date_prefix)
-    surfer = ret[0]
-    channel_state = ret[1]
-    err_occurred = ret[2]
-    if not err_occurred:
-        timestamps = ret[3]
-        timestamps_arr = ret[4]
-        if scrape_config.MITMPROXY_ENABLED:
-            mitmrunner = ret[5]
-            launch_mitm(mitmrunner)
-        else:
-            mitmrunner = None
-        (channel_state, err_occurred) = launch_channel(surfer, mitmrunner, timestamps, timestamps_arr)
-        if not err_occurred:
-            channel_state = collect_data(surfer, mitmrunner, timestamps, date_prefix)
-    '''
     while True:
-        print("Next step! Waiting for command...")
+        #key = get_key()
+        #ch = KEY_MAP.get(key, key)
+        #restart if "r" is pressed
+        time.sleep(2)
+        print("CONSOLE>>> Do you need MITM for the next channel[y/n]? ")
         key = get_key()
-        ch = KEY_MAP.get(key, key)
-        if not ch:
-            print("Don't understand", ch)
+        if key == "y":
+            scrape_config.MITMPROXY_ENABLED = True
+        elif key == "n":
+            scrape_config.MITMPROXY_ENABLED = False
+        elif key == "r":
+            print("CONSOLE>>> Restarting!")
             continue
-        elif ch == END_CHNL:
-            print("Ending channel")
-            break
-        elif ch == QUIT:
-            print("Will quit")
-            return QUIT
+        elif key == "q":
+            print("CONSOLE>>> Quiting!")
+            return
+        else:
+            print("CONSOLE>>> Not a valid input, try again!")
+            continue
+        channel_name = input("What is the name of the channel: ")
+        date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+        ret = setup_channel(channel_name, date_prefix)
+        err_occurred = ret[0]
+        if err_occurred:
+            print("CONSOLE>>> Error occurred in setup!")
+            continue
+        else:
+            surfer = ret[1]
+            timestamps = ret[2]
+            if scrape_config.MITMPROXY_ENABLED:
+                mitmrunner = ret[3]
+            else:
+                mitmrunner = None
+        nextKey = ""
+        #while nextKey != 'n':
+        key = ""
+        while key!= 'n':
+            print("CONSOLE>>> Install the channel manually then press \'n\'.")
+            key = get_key()
+            if key == "r":
+                print("CONSOLE>>> Restarting!")
+                break
+            elif key == "q":
+                print("CONSOLE>>> Quiting!")
+                return
+        if key == "r":
+            continue
+        if scrape_config.MITMPROXY_ENABLED:
+            launch_mitm(mitmrunner)
+        while key!= 'c':
+            print("CONSOLE>>> Lanunch the channel manually then press \'c\' when done.")
+            key = get_key()
+            if key == "r":
+                print("CONSOLE>>> Restarting!")
+                break
+            elif key == "q":
+                print("CONSOLE>>> Quiting!")
+                return
+        if key == "r":
+            continue
+        err_occurred = collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+        if not err_occurred:
+            print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
+        else:
+            print("CONSOLE>>> Error in scrapping channel %s" % channel_name)
+
 
 def main_loop():
-    while True:
-        if scrape_channel() == QUIT:
-            break
+    dns_sniffer_run()
+    scrape_channel()
+    dns_sniffer_stop()
 
 if __name__ == '__main__':
     main_loop()
