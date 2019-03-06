@@ -31,7 +31,6 @@ from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 import wave
 import pyaudio
-import numpy as np
 import scrape_config
 
 
@@ -147,7 +146,7 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
         log('Writing logs for channel ', channel_id)
         copy_log_file(channel_id, output_file_desc, False)
 
-    if RSYNC_EN:
+    if scrape_config.RSYNC_EN:
         rsync()
         if output_file_desc is not None:
             copy_log_file(channel_id, output_file_desc, True)
@@ -162,6 +161,13 @@ def main(channel_list=None):
     dns_sniffer_run()
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
+
+    if scrape_config.PLAT == "ROKU":
+        print("Importing Roku get all channels")
+        from platforms.roku.get_all_channels import get_channel_list
+    elif scrape_config.PLAT == "AMAZON":
+        from platforms.amazon.get_all_channels import get_channel_list
+
     if channel_list is not None:
         channels = get_channel_list(channel_list)
     else:

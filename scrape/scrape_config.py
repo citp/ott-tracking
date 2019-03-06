@@ -44,7 +44,3 @@ SCRAPE_TO = 900
 
 PLAT = os.getenv("PLATFORM")
 
-if PLAT == "ROKU":
-    from platforms.roku.get_all_channels import get_channel_list
-elif PLAT == "AMAZON":
-    from platforms.amazon.get_all_channels import get_channel_list
