@@ -69,9 +69,11 @@ def scrape_channel():
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
+                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
+                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
                 return
         if key == "r":
             continue
@@ -82,9 +84,11 @@ def scrape_channel():
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
+                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
+                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
                 return
         if key == "r":
             continue
