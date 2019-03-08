@@ -139,7 +139,6 @@ def rsync(date_prefix):
         log("rsync failed!")
 
 
-
 def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
     # Write logs
     if output_file_desc is not None:
@@ -155,6 +154,7 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
     log('Writing result of crawl to ', channel_res_file)
     with open(channel_res_file, "w") as tfile:
         print(str(scrape_success), file=tfile)
+
 
 def main(channel_list=None):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
@@ -489,6 +489,9 @@ def setup_channel(channel_id, date_prefix):
             mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
                                     str(scrape_config.DUMP_PREFIX), global_keylog_file)
         timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
+
+        timestamp = int(time.time())
+        surfer.capture_packets(timestamp)
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
@@ -533,9 +536,7 @@ def launch_channel(surfer, mitmrunner, timestamps):
     timestamps_arr = []  # list of tuples in the form of (key, timestamp)
     try:
         timestamp = int(time.time())
-        surfer.capture_packets(timestamp)
         timestamps["launch"] = timestamp
-
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)

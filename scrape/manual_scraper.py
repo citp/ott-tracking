@@ -22,6 +22,8 @@ def get_key():
 
 
 def scrape_channel():
+    output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
+    dns_sniffer_run()
     while True:
         #key = get_key()
         #ch = KEY_MAP.get(key, key)
@@ -44,6 +46,8 @@ def scrape_channel():
             continue
         channel_name = input("What is the name of the channel: ")
         date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
+        channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
+                                channel_name) + ".txt"
 
         ret = setup_channel(channel_name, date_prefix)
         err_occurred = ret[0]
@@ -74,7 +78,7 @@ def scrape_channel():
         if scrape_config.MITMPROXY_ENABLED:
             launch_mitm(mitmrunner)
         while key!= 'c':
-            print("CONSOLE>>> Lanunch the channel manually then press \'c\' when done.")
+            print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
@@ -85,6 +89,7 @@ def scrape_channel():
         if key == "r":
             continue
         err_occurred = collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+        write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
         else:
@@ -92,7 +97,6 @@ def scrape_channel():
 
 
 def main_loop():
-    dns_sniffer_run()
     scrape_channel()
     dns_sniffer_stop()
 
