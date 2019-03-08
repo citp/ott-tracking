@@ -152,6 +152,7 @@ class LogFileReader(object):
     def pass_through(self):
         return
 
+BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
 def log_analysis(root_dir):
     print(BANNER)
     channels = load_roku_channel_details()
@@ -165,10 +166,33 @@ def log_analysis(root_dir):
                 #print('---HTTP---')
                 log_reader.http_urls()
 
-BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
+def load_dns_data(root_dir):
+    rIP2NameDB = {}
+    rName2IPDB = {}
+    log_folder_name = os.path.join(root_dir, "db")
+    for root, dirs, files in os.walk(log_folder_name):
+        for file in files:
+            if file.endswith(".json"):
+                file_name = os.path.join(root, file)
+                with open(file_name) as f:
+                    if file.endswith("rIP2NameDB.json"):
+                        data = json.load(f)
+                        for IP in data:
+                            if IP not in rIP2NameDB:
+                                rIP2NameDB[IP] = []
+                            rIP2NameDB[IP].append(data[IP]['value'])
+                    elif file.endswith("rName2IPDB.json"):
+                        data = json.load(f)
+                        for Domain in data:
+                            if Domain not in rName2IPDB:
+                                rName2IPDB[Domain] = []
+                            rName2IPDB[Domain].extend(data[Domain]['value'])
+    return (rIP2NameDB, rName2IPDB)
+
+
 def test():
     log_analysis(sys.argv[1])
-
+    load_dns_data(sys.argv[1])
 
 if __name__ == '__main__':
     test()
