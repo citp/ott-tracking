@@ -249,6 +249,14 @@ def next_layer(next_layer):
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
         #cert = next_layer._find_cert()
+        mitmproxy.ctx.log("In next Layer!")
+        hostname = tls_strategy.getAssociatedDomain(server_address[0])
+        timestamp = '[{}] '.format(datetime.today())
+        if hostname:
+            mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s mapped to %s " % (str(server_address), hostname))
+        else:
+            mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s " % str(server_address))
+        mitmproxy.ctx.log("In next Layer2!")
         if not tls_strategy:
              mitmproxy.ctx.log("tls_strategy is None for %s" % repr(next_layer.server_conn.address), "info")
              return
