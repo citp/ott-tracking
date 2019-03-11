@@ -34,6 +34,7 @@ RUN_MITM_IN_SUBPROCESS = False
 DUMP_HAR = False
 HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 MITMPROXY_NET_SET = False
+SSL_STRIP = True
 
 LOG_DIR = os.getenv("LogDir")
 OPTIONS_FILE_NAME = "config.yaml"
@@ -261,6 +262,8 @@ class MITMRunner(object):
             ARGS.append(HAR_EXPORT_ADDON)
             ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' +
                         str(int(time.time())) + '.har')
+        if not SSL_STRIP:
+            ARGS.append('--set ssl_strip=0')
         print(ARGS)
         mitm_stdout = join(dump_dir, "%s_mitm_std.out" % str(channel_id))
         mitm_stderr = join(dump_dir, "%s_mitm_std.err" % str(channel_id))

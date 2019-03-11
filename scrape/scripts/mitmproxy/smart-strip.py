@@ -187,7 +187,11 @@ def load(l):
         "channel_id", int, 0, "Channel ID",
     )
     l.add_option(
-        "data_dir", str, "", "Data dir",
+        "data_dir", str, "", "/tmp/",
+    )
+    # 0 for False and other values for True
+    l.add_option(
+        "ssl_strip", int, 1, "Enable SSL Strip option: 0 for False and other values for True",
     )
     '''
     try:
@@ -209,7 +213,7 @@ def my_log(*args):
 
 def configure(updated):
     global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut,\
-        strip_log_file, lock_obj
+        strip_log_file, lock_obj, ssl_strip_en
     #if ctx.options.tlsstrat > 0:
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
@@ -218,6 +222,7 @@ def configure(updated):
         lock_obj = threading.Lock()
         channel_id = ctx.options.channel_id
         data_dir = ctx.options.data_dir
+        ssl_strip_en = bool(ctx.options.ssl_strip)
 
         base_filename = '{}-{}'.format(
             channel_id,
@@ -284,6 +289,9 @@ secure_hosts: typing.Set[str] = set()
 
 
 def request(flow: http.HTTPFlow) -> None:
+    global ssl_strip_en
+    if not ssl_strip_en:
+        return
     flow.request.headers.pop('If-Modified-Since', None)
     flow.request.headers.pop('Cache-Control', None)
     #mitmproxy.ctx.log(
@@ -306,8 +314,10 @@ def request(flow: http.HTTPFlow) -> None:
         flow.request.host = flow.request.pretty_host
 
 
-
 def response(flow: http.HTTPFlow) -> None:
+    global ssl_strip_en
+    if not ssl_strip_en:
+        return
     #flow.response.headers.pop('Strict-Transport-Security', None)
     #flow.response.headers.pop('Public-Key-Pins', None)
     #mitmproxy.ctx.log(
