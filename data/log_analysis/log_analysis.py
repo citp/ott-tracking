@@ -42,6 +42,8 @@ class LogFileReader(object):
         self.get_start_ts()
         self.init_unknown_fields()
         self.channel_info(channels)
+        self.tls_hs_list = set()
+        self.tls_pass_thru_list = set()
         return
 
     def init_unknown_fields(self):
@@ -107,7 +109,7 @@ class LogFileReader(object):
     def get_dst_ip(self, url):
         return "\"\""
 
-    def format_csv(self, request_line):
+    def format_http_csv(self, request_line):
         #print(request_line)
         req_url = self.get_url(request_line)
         res = ''
@@ -125,10 +127,33 @@ class LogFileReader(object):
         res += str(self.get_host(req_url)) + '\t'
         res += str(self.rankByWatched) + '\t'
         res += str(self.category)
-        #print(res)
+        print(res)
         return res
 
-    def find_regex(self, regex):
+    def tls_handshake_fail_hdl(self, request_line):
+        #Assuming this format:
+        #[2019-03-12 15:23:47.387505] 10.42.0.119:48764: Client Handshake failed. \
+        #The client may not trust the proxy's certificate for api.sr.roku.com.
+        self.tls_hs_list.add(request_line.split()[-1])
+
+    def tls_pass_thru_hdl(self, request_line):
+        global rIP2NameDB
+        # Assuming this format:
+        #[2019-03-12 15:23:52.560586] TLS passthrough for ('52.204.87.181', 443)
+        # [mapped to scribe.logs.roku.com.].
+        tmp = request_line.split()[3]
+        srv_addr = re.sub('\(|\,|\'', '', tmp)
+
+        if "mapped to" in request_line:
+            domain = request_line.split()[-1]
+        elif srv_addr in rIP2NameDB:
+            domain = rIP2NameDB[srv_addr][0]
+        else:
+            print("Server doesn't have a domain name! Couldn't find the server name in the DNS database either!")
+            return
+        self.tls_pass_thru_list.add(domain)
+
+    def find_regex(self, regex, format_func):
         result_list = []
         with open(self.log_file_fullpath) as f:
             for line in f:
@@ -136,24 +161,31 @@ class LogFileReader(object):
                 result = regex.search(line)
                 if result is not None:
                     #res = str(self.channel_id) + '\t' + str(self.start_ts) + '\t' + line.split()[2]
-                    res = self.format_csv(line)
-                    print(res)
+                    res = format_func(line)
                     result_list.append(res)
         return result_list
 
     def https_urls(self):
         regex = re.compile('(GET|POST) https\:*')
-        self.find_regex(regex)
+        self.find_regex(regex, self.format_http_csv)
 
     def http_urls(self):
         regex = re.compile('(GET|POST) http\:*')
-        self.find_regex(regex)
+        self.find_regex(regex, self.format_http_csv)
+
+    def tls_handshake_fail(self):
+        regex = re.compile('Client Handshake failed. The client may not trust the proxy\'s certificate for*')
+        self.find_regex(regex, self.tls_handshake_fail_hdl)
+
+    def tls_pass_thru(self):
+        regex = re.compile('TLS passthrough for*')
+        self.find_regex(regex, self.tls_pass_thru_hdl)
 
     def pass_through(self):
         return
 
 BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
-def log_analysis(root_dir):
+def http_s_log_to_csv(root_dir):
     print(BANNER)
     channels = load_roku_channel_details()
     log_folder_name = os.path.join(root_dir, "logs")
@@ -165,6 +197,24 @@ def log_analysis(root_dir):
                 log_reader.https_urls()
                 #print('---HTTP---')
                 log_reader.http_urls()
+
+def tls_pass_thru_list(root_dir):
+    channels = load_roku_channel_details()
+    log_folder_name = os.path.join(root_dir, "logs")
+    for root, dirs, files in os.walk(log_folder_name):
+        for file in files:
+            if file.endswith(".log"):
+                log_reader = LogFileReader(os.path.join(root, file), channels)
+                log_reader.tls_handshake_fail()
+                log_reader.tls_pass_thru()
+                print("Info for Channel: " + log_reader.channel_name + " - " + log_reader.channel_id)
+                if bool(log_reader.tls_hs_list):
+                    print("TLS Handshake Failure Domains: " + str(log_reader.tls_hs_list))
+                if bool(log_reader.tls_pass_thru_list):
+                    print("TLS Pass Through Domains: " + str(log_reader.tls_pass_thru_list))
+                    print("Delta: " + str(log_reader.tls_hs_list.difference(log_reader.tls_pass_thru_list) ))
+                    print('-----------------')
+
 
 def load_dns_data(root_dir):
     rIP2NameDB = {}
@@ -191,8 +241,13 @@ def load_dns_data(root_dir):
 
 
 def test():
-    log_analysis(sys.argv[1])
-    load_dns_data(sys.argv[1])
+    global rIP2NameDB, rName2IPDB
+    root_dir = sys.argv[1]
+    (rIP2NameDB, rName2IPDB) = load_dns_data(root_dir)
+    #http_s_log_to_csv(root_dir)
+    tls_pass_thru_list(root_dir)
+
+
 
 if __name__ == '__main__':
     test()
