@@ -34,7 +34,6 @@ RUN_MITM_IN_SUBPROCESS = False
 DUMP_HAR = False
 HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 MITMPROXY_NET_SET = False
-SSL_STRIP = True
 
 LOG_DIR = os.getenv("LogDir")
 OPTIONS_FILE_NAME = "config.yaml"
@@ -187,11 +186,12 @@ def set_event_handler(e):
 
 class MITMRunner(object):
 
-    def __init__(self, channel_id, data_dir, dump_prefix, global_keylog_file):
+    def __init__(self, channel_id, data_dir, dump_prefix, global_keylog_file, ssl_strip):
         self.channel_id = str(channel_id)
         self.data_dir = str(data_dir)
         self.dump_prefix = dump_prefix
         self.dump_dir = str(data_dir) + str(dump_prefix)
+        self.ssl_strip = ssl_strip
         self.event_handler = multiprocessing.Event()
         self.log('Initialized MITMRunner', channel_id)
         self.global_keylog_file = global_keylog_file
@@ -262,8 +262,9 @@ class MITMRunner(object):
             ARGS.append(HAR_EXPORT_ADDON)
             ARGS.append('--set hardump=' + dump_dir + str(channel_id) + '-' +
                         str(int(time.time())) + '.har')
-        if not SSL_STRIP:
-            ARGS.append('--set ssl_strip=0')
+        if not self.ssl_strip:
+            ARGS.append('--set')
+            ARGS.append('ssl_strip=0')
         print(ARGS)
         mitm_stdout = join(dump_dir, "%s_mitm_std.out" % str(channel_id))
         mitm_stderr = join(dump_dir, "%s_mitm_std.err" % str(channel_id))

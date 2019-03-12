@@ -240,6 +240,7 @@ def configure(updated):
         else:
             strip_log_file = os.path.join(strip_log_dir, (str(base_filename) + '.strip'))
         mitmproxy.ctx.log('Successfully loaded smart tls script!')
+        mitmproxy.ctx.log('SSL strip set to %s' % str(ssl_strip_en))
         #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
     except Exception as e:
         mitmproxy.ctx.log('Error loading the smart tls script!')
@@ -253,15 +254,13 @@ def next_layer(next_layer):
     """
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
-        #cert = next_layer._find_cert()
-        mitmproxy.ctx.log("In next Layer!")
+        #cert = next_layer._find_cert())
         hostname = tls_strategy.getAssociatedDomain(server_address[0])
         timestamp = '[{}] '.format(datetime.today())
         if hostname:
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s mapped to %s " % (str(server_address), hostname))
         else:
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s " % str(server_address))
-        mitmproxy.ctx.log("In next Layer2!")
         if not tls_strategy:
              mitmproxy.ctx.log("tls_strategy is None for %s" % repr(next_layer.server_conn.address), "info")
              return
@@ -271,7 +270,8 @@ def next_layer(next_layer):
             next_layer.__class__ = TlsFeedback
         else:
             # We don't intercept - reply with a pass-through layer and add a "skipped" entry.
-            mitmproxy.ctx.log("TLS passthrough for %s" % repr(next_layer.server_conn.address), "info")
+            timestamp = '[{}] '.format(datetime.today())
+            mitmproxy.ctx.log(timestamp + "TLS passthrough for %s" % repr(next_layer.server_conn.address), "info")
             next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
             next_layer.reply.send(next_layer_replacement)
             tls_strategy.record_skipped(server_address)

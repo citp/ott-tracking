@@ -389,7 +389,7 @@ def setup_channel(channel_id, date_prefix):
                                str(scrape_config.SCREENSHOT_PREFIX))
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
-                                    str(scrape_config.DUMP_PREFIX), global_keylog_file)
+                                    str(scrape_config.DUMP_PREFIX), global_keylog_file, scrape_config.SSL_STRIP)
         timestamps = {}  # TODO: will become obsolete after we move to smart crawl, remove
 
         timestamp = int(time.time())

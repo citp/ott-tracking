@@ -8,6 +8,7 @@ MITMPROXY_ENABLED = int(os.environ['MITMPROXY_ENABLED'])
 remove_dup = False
 RSYNC_EN = False
 REC_AUD = True
+SSL_STRIP = False
 
 
 MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])
