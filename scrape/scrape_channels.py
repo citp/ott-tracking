@@ -15,6 +15,7 @@ from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 from dns_sniffer import dns_sniffer_call
 from multiprocessing import Process
+from audio_recorder import AudioRecorder
 
 import json
 from datetime import datetime
@@ -29,8 +30,6 @@ import queue
 import enum
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
-import wave
-import pyaudio
 import scrape_config
 
 
@@ -257,109 +256,12 @@ def log(*args):
     with open(os.path.join(scrape_config.LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
-
-class AudioRecorder(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.pyaudio = pyaudio.PyAudio()
-        self.speaker_device = self.pyaudio.get_default_output_device_info()['hostApi']
-        self.recorded_message = []
-        self.record = False
-        self.seconds = 0
-        self.active = True
-        self.chunk = 1024
-        self.format = pyaudio.paInt16
-        self.channels = 2
-        self.rate = 44100
-        log('Audio: Opening audio stream.')
-        self.stream = self.pyaudio.open(format=self.format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk, input_host_api_specific_stream_info=self.speaker_device)
-        log('Audio: Audio stream opened.')
-
-    def run(self):
-        log('Audio: Starting audio thread.')
-        while True:
-            # Recording has been asked to stop completely
-            if not self.active:
-                break
-
-            # Asked to record
-            if self.record:
-                # Read from the stream
-                for i in range(0, int(self.rate / self.chunk * self.seconds)):
-                    # Stop recording immediately if flag switches
-                    if self.record:
-                        data = self.stream.read(self.chunk, exception_on_overflow=False)
-                        self.recorded_message.append(data)
-                    else:
-                        break
-
-                # Done recording for time seconds so end recording
-                self.record = False
-
-        log('Audio: Exiting audio thread.')
-        return
-
-    def start_recording(self, seconds, channel_id):
-        log('Audio: Started audio recording for channel %s' % str(channel_id))
-        # Stop the current recording immediately
-        self.record = False
-        # Make the current recording empty, adn set the seconds to record
-        self.recorded_message = []
-        self.seconds = seconds
-        # Start recording
-        self.record = True
-        return
-
-
-    def dump(self, filename_path):
-        self.record = False
-        wf = wave.open(filename_path, 'wb')
-        wf.setnchannels(self.channels)
-        wf.setsampwidth(self.pyaudio.get_sample_size(self.format))
-        wf.setframerate(self.rate)
-        wf.writeframes(b''.join(self.recorded_message))
-        wf.close()
-        log('Audio: Dumped audio to file %s' % filename_path)
-        self.recorded_message = []
-
-    def complete_audio_recording(self):
-        self.recorded_message = []
-        self.record = False
-        self.active = False
-        self.stream.stop_stream()
-        self.stream.close()
-        self.pyaudio.terminate()
-        log('Audio: Exited audio thread.')
-
-        return
-
-    def is_audio_playing(self, seconds):
-        if len(self.recorded_message) < seconds:
-            return False
-
-        '''data = self.recorded_message[-int(seconds):]
-        frames = []
-        for d in data:
-            frames.append(np.fromstring(d, dtype=np.int16))
-
-        npdata = np.hstack(frames)
-        mat = npdata.reshape(npdata.shape[0]//2, self.channels)
-        print(mat.shape)
-
-        baseline = np.zeros(shape=(mat.shape[0], self.channels))
-        print(baseline.shape)
-        for i in range(0, seconds):
-            second = mat[self.rate*i:self.rate*(i+1), :]
-            dist = np.sqrt(np.sum((second - baseline)**2, axis=1))
-            print(i, np.mean(dist), np.max(dist))'''
-
-        return False
-
 if scrape_config.REC_AUD:
     # Create recorder object
     try:
-        recorder = AudioRecorder()
-    except:
+        recorder = AudioRecorder(log)
+    except Exception as e:
+        log(e)
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
         scrape_config.REC_AUD = False
 
