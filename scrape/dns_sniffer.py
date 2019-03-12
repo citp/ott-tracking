@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 from scapy.all import *
-
+from datetime import datetime
 
 
 def querysniff(pkt):
@@ -29,7 +29,8 @@ def querysniff(pkt):
                             IP2NameDic[IPAddr] = set()
                         IP2NameDic[IPAddr].add(DomainName)
                         rIP2NameDic.set(IPAddr, DomainName)
-                        print(DomainName + " mapped to IP address " + IPAddr + ":" + str(p[DNSRR][x].type))
+                        timestamp = '[{}] '.format(datetime.today())
+                        print(timestamp + DomainName + " mapped to IP address " + IPAddr + ":" + str(p[DNSRR][x].type))
                     #name = p.an.rdata
                     #print(name)
 
