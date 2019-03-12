@@ -45,3 +45,9 @@ SCRAPE_TO = 900
 
 PLAT = os.getenv("PLATFORM")
 
+print("Environment:")
+l = list( locals().items())
+for k in l:
+    if "__" in k[0] or "module" in str(k[1]):
+        continue
+    print(k)
