@@ -271,7 +271,10 @@ def next_layer(next_layer):
         else:
             # We don't intercept - reply with a pass-through layer and add a "skipped" entry.
             timestamp = '[{}] '.format(datetime.today())
-            mitmproxy.ctx.log(timestamp + "TLS passthrough for %s" % repr(next_layer.server_conn.address), "info")
+            if hostname:
+                mitmproxy.ctx.log(timestamp + "TLS passthrough for %s mapped to %s" % (repr(next_layer.server_conn.address), hostname), "info")
+            else:
+                mitmproxy.ctx.log(timestamp + "TLS passthrough for %s" % repr(next_layer.server_conn.address), "info")
             next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
             next_layer.reply.send(next_layer_replacement)
             tls_strategy.record_skipped(server_address)
