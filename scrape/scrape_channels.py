@@ -11,12 +11,6 @@ TODO:
 
 """
 from __future__ import print_function
-from channel_surfer import ChannelSurfer ,SurferAborted
-from mitmproxy_runner import MITMRunner
-from dns_sniffer import dns_sniffer_call
-from multiprocessing import Process
-from audio_recorder import AudioRecorder
-
 import json
 from datetime import datetime
 import traceback
@@ -28,10 +22,17 @@ import redisdl
 import threading
 import queue
 import enum
-from shutil import copyfile, copyfileobj
-from os.path import join, isfile
 import scrape_config
 
+
+from channel_surfer import ChannelSurfer ,SurferAborted
+from mitmproxy_runner import MITMRunner
+from dns_sniffer import dns_sniffer_call
+from multiprocessing import Process
+from shutil import copyfile, copyfileobj
+from os.path import join, isfile
+if scrape_config.REC_AUD:
+    from audio_recorder import AudioRecorder
 
 #repeat = {}
 # To get this list use this command:

@@ -184,7 +184,7 @@ def load(l):
         "tlsstrat", int, 0, "TLS passthrough strategy (0-100)",
     )
     l.add_option(
-        "channel_id", int, 0, "Channel ID",
+        "channel_id", str, "", "Channel ID",
     )
     l.add_option(
         "data_dir", str, "", "/tmp/",
@@ -219,6 +219,7 @@ def configure(updated):
     #else:
     #    tls_strategy = ConservativeStrategy()
     try:
+        mitmproxy.ctx.log('Loading smart tls script!')
         lock_obj = threading.Lock()
         channel_id = ctx.options.channel_id
         data_dir = ctx.options.data_dir
