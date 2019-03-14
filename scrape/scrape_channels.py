@@ -227,14 +227,17 @@ def main(channel_list=None):
             #if channel['id'] not in repeat:
             #    continue
             try:
-                que = queue.Queue()
-                scrape_success = False
-                t = PropagatingThread(target=lambda q, arg1, arg2: q.put(scrape(arg1, arg2)),
-                                     args=(que, channel['id'], date_prefix,))
+                if scrape_config.THREADED_SCRAPE:
+                    que = queue.Queue()
+                    scrape_success = False
+                    t = PropagatingThread(target=lambda q, arg1, arg2: q.put(scrape(arg1, arg2)),
+                                         args=(que, channel['id'], date_prefix,))
 
-                t.start()
-                t.join(timeout=scrape_config.SCRAPE_TO)
-                channel_state = que.get()
+                    t.start()
+                    t.join(timeout=scrape_config.SCRAPE_TO)
+                    channel_state = que.get()
+                else:
+                    channel_state = scrape(channel['id'], date_prefix)
                 log("Crawl result: " + str(channel_state))
                 if channel_state == channel_state.TERMINATED:
                     scrape_success = True

@@ -9,6 +9,7 @@ remove_dup = False
 RSYNC_EN = False
 REC_AUD = True
 SSL_STRIP = False
+THREADED_SCRAPE = False
 
 
 MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'])

@@ -21,6 +21,7 @@ LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = False
+SCREENSHOT_STARTED = False
 
 PLAT = os.getenv("PLATFORM")
 PLATFORM_DIR = os.getenv("PLATFORM_DIR")
@@ -58,7 +59,10 @@ class ChannelSurfer(object):
         # On Roku: Start a background process that continuously captures screenshots to
         # the same file: ${LogDir}/continuous_screenshot.png
         if PLAT == "ROKU":
-            subprocess.Popen(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
+            global SCREENSHOT_STARTED
+            if not SCREENSHOT_STARTED:
+                subprocess.Popen(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
+                SCREENSHOT_STARTED = True
 
     def log(self, *args):
 
