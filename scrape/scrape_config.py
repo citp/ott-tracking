@@ -21,13 +21,13 @@ else:
 
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
-DATA_DIR = os.getenv("DATA_DIR")
+DATA_DIR = os.path.abspath(os.getenv("DATA_DIR"))
 PCAP_PREFIX = "pcaps/"
 DUMP_PREFIX = "mitmdumps/"
-LOG_PREFIX = "mitmlog/"
-LOG_FOLDER = "logs/"
+MITM_LOG_PREFIX = "mitmlog/"
+LOG_PREFIX = "logs/"
 LOG_FILE = 'scrape_channels.log'
-LOG_DIR = os.getenv("LogDir")
+LOCAL_LOG_DIR = os.path.abspath(os.getenv("LogDir"))
 LOG_FILE_PATH_NAME = os.getenv("LOG_OUT_FILE")
 SCREENSHOT_PREFIX = "screenshots/"
 AUDIO_PREFIX="audio/"
@@ -35,7 +35,7 @@ SSLKEY_PREFIX = "keys/"
 DB_PREFIX = "db/"
 #Each channel will have a file with the result of crawl of that channel in this folder
 FIN_CHL_PREFIX = "finished/"
-folders = [PCAP_PREFIX, DUMP_PREFIX, LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_FOLDER, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
+folders = [PCAP_PREFIX, DUMP_PREFIX, MITM_LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_PREFIX, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 
 
 RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'

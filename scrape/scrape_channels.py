@@ -11,7 +11,6 @@ TODO:
 
 """
 from __future__ import print_function
-import json
 from datetime import datetime
 import traceback
 import time
@@ -101,10 +100,6 @@ def dns_sniffer_stop():
     else:
         log("Error stopping DNS sniffer! Process not found")
 
-
-def dump_as_json(obj, json_path):
-    with open(json_path, 'w') as f:
-        json.dump(obj, f, indent=2)
 
 
 def dump_redis(PREFIX, date_prefix):
@@ -227,9 +222,9 @@ def main(channel_list=None):
             #if channel['id'] not in repeat:
             #    continue
             try:
+                scrape_success = False
                 if scrape_config.THREADED_SCRAPE:
                     que = queue.Queue()
-                    scrape_success = False
                     t = PropagatingThread(target=lambda q, arg1, arg2: q.put(scrape(arg1, arg2)),
                                          args=(que, channel['id'], date_prefix,))
 
@@ -257,7 +252,7 @@ def log(*args):
     s += ' '.join([str(v) for v in args])
 
     print(s)
-    with open(os.path.join(scrape_config.LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
+    with open(os.path.join(scrape_config.LOCAL_LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
 if scrape_config.REC_AUD:
@@ -275,7 +270,7 @@ if scrape_config.REC_AUD:
 
 def check_folders():
     for f in scrape_config.folders:
-        fullpath = str(scrape_config.DATA_DIR) + "/" +str(f)
+        fullpath = join(scrape_config.DATA_DIR , str(f))
         if not os.path.exists(fullpath):
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
@@ -297,10 +292,10 @@ def copy_log_file(channel_id, output_file_desc, is_rsync_res):
 
     if not is_rsync_res:
         output_path = str(scrape_config.DATA_DIR) + "/" + \
-                      scrape_config.LOG_FOLDER +"/" + str(filename) + ".log"
+                      scrape_config.LOG_PREFIX +"/" + str(filename) + ".log"
     else:
         output_path = str(scrape_config.DATA_DIR) + "/" + \
-                      scrape_config.LOG_FOLDER +"/" + str(filename) + ".rsync.log"
+                      scrape_config.LOG_PREFIX +"/" + str(filename) + ".rsync.log"
 
     #copy dest file for copying
     to_file = open(output_path,mode="w")
@@ -319,8 +314,8 @@ def copy_adb_logs(channel_id):
     )
 
     output_path = join(str(scrape_config.DATA_DIR),
-                       scrape_config.LOG_FOLDER , str(filename) + ".adblog")
-    input_path = os.path.join(scrape_config.LOG_DIR , "adb.log")
+                       scrape_config.LOG_PREFIX , str(filename) + ".adblog")
+    input_path = os.path.join(scrape_config.LOCAL_LOG_DIR , "adb.log")
     print("Copying ADB log from " + input_path + " to " + str(output_path))
 
     copyfile(input_path, output_path)
@@ -374,9 +369,12 @@ def fast_forward(surfer):
 
 
 def launch_channel_for_mitm_warmup(surfer, retry_count):
+    iter = 1
     for _ in range(retry_count):
+        surfer.timestamp_event("launch-" + str(iter))
         surfer.launch_channel()
         time.sleep(4)
+        iter += 1
 
 
 def setup_channel(channel_id, date_prefix):
@@ -389,6 +387,7 @@ def setup_channel(channel_id, date_prefix):
 
         surfer = ChannelSurfer(scrape_config.TV_IP_ADDR,
                                channel_id, str(scrape_config.DATA_DIR),
+                               str(scrape_config.LOG_PREFIX),
                                str(scrape_config.PCAP_PREFIX), date_prefix,
                                str(scrape_config.SCREENSHOT_PREFIX))
         if scrape_config.MITMPROXY_ENABLED:
@@ -413,7 +412,7 @@ def setup_channel(channel_id, date_prefix):
 
 def install_channel(surfer, timestamps):
     err_occurred = False
-    timestamps["install_channel"] = int(time.time())
+    surfer.timestamp_event("install_channel")
     try:
 
         surfer.install_channel()
@@ -441,8 +440,7 @@ def launch_channel(surfer, mitmrunner, timestamps):
     err_occurred = False
     timestamps_arr = []  # list of tuples in the form of (key, timestamp)
     try:
-        timestamp = int(time.time())
-        timestamps["launch"] = timestamp
+        surfer.timestamp_event("launch")
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
@@ -467,7 +465,7 @@ def launch_channel(surfer, mitmrunner, timestamps):
             for okay_ix in range(0, 3):
                 if not surfer.channel_is_active():
                     surfer.launch_channel()
-                timestamps['select-{}'.format(okay_ix)] = int(time.time())
+                surfer.timestamp_event('select-{}'.format(okay_ix))
                 surfer.press_select()
                 surfer.capture_screenshots(20)
     except SurferAborted as e:
@@ -512,8 +510,9 @@ def collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_id):
         surfer.kill_all_tcpdump()
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
-        dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_FOLDER,
-                                      "%s_timestamps.json" % channel_id))
+        surfer.write_timestamps()
+        #dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_PREFIX,
+        #                              "%s_timestamps.json" % channel_id))
     except Exception as e:
         err_occurred = True
         log('Error!')

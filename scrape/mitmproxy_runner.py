@@ -35,7 +35,7 @@ DUMP_HAR = False
 HAR_EXPORT_ADDON = '../src/mitmproxy/scripts/har_dump.py'
 MITMPROXY_NET_SET = False
 
-LOG_DIR = os.getenv("LogDir")
+LOCAL_LOG_DIR = os.path.abspath(os.getenv("LogDir"))
 OPTIONS_FILE_NAME = "config.yaml"
 MITMPROXY_PORT_NO = os.getenv("MITMPROXY_PORT_NO")
 SSLKEY_PREFIX = "keys/"
@@ -215,7 +215,7 @@ class MITMRunner(object):
 
         current_time = '[{}]'.format(datetime.datetime.today())
 
-        with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
+        with open(os.path.join(LOCAL_LOG_DIR , LOG_FILE), 'a') as fp:
             print(current_time, end=' ', file=fp)
             print(current_time, end=' ')
             for arg in args:

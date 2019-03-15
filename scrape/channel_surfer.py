@@ -12,12 +12,13 @@ import subprocess
 import datetime
 import os
 import binascii
+import json
 from shutil import copy2
 from os.path import join
 from shlex import split
 import fcntl, socket, struct
 
-LOG_DIR = os.getenv("LogDir")
+LOCAL_LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = False
@@ -32,13 +33,17 @@ def getHwAddr(ifname):
     info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', bytes(ifname[:15], 'utf-8')))
     return ''.join(['%02x:' % b for b in info[18:24]])[:-1]
 
+def dump_as_json(obj, json_path):
+    with open(json_path, 'w') as f:
+        json.dump(obj, f, indent=2)
+
 class SurferAborted(Exception):
     """Raised when we encounter an error while surfing this channel."""
     pass
 
 class ChannelSurfer(object):
 
-    def __init__(self, tv_ip, channel_id, data_dir, pcap_prefix, date_prefix, screenshot_folder):
+    def __init__(self, tv_ip, channel_id, data_dir, log_prefix ,pcap_prefix, date_prefix, screenshot_folder):
 
         self.pcap_filename = None
         if PLAT == "ROKU":
@@ -48,6 +53,7 @@ class ChannelSurfer(object):
         self.channel_id = str(channel_id)
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)
+        self.log_dir = join(self.data_dir  + str(log_prefix))
         self.screenshot_folder = self.data_dir + str(screenshot_folder)
         self.go_home()
         self.log('Initialized', channel_id)
@@ -55,6 +61,7 @@ class ChannelSurfer(object):
         self.launch_iter = 1
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
+        self.event_timestamp = {}
 
         # On Roku: Start a background process that continuously captures screenshots to
         # the same file: ${LogDir}/continuous_screenshot.png
@@ -68,7 +75,7 @@ class ChannelSurfer(object):
 
         current_time = '[{}]'.format(datetime.datetime.today())
 
-        with open(os.path.join(LOG_DIR , LOG_FILE), 'a') as fp:
+        with open(os.path.join(LOCAL_LOG_DIR , LOG_FILE), 'a') as fp:
             print(current_time, end=' ', file=fp)
             print(current_time, end=' ')
             for arg in args:
@@ -219,11 +226,20 @@ class ChannelSurfer(object):
 
         self.log('Capturing packets:', self.pcap_filename)
 
+    def timestamp_event(self, event_name):
+        self.event_timestamp[event_name] = int(time.time())
+
+    def write_timestamps(self):
+        timestamp_file_addr = join(self.log_dir,
+             "%s_timestamps.json" % self.channel_id)
+        self.log("Writing timestamps to %s" %  timestamp_file_addr)
+        dump_as_json(self.event_timestamp, timestamp_file_addr)
+
     def capture_screenshots(self, timeout):
 
         start_time = time.time()
         err_reported = False
-        FFMPEG_SCREENSHOT_NAME = os.path.join(LOG_DIR, 'continuous_screenshot.png')
+        FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, 'continuous_screenshot.png')
         while time.time() - start_time <= timeout:
             t0 = time.time()
             screenshot_filename = join(
