@@ -420,8 +420,8 @@ def install_channel(surfer, timestamps):
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
         if scrape_config.REC_AUD:
-            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
-                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
+            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -479,8 +479,9 @@ def launch_channel(surfer, mitmrunner, timestamps):
                 traceback.print_exc()
 
         if scrape_config.REC_AUD:
-            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
-                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
+            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -503,8 +504,8 @@ def collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_id):
                 traceback.print_exc()
 
         if scrape_config.REC_AUD:
-            recorder.dump(str(scrape_config.DATA_DIR) + str(scrape_config.AUDIO_PREFIX)
-                          + '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time())))
+            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
+            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -552,6 +553,7 @@ if __name__ == '__main__':
             main(sys.argv[1])
         else:
             channel_id = int(sys.argv[1])
-            scrape(channel_id, "/tmp/scrape-crawl")
+            date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
+            scrape(channel_id, date_prefix)
     else:
         main()
