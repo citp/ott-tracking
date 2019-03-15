@@ -21,7 +21,7 @@ import fcntl, socket, struct
 LOCAL_LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
-LOG_CRC_EN = False
+LOG_CRC_EN = True
 SCREENSHOT_STARTED = False
 
 PLAT = os.getenv("PLATFORM")

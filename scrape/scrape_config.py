@@ -17,7 +17,7 @@ MITMABLE_DOMAINS_WARM_UP_CRAWL = int(os.environ['MITMABLE_DOMAINS_WARM_UP_CRAWL'
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
     LAUNCH_RETRY_CNT = 5  # detect and store unmitmable domains and IPs
 else:
-    LAUNCH_RETRY_CNT = 1  # load unmitmable domains and IPs from files
+    LAUNCH_RETRY_CNT = 2  # load unmitmable domains and IPs from files
 
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20

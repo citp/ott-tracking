@@ -66,6 +66,7 @@ def loadUnMitmableHostsAndIps(filename):
     if isfile(filename):
         for line in open(filename):
             line = line.rstrip("\n")
+            append_to_file(mitmableFileName, line)
             _, ip, host = line.split("\t")
             if host:
                 hosts.add(host)
@@ -86,8 +87,8 @@ class _TlsStrategy:
         self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
         self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
         self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileNameIn)
-        logging.info("Loaded %d unmitmable hosts, %d unmitmable IPs from %s" % (
-            len(self.unMitmableHosts), len(self.unMitmableIps), unMitmableFileNameIn))
+        my_log("Loaded %d unmitmable hosts, %d unmitmable IPs from %s" % (
+            len(self.unMitmableHosts), len(self.unMitmableIps), unMitmableFileNameIn), write_to_file=False)
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
@@ -97,7 +98,6 @@ class _TlsStrategy:
         return list(IPList)
     def getAssociatedDomain(self, IPAddress):
         hostname = ""
-        IPList = set([str(IPAddress)])
         if IPAddress in self.rIP2NameDic:
             hostname = self.rIP2NameDic.get(IPAddress)
         return hostname
@@ -201,15 +201,16 @@ def load(l):
         pass
     '''
 
-def my_log(*args):
+def my_log(*args, write_to_file = True):
     global strip_log_file, lock_obj
     s = '[{}] '.format(datetime.today())
     s += ' '.join([str(v) for v in args])
 
     print(s)
-    with lock_obj:
-        with open(strip_log_file, 'a') as fp:
-            print(s, file=fp)
+    if write_to_file:
+        with lock_obj:
+            with open(strip_log_file, 'a') as fp:
+                print(s, file=fp)
 
 def configure(updated):
     global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut,\
@@ -229,17 +230,19 @@ def configure(updated):
             channel_id,
             int(time.time())
         )
-        mitmableFileName = os.path.join(str(data_dir), "mitmlog/") + str(base_filename) + '.mitmable'
-        unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
-        unMitmableFileNameOut = os.path.join(str(data_dir), "mitmlog/") + str(channel_id) + '.unmitmable'
-        # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
-        tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
 
         strip_log_dir = os.path.join(str(data_dir), "mitmlog/")
         if not os.path.isdir(strip_log_dir):
             mitmproxy.ctx.log("Error!!! Strip folder %s not found!" % strip_log_dir)
         else:
             strip_log_file = os.path.join(strip_log_dir, (str(base_filename) + '.strip'))
+
+        mitmableFileName = os.path.join(str(data_dir), "mitmlog/") + str(base_filename) + '.mitmable'
+        unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
+        unMitmableFileNameOut = os.path.join(str(data_dir), "mitmlog/") + str(channel_id) + '.unmitmable'
+        # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+        tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
+
         mitmproxy.ctx.log('Successfully loaded smart tls script!')
         mitmproxy.ctx.log('SSL strip set to %s' % str(ssl_strip_en))
         #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
