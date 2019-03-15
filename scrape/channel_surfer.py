@@ -227,7 +227,7 @@ class ChannelSurfer(object):
         self.log('Capturing packets:', self.pcap_filename)
 
     def timestamp_event(self, event_name):
-        self.event_timestamp[event_name] = int(time.time())
+        self.event_timestamp[event_name] = time.time()
 
     def write_timestamps(self):
         timestamp_file_addr = join(self.log_dir,
