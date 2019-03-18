@@ -42,8 +42,7 @@ def clear_dns_cache():
         cmd = "sudo systemd-resolve --flush-caches"
         p = subprocess.Popen(cmd, shell=True)
 
-
-def dns_sniffer_call(interface, hostIP=None):
+def dns_sniffer_call(interface):
     global Name2IPDic, IP2NameDic, rName2IPDic, rIP2NameDic
     clear_dns_cache()
     Name2IPDic = {}
@@ -65,13 +64,8 @@ def dns_sniffer_call(interface, hostIP=None):
         sys.exit(1)
     '''
 
-    sniff_filter = "port 53"
-    if hostIP is not None:
-        sniff_filter = "host " + hostIP + " and " + sniff_filter
-
-    print("Sniffing on " + str(interface) + " with filter : \"" + sniff_filter + "\"")
-
-    sniff(iface = interface,filter = sniff_filter, prn = querysniff, store = 0)
+    print("Sniffing on " + str(interface))
+    sniff(iface = interface,filter = "port 53", prn = querysniff, store = 0)
 
 
 if __name__ == '__main__':
