@@ -262,13 +262,38 @@ def load_timestamp_json(root_dir):
                     traceback.print_exc()
     return channel_timstamps
 
+
+def load_pcaps(root_dir, transform_func):
+    pcap_folder_name = os.path.join(root_dir, "pcaps")
+    for root, dirs, files in os.walk(pcap_folder_name):
+        for file in files:
+            if file.endswith(".pcap"):
+                #channel_name = file.split('-')[0]
+                try:
+                    transform_func(root, file)
+                except Exception:
+                    print("Error processing file %s" % file)
+                    traceback.print_exc()
+
+
+def find_tls_failures_pcap(root_dir):
+    tls_failure_list = {}
+    def tls_failure_find(root, file , failure_list = tls_failure_list):
+        channel_name = file.split('-')[0]
+        file_name = os.path.join(root, file)
+        print(channel_name)
+        "./extract_fields.sh -i /tmp/amazon-data-100-nomitm/pcaps -f "http" -e eth.src -e ip.dst -e http.request.method -e http.host"
+
+    load_pcaps(root_dir, tls_failure_find)
+
 def test():
     global rIP2NameDB, rName2IPDB, channel_timstamps
     root_dir = sys.argv[1]
     (rIP2NameDB, rName2IPDB) = load_dns_data(root_dir)
-    channel_timstamps = load_timestamp_json(root_dir)
-    http_s_log_to_csv(root_dir)
-    tls_pass_thru_list(root_dir)
+    #channel_timstamps = load_timestamp_json(root_dir)
+    #http_s_log_to_csv(root_dir)
+    #tls_pass_thru_list(root_dir)
+    find_tls_failures_pcap(root_dir)
 
 
 
