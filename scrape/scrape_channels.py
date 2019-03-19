@@ -336,7 +336,11 @@ def detect_playback_using_audio(seconds):
 
 
 def is_video_playing(surfer, seconds=5):
-    """Return True if playback is detected by either audio or screenshots"""
+    """Return True if playback is detected by either audio or screenshots.
+
+    `seconds` must be an odd integer, since the audio detection use
+    majority voting.
+    """
     return detect_playback_using_audio(seconds) or \
         detect_playback_using_screenshots(surfer)
 
@@ -344,10 +348,14 @@ def is_video_playing(surfer, seconds=5):
 KEY_SEQUENCES = {
     "ROKU": [
         ["Select", "Select", "Select"],
-        ["Down", "Down", "Select"]],
+        ["Down", "Select", "Select"],
+        ["Select", "Select", "Down", "Select", "Down", "Select"]
+    ],
     "AMAZON": [
         ["Select", "Select", "Select"],
-        ["Down", "Down", "Select"]]
+        ["Down", "Select", "Select"],
+        ["Select", "Select", "Down", "Select", "Down", "Select"]
+    ]
 }
 
 
