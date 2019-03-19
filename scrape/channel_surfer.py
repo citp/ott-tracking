@@ -50,6 +50,7 @@ class ChannelSurfer(object):
             self.rrc = RokuRemoteControl(tv_ip)
         elif PLAT == "AMAZON":
             self.rrc = AmazonRemoteControl(tv_ip)
+        self.tv_ip = tv_ip
         self.channel_id = str(channel_id)
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)
@@ -210,9 +211,9 @@ class ChannelSurfer(object):
 
         pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
-
+ 
         command = ['tcpdump', '-w', pcap_path, '-i', wlan_if_name, 'ether',  'host',
-                   wlan_eth_mac] + split(' and not arp and port not ssh')
+                   wlan_eth_mac] + split(' and not arp and port not ssh and ip.addr == '+ self.tv_ip )
         self.tcpdump_proc = subprocess.Popen(command,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

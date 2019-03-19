@@ -1,12 +1,10 @@
 import pandas as pd
-from urllib.request import urlopen
 from urllib.parse import urlparse
-from tld import parse_tld
 import json
 import sys
 import ntpath
 import re
-import time
+import traceback
 import os
 import ipaddress
 
@@ -149,7 +147,9 @@ class LogFileReader(object):
         elif srv_addr in rIP2NameDB:
             domain = rIP2NameDB[srv_addr][0]
         else:
-            print("Server doesn't have a domain name! Couldn't find the server name in the DNS database either!")
+            print("Server doesn't have a domain name! Couldn't find the server name in the "
+                  "DNS database either! Skipping!")
+            print(request_line)
             return
         self.tls_pass_thru_list.add(domain)
 
@@ -207,44 +207,67 @@ def tls_pass_thru_list(root_dir):
                 log_reader = LogFileReader(os.path.join(root, file), channels)
                 log_reader.tls_handshake_fail()
                 log_reader.tls_pass_thru()
-                print("Info for Channel: " + log_reader.channel_name + " - " + log_reader.channel_id)
-                if bool(log_reader.tls_hs_list):
-                    print("TLS Handshake Failure Domains: " + str(log_reader.tls_hs_list))
-                if bool(log_reader.tls_pass_thru_list):
-                    print("TLS Pass Through Domains: " + str(log_reader.tls_pass_thru_list))
-                    print("Delta: " + str(log_reader.tls_hs_list.difference(log_reader.tls_pass_thru_list) ))
-                    print('-----------------')
+                if bool(log_reader.tls_hs_list) and bool(log_reader.tls_pass_thru_list):
+                    # print("TLS Handshake Failure Domains: " + str(log_reader.tls_hs_list))
+                    #print("TLS Pass Through Domains: " + str(log_reader.tls_pass_thru_list))
+                    delta = log_reader.tls_hs_list.difference(log_reader.tls_pass_thru_list)
+                    if delta:
+                        print("Info for Channel: " + log_reader.channel_name + " - " + log_reader.channel_id)
+                        print("Delta: " + str(delta))
+                        print('-----------------')
 
 
 def load_dns_data(root_dir):
     rIP2NameDB = {}
     rName2IPDB = {}
-    log_folder_name = os.path.join(root_dir, "db")
-    for root, dirs, files in os.walk(log_folder_name):
+    db_folder_name = os.path.join(root_dir, "db")
+    for root, dirs, files in os.walk(db_folder_name):
         for file in files:
             if file.endswith(".json"):
                 file_name = os.path.join(root, file)
-                with open(file_name) as f:
-                    if file.endswith("rIP2NameDB.json"):
-                        data = json.load(f)
-                        for IP in data:
-                            if IP not in rIP2NameDB:
-                                rIP2NameDB[IP] = []
-                            rIP2NameDB[IP].append(data[IP]['value'])
-                    elif file.endswith("rName2IPDB.json"):
-                        data = json.load(f)
-                        for Domain in data:
-                            if Domain not in rName2IPDB:
-                                rName2IPDB[Domain] = []
-                            rName2IPDB[Domain].extend(data[Domain]['value'])
+                try:
+                    with open(file_name) as f:
+                        if file.endswith("rIP2NameDB.json"):
+                            data = json.load(f)
+                            for IP in data:
+                                if IP not in rIP2NameDB:
+                                    rIP2NameDB[IP] = []
+                                rIP2NameDB[IP].append(data[IP]['value'])
+                        elif file.endswith("rName2IPDB.json"):
+                            data = json.load(f)
+                            for Domain in data:
+                                if Domain not in rName2IPDB:
+                                    rName2IPDB[Domain] = []
+                                rName2IPDB[Domain].extend(data[Domain]['value'])
+                except Exception:
+                    print("Couldn't open %s" % file_name)
+                    traceback.print_exc()
     return (rIP2NameDB, rName2IPDB)
 
 
+def load_timestamp_json(root_dir):
+    channel_timstamps = {}
+    log_folder_name = os.path.join(root_dir, "logs")
+    for root, dirs, files in os.walk(log_folder_name):
+        for file in files:
+            if file.endswith("_timestamps.json"):
+                channel_name = file.replace('_timestamps.json','')
+                file_name = os.path.join(root, file)
+                try:
+                    with open(file_name) as f:
+                        data = json.load(f)
+                        channel_timstamps[channel_name] = data
+                except Exception:
+                    print("Couldn't open %s" % file_name)
+                    traceback.print_exc()
+    return channel_timstamps
+
 def test():
-    global rIP2NameDB, rName2IPDB
+    global rIP2NameDB, rName2IPDB, channel_timstamps
     root_dir = sys.argv[1]
     (rIP2NameDB, rName2IPDB) = load_dns_data(root_dir)
-    #http_s_log_to_csv(root_dir)
+    channel_timstamps = load_timestamp_json(root_dir)
+    http_s_log_to_csv(root_dir)
     tls_pass_thru_list(root_dir)
 
 
