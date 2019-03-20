@@ -359,15 +359,16 @@ KEY_SEQUENCES = {
 }
 
 
-
-def play_key_sequence(surfer, key_sequence, timestamps_arr):
-    for key in key_sequence:
-        timestamps_arr.append((key, int(time.time())))
+def play_key_sequence(surfer, key_sequence):
+    for idx, key in enumerate(key_sequence):
+        surfer.timestamp_event("key-seq-%s" % idx)
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
             surfer.capture_screenshots(10)
             if is_video_playing(surfer):
                 return True
+        elif key == "Down":  # pause for 1s after Down
+            surfer.capture_screenshots(1)
     else:
         return False
 
@@ -449,7 +450,6 @@ def launch_mitm(mitmrunner):
 def launch_channel(surfer, mitmrunner):
     log('Launching channel %s' % str(surfer.channel_id))
     err_occurred = False
-    timestamps_arr = []  # list of tuples in the form of (key, timestamp)
     try:
         surfer.timestamp_event("launch")
 
@@ -459,10 +459,11 @@ def launch_channel(surfer, mitmrunner):
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
-            surfer.launch_channel()  # make sure we start from the homepage
             for key_sequence in KEY_SEQUENCES[scrape_config.PLAT]:
-                playback_detected = play_key_sequence(
-                    surfer, key_sequence, timestamps_arr)
+                surfer.launch_channel()  # make sure we start from the homepage
+                log('Starting a new key seq for channel: %s %s' % (
+                    surfer.channel_id, ",".join(key_sequence)))
+                playback_detected = play_key_sequence(surfer, key_sequence)
                 if playback_detected:
                     log('Playback detected on channel: %s' % channel_id)
                     fast_forward(surfer)
