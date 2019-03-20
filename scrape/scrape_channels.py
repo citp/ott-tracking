@@ -378,24 +378,19 @@ def play_key_sequence(surfer, key_sequence):
 
 def fast_forward(surfer):
     """Press FWD to trigger more ads"""
-    MAX_FWD_CNT = 1
-    fwd_cnt = 0
-    while(fwd_cnt < MAX_FWD_CNT):
-        fwd_cnt+=1
-        log("SMART_CRAWLER: will fast forward (%d of %d) on channel %s" % (
-            fwd_cnt, MAX_FWD_CNT, surfer.channel_id))
-        surfer.press_key('Fwd')
-        surfer.capture_screenshots(1)
-        surfer.press_key('Fwd')
-        surfer.capture_screenshots(1)
-        surfer.press_key('Fwd')
-        surfer.capture_screenshots(1)
-        sleep(10)
-        log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
-            % surfer.channel_id)
-        surfer.press_key('Play')
-        surfer.capture_screenshots(30)
-        # sleep(30)
+    log("SMART_CRAWLER: will fast forward on channel %s" % surfer.channel_id)
+    surfer.press_key('Fwd')
+    surfer.capture_screenshots(1)
+    surfer.press_key('Fwd')
+    surfer.capture_screenshots(1)
+    surfer.press_key('Fwd')
+    surfer.capture_screenshots(1)
+    sleep(10)
+    log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
+        % surfer.channel_id)
+    surfer.press_key('Play')
+    surfer.capture_screenshots(30)
+    # sleep(30)
 
 
 def launch_channel_for_mitm_warmup(surfer, retry_count):
