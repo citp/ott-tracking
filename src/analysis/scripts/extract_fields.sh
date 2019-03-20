@@ -40,6 +40,9 @@ usage()
 
 while [ "$1" != "" ]; do
     case $1 in
+        # write to filethat contains the pcaps
+        -w )                    WRITE_TO_FILE=true
+                                ;;
          # directory that contains the pcaps
         -i | --input_dir )      shift
                                 PCAP_DIR=$1
@@ -70,8 +73,10 @@ done
 #echo "DEBUG" $PCAP_DIR $FILTER $FIELDS;
 
 # create a temp dir to store intermediate files
-OUTDIR=$(mktemp -d pcap_extract_fields.XXXXXXXXX)
-mkdir -p $OUTDIR
+if [ "$WRITE_TO_FILE" = true ] ; then
+    OUTDIR=$(mktemp -d pcap_extract_fields.XXXXXXXXX)
+    mkdir -p $OUTDIR
+fi
 MAX_PROCESS=8
 i=0
 for f in $PCAP_DIR/*.pcap; do
@@ -83,7 +88,12 @@ for f in $PCAP_DIR/*.pcap; do
   SSLKEYFILE=${SSLKEYLOGFOLDER}/`ls $SSLKEYLOGFOLDER | grep "^${channelid}\.txt"`
   [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:'${SSLKEYFILE}'"
 
-  tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
+  if [ "$WRITE_TO_FILE" = true ] ; then
+    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
+  else
+    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
+  fi
+
   #sleep 0.05;
   n_running+=1
   ((i=i%MAX_PROCESS)); ((i++==0)) && wait
@@ -91,6 +101,10 @@ for f in $PCAP_DIR/*.pcap; do
 done
 wait
 
-echo "Output in $OUTDIR" 
+if [ "$WRITE_TO_FILE" = true ] ; then
+  echo "Output in $OUTDIR"
+fi
+
+
 
 
