@@ -448,7 +448,7 @@ def launch_mitm(mitmrunner):
 
 
 def launch_channel(surfer, mitmrunner):
-    log('Launching channel %s' % str(surfer.channel_id))
+    log('Launching channel %s' % surfer.channel_id)
     err_occurred = False
     try:
         surfer.timestamp_event("launch")
@@ -465,14 +465,14 @@ def launch_channel(surfer, mitmrunner):
                     surfer.channel_id, ",".join(key_sequence)))
                 playback_detected = play_key_sequence(surfer, key_sequence)
                 if playback_detected:
-                    log('Playback detected on channel: %s' % channel_id)
+                    log('Playback detected on channel: %s' % surfer.channel_id)
                     fast_forward(surfer)
                     break
 
                 time.sleep(4)
                 # TODO: should we restart audio recording here?
             else:
-                log('Cannot detect playback on channel: %s' % channel_id)
+                log('Cannot detect playback on channel: %s' % surfer.channel_id)
         else:
             for okay_ix in range(0, 3):
                 if not surfer.channel_is_active():
