@@ -461,12 +461,12 @@ def launch_channel(surfer, mitmrunner):
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
+            n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
             for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT]):
                 surfer.launch_channel()  # make sure we start from the homepage
                 log("SMART_CRAWLER: Will play key seq (%d of %d) for channel:"
-                    " %s %s" % (
-                    idx, len(key_sequence),
-                    surfer.channel_id, "-".join(key_sequence)))
+                    " %s %s" % (idx, n_key_seqs, surfer.channel_id,
+                                "-".join(key_sequence)))
                 playback_detected = play_key_sequence(surfer, key_sequence)
                 if playback_detected:
                     log('SMART_CRAWLER: Playback detected on channel: %s' %
