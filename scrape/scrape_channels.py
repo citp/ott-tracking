@@ -389,7 +389,7 @@ def fast_forward(surfer):
         surfer.press_key('Fwd')
         surfer.capture_screenshots(1)
         surfer.press_key('Fwd')
-        surfer.capture_screenshots(5)
+        surfer.capture_screenshots(1)
         sleep(10)
         log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
             % surfer.channel_id)
