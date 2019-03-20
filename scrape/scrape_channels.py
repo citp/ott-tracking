@@ -360,8 +360,10 @@ KEY_SEQUENCES = {
 
 
 def play_key_sequence(surfer, key_sequence):
+    n_keys = len(key_sequence)
     for idx, key in enumerate(key_sequence):
         surfer.timestamp_event("key-seq-%s" % idx)
+        log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
             surfer.capture_screenshots(10)
@@ -459,20 +461,24 @@ def launch_channel(surfer, mitmrunner):
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
-            for key_sequence in KEY_SEQUENCES[scrape_config.PLAT]:
+            for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT]):
                 surfer.launch_channel()  # make sure we start from the homepage
-                log('Starting a new key seq for channel: %s %s' % (
-                    surfer.channel_id, ",".join(key_sequence)))
+                log("SMART_CRAWLER: Will play key seq (%d of %d) for channel:"
+                    " %s %s" % (
+                    idx, len(key_sequence),
+                    surfer.channel_id, "-".join(key_sequence)))
                 playback_detected = play_key_sequence(surfer, key_sequence)
                 if playback_detected:
-                    log('Playback detected on channel: %s' % surfer.channel_id)
+                    log('SMART_CRAWLER: Playback detected on channel: %s' %
+                        surfer.channel_id)
                     fast_forward(surfer)
                     break
 
                 time.sleep(4)
                 # TODO: should we restart audio recording here?
             else:
-                log('Cannot detect playback on channel: %s' % surfer.channel_id)
+                log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
+                    surfer.channel_id)
         else:
             for okay_ix in range(0, 3):
                 if not surfer.channel_is_active():
