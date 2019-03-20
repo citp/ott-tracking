@@ -8,7 +8,7 @@ sslPinningDisable = True
 rootDetectionDisable = True
 logLibraries = True
 logListeners = True
-verbose = False
+verbose = True
 fridaStartingPort = 45000
 serviceBlacklistJSON = "serviceBlacklist.json"
 
