@@ -31,6 +31,7 @@ from multiprocessing import Process
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 from timeout import timeout
+from time import sleep
 if scrape_config.REC_AUD:
     from audio_recorder import AudioRecorder
 
@@ -377,7 +378,24 @@ def play_key_sequence(surfer, key_sequence):
 
 def fast_forward(surfer):
     """Press FWD to trigger more ads"""
-    pass
+    MAX_FWD_CNT = 3
+    fwd_cnt = 0
+    while(fwd_cnt < MAX_FWD_CNT):
+        fwd_cnt+=1
+        log("SMART_CRAWLER: will fast forward (%d of %d) on channel %s" % (
+            fwd_cnt, MAX_FWD_CNT, surfer.channel_id))
+        surfer.press_key('Fwd')
+        surfer.capture_screenshots(1)
+        surfer.press_key('Fwd')
+        surfer.capture_screenshots(1)
+        surfer.press_key('Fwd')
+        surfer.capture_screenshots(5)
+        sleep(10)
+        log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
+            % surfer.channel_id)
+        surfer.press_key('Play')
+        surfer.capture_screenshots(5)
+        sleep(10)
 
 
 def launch_channel_for_mitm_warmup(surfer, retry_count):
