@@ -361,7 +361,7 @@ KEY_SEQUENCES = {
 
 def play_key_sequence(surfer, key_sequence):
     n_keys = len(key_sequence)
-    for idx, key in enumerate(key_sequence):
+    for idx, key in enumerate(key_sequence, 1):
         surfer.timestamp_event("key-seq-%s" % idx)
         log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
         surfer.press_key(key)
@@ -462,7 +462,7 @@ def launch_channel(surfer, mitmrunner):
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
             n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
-            for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT]):
+            for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
                 surfer.launch_channel()  # make sure we start from the homepage
                 log("SMART_CRAWLER: Will play key seq (%d of %d) for channel:"
                     " %s %s" % (idx, n_key_seqs, surfer.channel_id,
