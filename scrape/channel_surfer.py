@@ -213,7 +213,7 @@ class ChannelSurfer(object):
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
  
         command = ['tcpdump', '-w', pcap_path, '-i', wlan_if_name, 'ether',  'host',
-                   wlan_eth_mac] + split(' and not arp and port not ssh and ip.addr == '+ self.tv_ip )
+                   wlan_eth_mac] + split(' and not arp and port not ssh and host '+ self.tv_ip )
         self.tcpdump_proc = subprocess.Popen(command,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
