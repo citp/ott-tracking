@@ -19,7 +19,7 @@ from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
 
 
-UNMITMABLE_HOST_DIR = "/smart-tv-data/roku-unmitmable-hosts/"
+UNMITMABLE_HOSTS_DIR = os.environ['UNMITMABLE_HOSTS_DIR']
 
 
 class InterceptionResult(Enum):
