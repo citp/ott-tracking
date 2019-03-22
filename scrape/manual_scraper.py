@@ -56,9 +56,8 @@ def scrape_channel():
             continue
         else:
             surfer = ret[1]
-            timestamps = ret[2]
             if scrape_config.MITMPROXY_ENABLED:
-                mitmrunner = ret[3]
+                mitmrunner = ret[2]
             else:
                 mitmrunner = None
         nextKey = ""

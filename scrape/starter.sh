@@ -1,32 +1,20 @@
 #!/bin/bash
 set -x
 
-# Change platform if needed
-#export PLATFORM=amazon
-export PLATFORM=roku
+#We have to run source twice to write to a file
+source global.conf
+source global.conf |& tee $LOG_OUT_FILE
 
-export MITMPROXY_ENABLED=0
-export MITMABLE_DOMAINS_WARM_UP_CRAWL=0  # if 1 it'll launch each channel 5times
-
-export PLATFORM_DIR=`realpath ./platforms/${PLATFORM}`
-export ScriptDir=`realpath ./scripts/`
-export MainDir=`realpath $PWD`
-
-source ${PLATFORM_DIR}/config.txt
-
-#Global log folder/file
-mkdir -p ${MainDir}/logs 2> /dev/null
-export LogDir=${MainDir}/logs
+#creating local log folder
+mkdir -p ${LogDir} 2> /dev/null
 rm -rf ${LogDir}/*
-export LOG_OUT_FILE="${LogDir}/output.txt"
 
 #echo 'Clearing Data Folder!'
 mkdir ${DATA_DIR} 2> /dev/null
 #rm -rf ${DATA_DIR}/*
 
-
-cd $MainDir
+##CRAWL COMMANDS!
 # Automatic crawler
-stdbuf -oL -eL python3 -u ./scrape_channels.py $1 |& tee $LOG_OUT_FILE
+stdbuf -oL -eL python3 -u ./scrape_channels.py $1 |& tee -a $LOG_OUT_FILE
 # Manual crawler
 #stdbuf -oL -eL python3 -u ./manual_scraper.py |& tee $LOG_OUT_FILE
