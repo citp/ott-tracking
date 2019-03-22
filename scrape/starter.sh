@@ -13,10 +13,6 @@ rm -rf ${LogDir}/*
 mkdir ${DATA_DIR} 2> /dev/null
 #rm -rf ${DATA_DIR}/*
 
-#optional
-DATE_PREFIX=`python3 -c 'from datetime import datetime; print(datetime.now().strftime("%Y%m%d-%H%M%S"))'`
-DATA_DIR=${DATA_DIR}-${DATE_PREFIX}
-
 ##CRAWL COMMANDS!
 # Automatic crawler
 stdbuf -oL -eL python3 -u ./scrape_channels.py $1 |& tee -a $LOG_OUT_FILE

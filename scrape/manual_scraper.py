@@ -68,11 +68,11 @@ def scrape_channel():
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
-                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+                collect_data(surfer, mitmrunner, date_prefix)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
-                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+                collect_data(surfer, mitmrunner, date_prefix)
                 return
         if key == "r":
             continue
@@ -83,15 +83,15 @@ def scrape_channel():
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
-                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+                collect_data(surfer, mitmrunner, date_prefix)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
-                collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+                collect_data(surfer, mitmrunner, date_prefix)
                 return
         if key == "r":
             continue
-        err_occurred = collect_data(surfer, mitmrunner, timestamps, date_prefix, channel_name)
+        err_occurred = collect_data(surfer, mitmrunner,  date_prefix)
         write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
