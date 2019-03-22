@@ -32,20 +32,27 @@ set -x
 
 FILTER="eth"  # do not filter out any packets by default
 FORMAT="fields"  # output format, CSV by default. -T in tshark
+SUFFIX="txt" #default suffix for output files
 
 usage()
 {
-    echo "Usage: extract_fields.sh -i /path/to/pcaps [-o /path/to/keys] [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
+    echo "Usage: extract_fields.sh -w /path/to/output/dir -i /path/to/pcaps [-o /path/to/keys] [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
 }
 
 while [ "$1" != "" ]; do
     case $1 in
-        # write to filethat contains the pcaps
+        # write results to file
         -w )                    WRITE_TO_FILE=true
+                                shift
+                                OUTDIR=$1
                                 ;;
-         # directory that contains the pcaps
+        # directory that contains the pcaps
         -i | --input_dir )      shift
                                 PCAP_DIR=$1
+                                ;;
+        # add suffix to the name
+        -s )                    shift
+                                SUFFIX=$1
                                 ;;
 		# packet filter, optional
         -f | --filter )         shift
@@ -56,11 +63,11 @@ while [ "$1" != "" ]; do
                                 FORMAT=$1
                                 ;;
         # use SSLKEYLOGFOLDER to decrypt traffic
-		-o | --sslkeydir)
-                                shift
+		-o | --sslkeydir)       shift
                                 SSLKEYLOGFOLDER=$1
                                 ;;
         # list of fields to be extracted
+        # these should be the last arguments
         -e )
                                 FIELDS=$@
                                 break
@@ -73,10 +80,11 @@ done
 #echo "DEBUG" $PCAP_DIR $FILTER $FIELDS;
 
 # create a temp dir to store intermediate files
-if [ "$WRITE_TO_FILE" = true ] ; then
-    OUTDIR=$(mktemp -d pcap_extract_fields.XXXXXXXXX)
-    mkdir -p $OUTDIR
-fi
+#if [ "$WRITE_TO_FILE" = true ] ; then
+#    OUTDIR=$(mktemp -d pcap_extract_fields.XXXXXXXXX)
+mkdir -p $OUTDIR
+#fi
+
 MAX_PROCESS=8
 i=0
 for f in $PCAP_DIR/*.pcap; do
@@ -89,7 +97,7 @@ for f in $PCAP_DIR/*.pcap; do
   [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:'${SSLKEYFILE}'"
 
   if [ "$WRITE_TO_FILE" = true ] ; then
-    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.txt &
+    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.${SUFFIX} &
   else
     tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
   fi
