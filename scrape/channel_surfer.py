@@ -26,6 +26,7 @@ SCREENSHOT_STARTED = False
 
 PLAT = os.getenv("PLATFORM")
 PLATFORM_DIR = os.getenv("PLATFORM_DIR")
+ADB_PORT_NO = "5555"
 
 
 def getHwAddr(ifname):
@@ -211,9 +212,22 @@ class ChannelSurfer(object):
 
         pcap_path = join(str(self.pcap_dir), str(self.pcap_filename))
         # tcpdump -v -w "$1".pcap -i ${LANIF} ether host $ETH_MAC_ADDRESS and not arp and port not ssh
- 
-        command = ['tcpdump', '-w', pcap_path, '-i', wlan_if_name, 'ether',  'host',
-                   wlan_eth_mac] + split(' and not arp and port not ssh and host '+ self.tv_ip )
+
+        mac_filter = ' ether host ' +  wlan_eth_mac
+        protocol_filter = ' and not arp and port not ssh'
+        if PLAT == "ROKU":
+            host_filter = ' and host ' + self.tv_ip
+        elif PLAT == "AMAZON":
+            #Filter out ADB packets
+            host_filter = ' and (' +\
+                          '(src ' + self.tv_ip + ' and not src port ' + ADB_PORT_NO +')'+\
+                          ' or '+\
+                          '(dst '  + self.tv_ip + ' and not dst port ' + ADB_PORT_NO +')' +\
+                          ')'
+
+        command = ['tcpdump', '-w', pcap_path, '-i', wlan_if_name] +\
+                     mac_filter.split() + protocol_filter.split() + host_filter.split()
+
         self.tcpdump_proc = subprocess.Popen(command,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

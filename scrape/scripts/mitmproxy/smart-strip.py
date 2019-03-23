@@ -19,7 +19,10 @@ from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
 
 
-UNMITMABLE_HOST_DIR = os.environ['UNMITMABLE_HOSTS_DIR']
+try:
+    UNMITMABLE_HOST_DIR = os.environ['UNMITMABLE_HOST_DIR']
+except Exception as e:
+        print("Error! Env variable UNMITMABLE_HOST_DIR not defined!")
 
 
 class InterceptionResult(Enum):
