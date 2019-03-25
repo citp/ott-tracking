@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 set -x
 DATA_DIR=$1
-if [ ! -d "$DATA_DIR" ]; then
-  echo "Usage: $0 CRAWL_DATA_DIR"
+TMP_DIR=$2
+if [ ! -d "$DATA_DIR" ] || [ ! -d "$TMP_DIR" ] ; then
+  echo "Usage: $0 CRAWL_DATA_DIR LOCAL_TMP_DIR"
 fi
 
-TMP_DIR="temp"
+
 PCAP_DIR="$1/pcaps"
 KEY_DIR="$1/keys"
 
-#List all TCP streams
-#Call post_process.sh to find the first time epoch
+#List all SSL/TCP streams SYN packets
 FORMAT="fields"
-FILTER="tcp and ssl"
+FILTER="tcp.flags.syn==1 && tcp.flags.ack==0"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="tcp_streams"
 ./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
@@ -34,3 +34,5 @@ SUFFIX="ssl_fail"
 
 #Post processing of files
 ./post_process.sh $TMP_DIR
+
+python3 pcap_analysis.py $DATA_DIR $TMP_DIR
