@@ -20,7 +20,7 @@ SUFFIX="tcp_streams"
 #MITM attemps (we search for all x509 certs that have mitmproxy in their name)
 FORMAT="fields"
 FILTER="x509sat.uTF8String==mitmproxy"
-FIELDS="-e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="mitmproxy-attemp"
 ./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
@@ -28,6 +28,9 @@ SUFFIX="mitmproxy-attemp"
 #Full list: https://tools.ietf.org/html/rfc5246#appendix-A.3
 FORMAT="json"
 FILTER="ssl.alert_message.desc==46 or ssl.alert_message.desc==48"
-FIELDS="-e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="ssl_fail"
 ./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
+#Post processing of files
+./post_process.sh $TMP_DIR
