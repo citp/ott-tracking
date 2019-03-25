@@ -246,7 +246,7 @@ class ChannelSurfer(object):
 
     def write_timestamps(self):
         timestamp_file_addr = join(self.log_dir,
-             "%s_timestamps.json" % self.channel_id)
+             "%s-timestamps.json" % self.channel_id)
         self.log("Writing timestamps to %s" %  timestamp_file_addr)
         dump_as_json(self.event_timestamp, timestamp_file_addr)
 

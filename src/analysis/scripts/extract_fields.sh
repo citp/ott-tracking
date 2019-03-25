@@ -56,7 +56,11 @@ while [ "$1" != "" ]; do
                                 ;;
 		# packet filter, optional
         -f | --filter )         shift
-                                FILTER=$1
+                                FILTER=""
+            while [[ $1 != -* ]]; do
+                                FILTER="$FILTER $1"
+                                shift
+            done
                                 ;;
 		# output format, optional
         -t | --format )         shift
@@ -97,9 +101,9 @@ for f in $PCAP_DIR/*.pcap; do
   [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:'${SSLKEYFILE}'"
 
   if [ "$WRITE_TO_FILE" = true ] ; then
-    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.${SUFFIX} &
+    tshark -r $f $SSLKEYOPTION -E header=y -E separator=, -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.${SUFFIX} &
   else
-    tshark -r $f $SSLKEYOPTION -E separator="|" -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
+    tshark -r $f $SSLKEYOPTION -E header=y -E separator=,-T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
   fi
 
   #sleep 0.05;
@@ -115,4 +119,9 @@ fi
 
 
 
+#Contenders for POST body capture:
+#tshark: https://stackoverflow.com/questions/8903815/how-do-i-use-tshark-to-print-request-response-pairs-from-a-pcap-file
+#httpdump: https://github.com/hsiafan/httpdump
+#httpcap https://pypi.org/project/httpcap/
+#pcap-http-analyzer: https://github.com/Enough-Software/pcap-http-analyzer.git
 

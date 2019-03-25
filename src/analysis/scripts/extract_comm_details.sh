@@ -9,12 +9,25 @@ TMP_DIR="temp"
 PCAP_DIR="$1/pcaps"
 KEY_DIR="$1/keys"
 
+#List all TCP streams
+#Call post_process.sh to find the first time epoch
+FORMAT="fields"
+FILTER="tcp and ssl"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+SUFFIX="tcp_streams"
+./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
 #MITM attemps (we search for all x509 certs that have mitmproxy in their name)
+FORMAT="fields"
 FILTER="x509sat.uTF8String==mitmproxy"
-./extract_fields.sh -w $TMP_DIR -s attemp -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t json -e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream
+FIELDS="-e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream"
+SUFFIX="mitmproxy-attemp"
+./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
 #All TLS handshake failures
 #Full list: https://tools.ietf.org/html/rfc5246#appendix-A.3
+FORMAT="json"
 FILTER="ssl.alert_message.desc==46 or ssl.alert_message.desc==48"
-./extract_fields.sh -w $TMP_DIR -s ssl_fail -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t json  -e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream
-
+FIELDS="-e frame.time_epoch -e ip.src -e ip.dst -e tcp.stream"
+SUFFIX="ssl_fail"
+./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS

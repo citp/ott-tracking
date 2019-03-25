@@ -1,4 +1,3 @@
-import pandas as pd
 from urllib.parse import urlparse
 import json
 import sys
@@ -250,8 +249,8 @@ def load_timestamp_json(root_dir):
     log_folder_name = os.path.join(root_dir, "logs")
     for root, dirs, files in os.walk(log_folder_name):
         for file in files:
-            if file.endswith("_timestamps.json"):
-                channel_name = file.replace('_timestamps.json','')
+            if file.endswith("-timestamps.json"):
+                channel_name = file.replace('-timestamps.json','')
                 file_name = os.path.join(root, file)
                 try:
                     with open(file_name) as f:
