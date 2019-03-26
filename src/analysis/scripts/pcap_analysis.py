@@ -97,3 +97,47 @@ for epoch in epoch_list:
     global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged[epoch],
                                      epoch, global_df_merged['epoch'])
 
+
+
+#Graph
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+labels = epoch_list
+failure_percentage = []
+success_percentage = []
+for epoch in epoch_list:
+    df_epoch = global_df_merged.loc[global_df_merged['epoch'] == epoch]
+    total_len = len(df_epoch)
+    failure_len = len(df_epoch.loc[df_epoch['SSL Failure'] == 1])
+    if total_len == 0:
+        failure_percent = 0
+        success_percent = 100
+    else:
+        failure_percent = 100 * float(failure_len)/float(total_len)
+        success_percent = 100 - failure_percent
+    failure_percentage.append(failure_percent)
+    success_percentage.append(success_percent)
+    print(failure_percentage)
+    print(success_percentage)
+    print('******')
+
+
+
+
+N = len(epoch_list)
+ind = np.arange(N)
+width = 0.35
+
+
+p1 = plt.bar(ind, failure_percentage, width)
+p2 = plt.bar(ind, success_percentage, width, bottom=failure_percentage)
+plt.xticks(ind, epoch_list)
+plt.yticks(np.arange(0, 100, 10))
+plt.ylabel('Percentage')
+plt.title('TLS Failure Rates for each Stage')
+plt.legend((p1[0], p2[0]), ('Failure', 'Success'))
+
+
+plt.show()
