@@ -1,6 +1,7 @@
 #load tcp/ssl stream from csv file
 import sys
 import pandas as pd
+import numpy as np
 import json
 import traceback
 from glob import glob
@@ -28,7 +29,8 @@ def load_timestamp_json(root_dir):
 
 
 channel_timestamps = load_timestamp_json(crawl_data_dir)
-df_ch_timestamps = pd.DataFrame(channel_timestamps).transpose()
+df_ch_timestamps = pd.DataFrame(channel_timestamps).transpose().reset_index()
+df_ch_timestamps.rename(columns={'index': 'Channel Name'}, inplace=True)
 
 
 
@@ -59,13 +61,9 @@ for txt_path in glob(join(local_data_dir, "*.pcap.mitmproxy-attemp")):
     #df['Channel Name'] = channel_name
     #df['MITM Attemp'] = 1
     #print( df.columns.str.lower())
-    for i, row in df.iterrows():
-        for name, value in row.iteritems():
-            if name == 'tcp.stream':
-                tcp_stream = value
-                global_df.loc[(global_df['tcp.stream'] ==  tcp_stream)
-                                 & (global_df['Channel Name'] == channel_name), 'MITM Attemp'] = 1
-                break
+    tcp_stream_list = df['tcp.stream'].unique()
+    global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
+                  (global_df['Channel Name'] == channel_name), 'MITM Attemp'] = 1
 
 #find all tls failure due to invalid cert:
 
@@ -76,16 +74,27 @@ for txt_path in glob(join(local_data_dir, "*.pcap.ssl_fail")):
     #df['Channel Name'] = channel_name
     #df['MITM Attemp'] = 1
     #print( df.columns.str.lower())
-    for i, row in df.iterrows():
-        for name, value in row.iteritems():
-            if name == 'tcp.stream':
-                tcp_stream = value
-                global_df.loc[(global_df['tcp.stream'] ==  tcp_stream)
-                                 & (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
-                break
+    tcp_stream_list = df['tcp.stream'].unique()
+    global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
+                  (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
 
 
 global_df = global_df.drop_duplicates(subset=['Channel Name', 'ip.dst',  'MITM Attemp',  'SSL Failure'])
 print(global_df)
 
+global_df_merged = pd.merge(global_df, df_ch_timestamps, on=['Channel Name'],  how='left')
+
+
+global_df_merged['epoch'] = np.nan
+
+global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['install_channel'],
+                                     'install_channel', global_df_merged['epoch'])
+global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['launch'],
+                                     'launch', global_df_merged['epoch'])
+global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-1'],
+                                     'select-0', global_df_merged['epoch'])
+global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-1'],
+                                     'select-1', global_df_merged['epoch'])
+global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-2'],
+                                     'select-2', global_df_merged['epoch'])
 
