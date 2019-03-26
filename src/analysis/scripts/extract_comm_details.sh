@@ -26,7 +26,7 @@ SUFFIX="mitmproxy-attemp"
 
 #All TLS handshake failures
 #Full list: https://tools.ietf.org/html/rfc5246#appendix-A.3
-FORMAT="json"
+FORMAT="fields"
 FILTER="ssl.alert_message.desc==46 or ssl.alert_message.desc==48"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="ssl_fail"

@@ -37,6 +37,7 @@ SUFFIX="txt" #default suffix for output files
 usage()
 {
     echo "Usage: extract_fields.sh -w /path/to/output/dir -i /path/to/pcaps [-o /path/to/keys] [-f filter] [-t format] -e field1 -e field2 ... -e fieldN"
+    echo "The order of arguments MUST be preserved!"
 }
 
 while [ "$1" != "" ]; do
@@ -57,10 +58,14 @@ while [ "$1" != "" ]; do
 		# packet filter, optional
         -f | --filter )         shift
                                 FILTER=""
-            while [[ $1 != -* ]]; do
-                                FILTER="$FILTER $1"
-                                shift
-            done
+                                while [[ $1 != "-t" ]]; do
+                                    FILTER="$FILTER $1"
+                                    if [[ ! -z "$2" ]] && [[ $2 != "-t" ]]; then
+                                        shift
+                                    else
+                                        break
+                                    fi
+                                done
                                 ;;
 		# output format, optional
         -t | --format )         shift

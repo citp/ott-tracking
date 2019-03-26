@@ -1,31 +1,34 @@
 #load tcp/ssl stream from csv file
 import sys
 import pandas as pd
+import json
+import traceback
 from glob import glob
 from os.path import join, sep
 
-import os
-import json
-import traceback
-
-
 crawl_data_dir = sys.argv[1]
+
+##Replace _ with -
 def load_timestamp_json(root_dir):
+    global data
     channel_timstamps = {}
-    for txt_path in glob(join(root_dir, "-timestamps.json")):
-                filename = txt_path.split(sep)[-1]
-                channel_name = channel_name = filename.split("-")[0]
-                try:
-                    with open(filename) as f:
-                        data = json.load(f)
-                        channel_timstamps[channel_name] = data
-                except Exception:
-                    print("Couldn't open %s" % filename)
-                    traceback.print_exc()
+    for txt_path in glob(root_dir + "/**/*_timestamps.json", recursive=True):
+        filename = txt_path.split(sep)[-1]
+        print("Loading %s" % txt_path)
+        channel_name = filename.split("_")[0]
+        try:
+            with open(txt_path) as f:
+                data = json.load(f)
+                #df1 = pd.DataFrame(data)
+                channel_timstamps[channel_name] = data
+        except Exception:
+            print("Couldn't open %s" % filename)
+            traceback.print_exc()
     return channel_timstamps
 
 
-channel_timstamps = load_timestamp_json(crawl_data_dir)
+channel_timestamps = load_timestamp_json(crawl_data_dir)
+df_ch_timestamps = pd.DataFrame(channel_timestamps).transpose()
 
 
 
@@ -81,10 +84,8 @@ for txt_path in glob(join(local_data_dir, "*.pcap.ssl_fail")):
                                  & (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
                 break
 
-print(len(global_df))
-global_df = global_df.drop_duplicates(subset=['Channel Name', 'ip.dst',  'MITM Attemp',  'SSL Failure'])
-print(len(global_df))
 
+global_df = global_df.drop_duplicates(subset=['Channel Name', 'ip.dst',  'MITM Attemp',  'SSL Failure'])
 print(global_df)
 
 
