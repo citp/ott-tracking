@@ -3,11 +3,13 @@ set -x
 
 #We have to run source twice to write to a file
 source global.conf
-source global.conf |& tee $LOG_OUT_FILE
 
 #creating local log folder
 mkdir -p ${LogDir} 2> /dev/null
 rm -rf ${LogDir}/*
+
+#Source this again to have a copy of imported envs
+source global.conf |& tee $LOG_OUT_FILE
 
 #echo 'Clearing Data Folder!'
 mkdir ${DATA_DIR} 2> /dev/null
