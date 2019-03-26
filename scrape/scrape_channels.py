@@ -466,10 +466,11 @@ def launch_channel(surfer, mitmrunner):
     log('Launching channel %s' % surfer.channel_id)
     err_occurred = False
     try:
-        surfer.timestamp_event("launch")
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
+        else:
+            surfer.timestamp_event("launch")
 
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
