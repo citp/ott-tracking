@@ -8,15 +8,17 @@ from glob import glob
 from os.path import join, sep
 
 crawl_data_dir = sys.argv[1]
+local_data_dir = sys.argv[2]
+
 
 ##Replace _ with -
 def load_timestamp_json(root_dir):
     global data
     channel_timstamps = {}
-    for txt_path in glob(root_dir + "/**/*_timestamps.json", recursive=True):
+    for txt_path in glob(root_dir + "/**/*-timestamps.json", recursive=True):
         filename = txt_path.split(sep)[-1]
         print("Loading %s" % txt_path)
-        channel_name = filename.split("_")[0]
+        channel_name = filename.split("-")[0]
         try:
             with open(txt_path) as f:
                 data = json.load(f)
@@ -34,7 +36,7 @@ df_ch_timestamps.rename(columns={'index': 'Channel Name'}, inplace=True)
 
 
 
-local_data_dir = sys.argv[2]
+
 global_df = None
 for txt_path in glob(join(local_data_dir, "*.uniq")):
     filename = txt_path.split(sep)[-1]
@@ -87,14 +89,11 @@ global_df_merged = pd.merge(global_df, df_ch_timestamps, on=['Channel Name'],  h
 
 global_df_merged['epoch'] = np.nan
 
-global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['install_channel'],
-                                     'install_channel', global_df_merged['epoch'])
-global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['launch'],
-                                     'launch', global_df_merged['epoch'])
-global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-1'],
-                                     'select-0', global_df_merged['epoch'])
-global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-1'],
-                                     'select-1', global_df_merged['epoch'])
-global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged['select-2'],
-                                     'select-2', global_df_merged['epoch'])
+epoch_list = list(df_ch_timestamps)
+epoch_list.remove('Channel Name')
+
+
+for epoch in epoch_list:
+    global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged[epoch],
+                                     epoch, global_df_merged['epoch'])
 
