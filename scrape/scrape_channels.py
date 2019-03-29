@@ -22,6 +22,7 @@ import threading
 import queue
 import enum
 import scrape_config
+import glob
 
 
 from channel_surfer import ChannelSurfer ,SurferAborted
@@ -533,9 +534,17 @@ def launch_channel(surfer, mitmrunner):
         traceback.print_exc()
     return err_occurred
 
+def cleanup_data_folder(data_dir, channel_id):
+    for filename in glob.iglob(data_dir + '/**/' + str(channel_id) + '*', recursive=True):
+        log('Removing existing file %s for channel %s.' % (filename, channel_id))
+        os.remove(filename)
+
 
 def collect_data(surfer, mitmrunner, date_prefix):
     log('Collecting data for channel %s' % str(surfer.channel_id))
+
+    cleanup_data_folder(scrape_config.DATA_DIR, surfer.channel_id)
+
     err_occurred = False
     try:
         surfer.go_home()
