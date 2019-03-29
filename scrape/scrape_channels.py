@@ -617,3 +617,6 @@ if __name__ == '__main__':
             scrape(channel_id, date_prefix)
     else:
         main()
+    #NOTE: This doesn't terminate child processes
+    # executed with Popen! They remain running!
+    sys.exit(1)

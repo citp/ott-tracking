@@ -15,7 +15,6 @@ import binascii
 import json
 from shutil import copy2
 from os.path import join
-from shlex import split
 import fcntl, socket, struct
 
 LOCAL_LOG_DIR = os.getenv("LogDir")
