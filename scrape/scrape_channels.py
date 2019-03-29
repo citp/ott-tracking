@@ -40,6 +40,7 @@ if scrape_config.REC_AUD:
 # ls -larSt /mnt/iot-house/keys |  awk '{print $9}' | tr '\n' ','
 channels_done = {}
 
+#This is a global env that needs to be set in bash
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
 
 
@@ -425,7 +426,10 @@ def setup_channel(channel_id, date_prefix):
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
-    except Exception as e:
+    except TimeoutError:
+        log('Timeout for crawl expired in setup_channel!')
+        raise
+    except Exception:
         err_occurred = True
         log('Error!')
         traceback.print_exc()
@@ -451,7 +455,10 @@ def install_channel(surfer):
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
-    except Exception as e:
+    except TimeoutError:
+        log('Timeout for crawl expired in install_channel!')
+        raise
+    except Exception:
         err_occurred = True
         log('Error!')
         traceback.print_exc()
@@ -517,7 +524,10 @@ def launch_channel(surfer, mitmrunner):
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
-    except Exception as e:
+    except TimeoutError:
+        log('Timeout for crawl expired in launch_channel!')
+        raise
+    except Exception:
         err_occurred = True
         log('Error!')
         traceback.print_exc()
@@ -547,7 +557,10 @@ def collect_data(surfer, mitmrunner, date_prefix):
         surfer.write_timestamps()
         #dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_PREFIX,
         #                              "%s_timestamps.json" % channel_id))
-    except Exception as e:
+    except TimeoutError:
+        log('Timeout for crawl expired in collect_data!')
+        raise
+    except Exception:
         err_occurred = True
         log('Error!')
         traceback.print_exc()
@@ -555,27 +568,33 @@ def collect_data(surfer, mitmrunner, date_prefix):
 
 @timeout(scrape_config.SCRAPE_TO)
 def scrape(channel_id, date_prefix):
-    channel_state = CrawlState.PREINSTALL
-    ret = setup_channel(channel_id, date_prefix)
-    err_occurred = ret[0]
-    if not err_occurred:
-        surfer = ret[1]
-        if scrape_config.MITMPROXY_ENABLED:
-            mitmrunner = ret[2]
-        else:
-            mitmrunner = None
-        channel_state = CrawlState.INSTALLING
-        err_occurred = install_channel(surfer)
+    try:
+        channel_state = CrawlState.PREINSTALL
+        ret = setup_channel(channel_id, date_prefix)
+        err_occurred = ret[0]
         if not err_occurred:
-            channel_state = CrawlState.LAUNCHING
+            surfer = ret[1]
             if scrape_config.MITMPROXY_ENABLED:
-                launch_mitm(mitmrunner)
-            err_occurred = launch_channel(surfer, mitmrunner)
+                mitmrunner = ret[2]
+            else:
+                mitmrunner = None
+            channel_state = CrawlState.INSTALLING
+            err_occurred = install_channel(surfer)
             if not err_occurred:
-                channel_state = CrawlState.TERMINATING
-                err_occurred = collect_data(surfer, mitmrunner, date_prefix)
+                channel_state = CrawlState.LAUNCHING
+                if scrape_config.MITMPROXY_ENABLED:
+                    launch_mitm(mitmrunner)
+                err_occurred = launch_channel(surfer, mitmrunner)
                 if not err_occurred:
-                    channel_state = CrawlState.TERMINATED
+                    channel_state = CrawlState.TERMINATING
+                    err_occurred = collect_data(surfer, mitmrunner, date_prefix)
+                    if not err_occurred:
+                        channel_state = CrawlState.TERMINATED
+    except TimeoutError:
+        log('Timeout for crawl expired! Ending scrape for channel %s' % channel_id)
+    except Exception:
+        log('Error!')
+        traceback.print_exc()
     return channel_state
 
 
