@@ -408,6 +408,7 @@ def setup_channel(channel_id, date_prefix):
     log('Setting up channel %s' % str(channel_id))
     err_occurred = False
     try:
+        cleanup_data_folder(scrape_config.DATA_DIR, channel_id)
         if scrape_config.REC_AUD:
             recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
 
@@ -542,8 +543,6 @@ def cleanup_data_folder(data_dir, channel_id):
 
 def collect_data(surfer, mitmrunner, date_prefix):
     log('Collecting data for channel %s' % str(surfer.channel_id))
-
-    cleanup_data_folder(scrape_config.DATA_DIR, surfer.channel_id)
 
     err_occurred = False
     try:

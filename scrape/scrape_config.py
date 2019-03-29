@@ -36,7 +36,8 @@ SSLKEY_PREFIX = "keys/"
 DB_PREFIX = "db/"
 #Each channel will have a file with the result of crawl of that channel in this folder
 FIN_CHL_PREFIX = "finished/"
-folders = [PCAP_PREFIX, DUMP_PREFIX, MITM_LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX, LOG_PREFIX, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
+folders = [PCAP_PREFIX, DUMP_PREFIX, MITM_LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX,
+           LOG_PREFIX, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 
 
 RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
