@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -x
 DATA_DIR=$1
-TMP_DIR=$2
+TMP_DIR=$DATA_DIR/post-process
 
 if [ ! -d "$TMP_DIR" ] ; then
   mkdir -p $TMP_DIR
 fi
 
 if [ ! -d "$DATA_DIR" ] || [ ! -d "$TMP_DIR" ] ; then
-  echo "Usage: $0 CRAWL_DATA_DIR LOCAL_TMP_DIR"
+  echo "Usage: $0 CRAWL_DATA_DIR"
   exit 1
 fi
 

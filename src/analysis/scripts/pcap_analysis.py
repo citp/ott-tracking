@@ -7,7 +7,7 @@ from glob import glob
 from os.path import join, sep
 
 crawl_data_dir = sys.argv[1]
-local_data_dir = sys.argv[2]
+post_process_dir = join(crawl_data_dir, 'post-process')
 
 
 ##Load Timestamps
@@ -54,10 +54,10 @@ def gen_global_df(root_dir):
         #print(global_df)
     return global_df
 
-global_df = gen_global_df(local_data_dir)
+global_df = gen_global_df(post_process_dir)
 
 #Find all streams in the list that have mitm in the cert
-for txt_path in glob(join(local_data_dir, "*.pcap.mitmproxy-attemp")):
+for txt_path in glob(join(post_process_dir, "*.pcap.mitmproxy-attemp")):
     filename = txt_path.split(sep)[-1]
     channel_name = filename.split("-")[0]
     df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
@@ -66,7 +66,7 @@ for txt_path in glob(join(local_data_dir, "*.pcap.mitmproxy-attemp")):
                   (global_df['Channel Name'] == channel_name), 'MITM Attemp'] = 1
 
 #Find all tls failure due to invalid cert:
-for txt_path in glob(join(local_data_dir, "*.pcap.ssl_fail")):
+for txt_path in glob(join(post_process_dir, "*.pcap.ssl_fail")):
     filename = txt_path.split(sep)[-1]
     channel_name = filename.split("-")[0]
     df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
@@ -97,9 +97,6 @@ epoch_list.remove('Channel Name')
 for epoch in epoch_list:
     global_df_merged['epoch'] = np.where(global_df_merged['frame.time_epoch']>global_df_merged[epoch],
                                      epoch, global_df_merged['epoch'])
-
-
-
 
 
 #Graph
