@@ -2,8 +2,14 @@
 set -x
 DATA_DIR=$1
 TMP_DIR=$2
+
+if [ ! -d "$TMP_DIR" ] ; then
+  mkdir -p $TMP_DIR
+fi
+
 if [ ! -d "$DATA_DIR" ] || [ ! -d "$TMP_DIR" ] ; then
   echo "Usage: $0 CRAWL_DATA_DIR LOCAL_TMP_DIR"
+  exit 1
 fi
 
 
@@ -12,7 +18,7 @@ KEY_DIR="$1/keys"
 
 #List all SSL/TCP streams SYN packets
 FORMAT="fields"
-FILTER="tcp.flags.syn==1 && tcp.flags.ack==0"
+FILTER="tcp.flags.syn==1 && tcp.flags.ack==0 && tcp.port ==443"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="tcp_streams"
 ./extract_fields.sh -w $TMP_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
