@@ -66,3 +66,8 @@ def add_ssl_features(global_df, post_process_dir):
         global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
                       (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
     return global_df
+
+
+
+def str_to_int_key(text):
+    return int(text.split('-')[1])
