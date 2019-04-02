@@ -41,4 +41,4 @@ SUFFIX="ssl_fail"
 #Post processing of files
 ./post_process.sh $TMP_DIR
 
-python3 pcap_analysis.py $DATA_DIR $TMP_DIR
+#python3 pcap_analysis.py $DATA_DIR $TMP_DIR
