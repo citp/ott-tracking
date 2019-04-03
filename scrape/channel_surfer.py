@@ -21,10 +21,8 @@ LOCAL_LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = True
-SCREENSHOT_STARTED = False
 
 PLAT = os.getenv("PLATFORM")
-PLATFORM_DIR = os.getenv("PLATFORM_DIR")
 ADB_PORT_NO = "5555"
 
 
@@ -64,13 +62,6 @@ class ChannelSurfer(object):
         self.tcpdump_proc = None
         self.event_timestamp = {}
 
-        # On Roku: Start a background process that continuously captures screenshots to
-        # the same file: ${LogDir}/continuous_screenshot.png
-        if PLAT == "ROKU":
-            global SCREENSHOT_STARTED
-            if not SCREENSHOT_STARTED:
-                subprocess.Popen(join(PLATFORM_DIR, 'scripts') + '/capture_screenshot.sh', shell=True)
-                SCREENSHOT_STARTED = True
 
     def log(self, *args):
 
@@ -298,10 +289,10 @@ class ChannelSurfer(object):
             self.tcpdump_proc.kill()
         else:
             self.log("Successfully terminated tcpdump")
-
-        # subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        time.sleep(5)
+        subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)
-        # subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
+        subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)
 
     def terminate_rrc(self):

@@ -23,7 +23,7 @@ import queue
 import enum
 import scrape_config
 import glob
-
+import signal
 
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
@@ -406,6 +406,24 @@ def launch_channel_for_mitm_warmup(surfer, retry_count):
         time.sleep(4)
         iter += 1
 
+SCREENSHOT_PROCESS = None
+def start_screenshot():
+    # On Roku: Start a background process that continuously captures screenshots to
+    # the same file: ${LogDir}/continuous_screenshot.png
+    if scrape_config.PLAT == "ROKU":
+        global SCREENSHOT_PROCESS
+        if SCREENSHOT_PROCESS is None:
+            cmd = join(scrape_config.PLATFORM_DIR,'scripts') + '/capture_screenshot.sh'
+            log('Starting screenshot process with %s ' % cmd)
+            SCREENSHOT_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+
+def stop_screenshot():
+    if scrape_config.PLAT == "ROKU":
+        global SCREENSHOT_PROCESS
+        if SCREENSHOT_PROCESS is not None:
+            log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
+            os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
+
 
 def setup_channel(channel_id, date_prefix):
     log('Setting up channel %s' % str(channel_id))
@@ -610,6 +628,7 @@ def scrape(channel_id, date_prefix):
 
 
 if __name__ == '__main__':
+    start_screenshot()
     if len(sys.argv) > 1:
         if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
@@ -618,7 +637,9 @@ if __name__ == '__main__':
             date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
             scrape(channel_id, date_prefix)
     else:
+
         main()
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
+    stop_screenshot()
     sys.exit(1)

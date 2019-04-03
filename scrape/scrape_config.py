@@ -23,6 +23,8 @@ else:
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
 DATA_DIR = os.path.abspath(os.getenv("DATA_DIR"))
+PLAT = os.getenv("PLATFORM")
+PLATFORM_DIR = os.path.abspath(os.getenv("PLATFORM_DIR"))
 PCAP_PREFIX = "pcaps/"
 DUMP_PREFIX = "mitmdumps/"
 MITM_LOG_PREFIX = "mitmlog/"
