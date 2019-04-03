@@ -13,6 +13,7 @@ def load_timestamp_json(root_dir):
     for txt_path in glob(root_dir + "/**/*-timestamps.json", recursive=True):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
+        #print(txt_path)
         try:
             with open(txt_path) as f:
                 data = json.load(f)
