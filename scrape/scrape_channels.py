@@ -398,7 +398,7 @@ def fast_forward(surfer):
 def launch_channel_for_mitm_warmup(surfer, retry_count):
     iter = 1
     for _ in range(retry_count):
-        if range(retry_count) < 10:
+        if retry_count < 10:
             surfer.timestamp_event("launch-" + str(iter))
         else:
             surfer.timestamp_event("launch-" + str(iter).zfill(2))
