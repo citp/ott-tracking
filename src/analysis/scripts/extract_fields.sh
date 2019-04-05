@@ -33,6 +33,7 @@ set -x
 FILTER="eth"  # do not filter out any packets by default
 FORMAT="fields"  # output format, CSV by default. -T in tshark
 SUFFIX="txt" #default suffix for output files
+SEPRATOR=','
 
 usage()
 {
@@ -71,6 +72,10 @@ while [ "$1" != "" ]; do
         -t | --format )         shift
                                 FORMAT=$1
                                 ;;
+		# output separator, optional
+        -r | --separator )      shift
+                                SEPRATOR=$1
+                                ;;
         # use SSLKEYLOGFOLDER to decrypt traffic
 		-o | --sslkeydir)       shift
                                 SSLKEYLOGFOLDER=$1
@@ -106,9 +111,9 @@ for f in $PCAP_DIR/*.pcap; do
   [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:'${SSLKEYFILE}'"
 
   if [ "$WRITE_TO_FILE" = true ] ; then
-    tshark -r $f $SSLKEYOPTION -E header=y -E separator=, -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.${SUFFIX} &
+    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPRATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq > $OUTDIR/$basename.${SUFFIX} &
   else
-    tshark -r $f $SSLKEYOPTION -E header=y -E separator=,-T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
+    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPRATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
   fi
 
   #sleep 0.05;
