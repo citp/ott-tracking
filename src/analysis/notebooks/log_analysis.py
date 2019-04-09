@@ -1,11 +1,15 @@
 from urllib.parse import urlparse
-import json
-import sys
 import ntpath
 import re
-import traceback
 import os
 import ipaddress
+import sys
+import pandas as pd
+import json
+import traceback
+from glob import glob
+from os.path import join, sep
+
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
@@ -220,46 +224,26 @@ def load_dns_data(root_dir):
     rIP2NameDB = {}
     rName2IPDB = {}
     db_folder_name = os.path.join(root_dir, "db")
-    for root, dirs, files in os.walk(db_folder_name):
-        for file in files:
-            if file.endswith(".json"):
-                file_name = os.path.join(root, file)
-                try:
-                    with open(file_name) as f:
-                        if file.endswith("rIP2NameDB.json"):
-                            data = json.load(f)
-                            for IP in data:
-                                if IP not in rIP2NameDB:
-                                    rIP2NameDB[IP] = []
-                                rIP2NameDB[IP].append(data[IP]['value'])
-                        elif file.endswith("rName2IPDB.json"):
-                            data = json.load(f)
-                            for Domain in data:
-                                if Domain not in rName2IPDB:
-                                    rName2IPDB[Domain] = []
-                                rName2IPDB[Domain].extend(data[Domain]['value'])
-                except Exception:
-                    print("Couldn't open %s" % file_name)
-                    traceback.print_exc()
+    for txt_path in glob(join(db_folder_name, "*.json")):
+        file_name = txt_path.split(sep)[-1]
+        try:
+            with open(file_name) as f:
+                if file_name.endswith("rIP2NameDB.json"):
+                    data = json.load(f)
+                    for IP in data:
+                        if IP not in rIP2NameDB:
+                            rIP2NameDB[IP] = []
+                        rIP2NameDB[IP].append(data[IP]['value'])
+                elif file_name.endswith("rName2IPDB.json"):
+                    data = json.load(f)
+                    for Domain in data:
+                        if Domain not in rName2IPDB:
+                            rName2IPDB[Domain] = []
+                        rName2IPDB[Domain].extend(data[Domain]['value'])
+        except Exception:
+            print("Couldn't open %s" % file_name)
+            traceback.print_exc()
     return (rIP2NameDB, rName2IPDB)
-
-
-def load_timestamp_json(root_dir):
-    channel_timstamps = {}
-    log_folder_name = os.path.join(root_dir, "logs")
-    for root, dirs, files in os.walk(log_folder_name):
-        for file in files:
-            if file.endswith("-timestamps.json"):
-                channel_name = file.replace('-timestamps.json','')
-                file_name = os.path.join(root, file)
-                try:
-                    with open(file_name) as f:
-                        data = json.load(f)
-                        channel_timstamps[channel_name] = data
-                except Exception:
-                    print("Couldn't open %s" % file_name)
-                    traceback.print_exc()
-    return channel_timstamps
 
 
 def load_pcaps(root_dir, transform_func):
@@ -295,9 +279,98 @@ def test():
     find_tls_failures_pcap(root_dir)
 
 
+##Load Timestamps
+def load_timestamp_json(root_dir):
+    global data
+    channel_timstamps = {}
+    print("Loading timestamp data from %s" % root_dir)
+    for txt_path in glob(root_dir + "/**/*-timestamps.json", recursive=True):
+        filename = txt_path.split(sep)[-1]
+        channel_name = filename.split("-")[0]
+        #print(txt_path)
+        try:
+            with open(txt_path) as f:
+                data = json.load(f)
+                #df1 = pd.DataFrame(data)
+                channel_timstamps[channel_name] = data
+        except Exception:
+            print("Couldn't open %s" % filename)
+            traceback.print_exc()
+    return channel_timstamps
+
+
+'''Older version
+def load_timestamp_json(root_dir):
+    channel_timstamps = {}
+    log_folder_name = os.path.join(root_dir, "logs")
+    for root, dirs, files in os.walk(log_folder_name):
+        for file in files:
+            if file.endswith("-timestamps.json"):
+                channel_name = file.replace('-timestamps.json','')
+                file_name = os.path.join(root, file)
+                try:
+                    with open(file_name) as f:
+                        data = json.load(f)
+                        channel_timstamps[channel_name] = data
+                except Exception:
+                    print("Couldn't open %s" % file_name)
+                    traceback.print_exc()
+    return channel_timstamps
+'''
+
+
+#Create global_df, containing all SSL/TCP streams SYN packets
+def gen_global_df(root_dir):
+    print("Generating Global DF from %s " % root_dir)
+    global_df = None
+    for txt_path in glob(join(root_dir, "*.uniq")):
+        filename = txt_path.split(sep)[-1]
+        #print(txt_path)
+        channel_name = filename.split("-")[0]
+        #print(channel_name)
+        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+        df['Channel Name'] = channel_name
+        df['MITM Attemp'] = 0
+        df['SSL Failure'] = 0
+        if global_df is None:
+            global_df = df
+        else:
+            global_df = global_df.append(df)
+        #print(len(global_df.index))
+        #print(global_df)
+    return global_df
+
+#Add SSL features
+def add_ssl_features(global_df, post_process_dir):
+    print("Adding SSL features to DF from %s " % post_process_dir)
+    #Find all streams in the list that have mitm in the cert
+    for txt_path in glob(join(post_process_dir, "*.pcap.mitmproxy-attemp")):
+        filename = txt_path.split(sep)[-1]
+        channel_name = filename.split("-")[0]
+        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+        tcp_stream_list = df['tcp.stream'].unique()
+        global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
+                      (global_df['Channel Name'] == channel_name), 'MITM Attemp'] = 1
+
+    #Find all tls failure due to invalid cert:
+    for txt_path in glob(join(post_process_dir, "*.pcap.ssl_fail")):
+        filename = txt_path.split(sep)[-1]
+        channel_name = filename.split("-")[0]
+        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+        tcp_stream_list = df['tcp.stream'].unique()
+        global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
+                      (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
+    return global_df
+
+
+
+def str_to_int_key(text):
+    return int(text.split('-')[1])
+
 
 if __name__ == '__main__':
     test()
 
 
 #"104458-1549016122.log:10.42.0.119:60948: GET https://player.vimeo.com/external/85009516.hd.mp4?s=1112830b731d1291ae084647833a0af5"
+
