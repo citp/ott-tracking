@@ -9,6 +9,7 @@ mkdir -p ${LogDir} 2> /dev/null
 rm -rf ${LogDir}/*
 
 #Source this again to have a copy of imported envs
+source global.conf |& tee $CRAWL_INFO_FILE && python3 scrape_config.py >> $CRAWL_INFO_FILE
 source global.conf |& tee $LOG_OUT_FILE
 
 #echo 'Clearing Data Folder!'
