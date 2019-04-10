@@ -46,7 +46,7 @@ def separate_pipelined_requests(csv_path):
         for idx in range(n_pipelined_reqs):
             request_tuples.append(
                 (columns[0], columns[1], columns[2],
-                 pipeline_methods[idx], pipeline_methods[idx],
+                 pipeline_methods[idx],
                  pipeline_urls[idx], pipeline_user_agents[idx],
                  pipeline_referrers[idx], pipeline_cookies[idx], "True"))
 
