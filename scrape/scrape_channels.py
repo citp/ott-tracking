@@ -499,7 +499,7 @@ def launch_channel(surfer, mitmrunner):
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
-            n_smart_crawls = 10  # run multiple smart crawls to discover the best number for the warmup
+            n_smart_crawls = 5  # run multiple smart crawls to discover the best number for the warmup
         else:
             surfer.timestamp_event("launch")
             n_smart_crawls = 1
