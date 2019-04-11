@@ -89,7 +89,7 @@ class LogFileReader(object):
             return 'http'
 
     def get_url(self, req_line):
-        #return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
+        # return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
         return req_line.split()[2]
 
     def get_host(self, url):
@@ -265,7 +265,7 @@ def find_tls_failures_pcap(root_dir):
         channel_name = file.split('-')[0]
         file_name = os.path.join(root, file)
         print(channel_name)
-        "./extract_fields.sh -i /tmp/amazon-data-100-nomitm/pcaps -f "http" -e eth.src -e ip.dst -e http.request.method -e http.host"
+        # "./extract_fields.sh -i /tmp/amazon-data-100-nomitm/pcaps -f "http" -e eth.src -e ip.dst -e http.request.method -e http.host"
 
     load_pcaps(root_dir, tls_failure_find)
 
@@ -284,7 +284,7 @@ def load_timestamp_json(root_dir):
     global data
     channel_timstamps = {}
     print("Loading timestamp data from %s" % root_dir)
-    for txt_path in glob(root_dir + "/**/*-timestamps.json", recursive=True):
+    for txt_path in glob(root_dir + "/**/*-timestamps.txt", recursive=True):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
         #print(txt_path)
@@ -329,9 +329,9 @@ def gen_global_df(root_dir):
         channel_name = filename.split("-")[0]
         #print(channel_name)
         df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        df['Channel Name'] = channel_name
-        df['MITM Attemp'] = 0
-        df['SSL Failure'] = 0
+        df['channel_name'] = channel_name
+        df['mitm_attempt'] = 0
+        df['mitm_fail'] = 0
         if global_df is None:
             global_df = df
         else:
@@ -340,28 +340,17 @@ def gen_global_df(root_dir):
         #print(global_df)
     return global_df
 
-#Add SSL features
-def add_ssl_features(global_df, post_process_dir):
-    print("Adding SSL features to DF from %s " % post_process_dir)
-    #Find all streams in the list that have mitm in the cert
-    for txt_path in glob(join(post_process_dir, "*.pcap.mitmproxy-attemp")):
+
+def get_tcp_conns(post_process_dir, suffix):
+    # Find all tls failure due to invalid cert:
+    unique_tcp_conn_ids = {}
+    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt"]
+    for txt_path in glob(join(post_process_dir, suffix)):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
         df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        tcp_stream_list = df['tcp.stream'].unique()
-        global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
-                      (global_df['Channel Name'] == channel_name), 'MITM Attemp'] = 1
-
-    #Find all tls failure due to invalid cert:
-    for txt_path in glob(join(post_process_dir, "*.pcap.ssl_fail")):
-        filename = txt_path.split(sep)[-1]
-        channel_name = filename.split("-")[0]
-        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        tcp_stream_list = df['tcp.stream'].unique()
-        global_df.loc[(global_df['tcp.stream'].isin(tcp_stream_list)) &
-                      (global_df['Channel Name'] == channel_name), 'SSL Failure'] = 1
-    return global_df
-
+        unique_tcp_conn_ids[channel_name] = df['tcp.stream'].unique()
+    return unique_tcp_conn_ids
 
 
 def str_to_int_key(text):

@@ -362,10 +362,10 @@ KEY_SEQUENCES = {
 }
 
 
-def play_key_sequence(surfer, key_sequence):
+def play_key_sequence(surfer, key_sequence, key_seq_idx):
     n_keys = len(key_sequence)
     for idx, key in enumerate(key_sequence, 1):
-        surfer.timestamp_event("key-seq-%s" % idx)
+        surfer.timestamp_event("key-seq-%02d-key-%02d" % (key_seq_idx, idx))
         log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
@@ -387,7 +387,7 @@ def fast_forward(surfer):
     surfer.capture_screenshots(1)
     surfer.press_key('Fwd')
     surfer.capture_screenshots(1)
-    sleep(10)
+    sleep(3)
     log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
         % surfer.channel_id)
     surfer.press_key('Play')
@@ -511,7 +511,7 @@ def launch_channel(surfer, mitmrunner):
                 log("SMART_CRAWLER: Will play key seq (%d of %d) for channel:"
                     " %s %s" % (idx, n_key_seqs, surfer.channel_id,
                                 "-".join(key_sequence)))
-                playback_detected = play_key_sequence(surfer, key_sequence)
+                playback_detected = play_key_sequence(surfer, key_sequence, idx)
                 if playback_detected:
                     log('SMART_CRAWLER: Playback detected on channel: %s' %
                         surfer.channel_id)

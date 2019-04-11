@@ -53,7 +53,7 @@ SUFFIX="tcp_streams"
 FORMAT="fields"
 FILTER="x509sat.uTF8String==mitmproxy"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
-SUFFIX="mitmproxy-attemp"
+SUFFIX="mitmproxy-attempt"
 #./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
 #All TLS handshake failures
