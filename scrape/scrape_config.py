@@ -46,7 +46,11 @@ RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/
 
 
 CUTOFF_TRESHOLD=100000
-SCRAPE_TO = 900
+
+if MITMABLE_DOMAINS_WARM_UP_CRAWL:
+    SCRAPE_TO = 1800  # timeout
+else:
+    SCRAPE_TO = 900
 
 PLAT = os.getenv("PLATFORM")
 
