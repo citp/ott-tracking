@@ -239,8 +239,8 @@ class ChannelSurfer(object):
              "%s-timestamps.txt" % self.channel_id)
         self.log("Writing timestamps to %s" %  timestamp_file_path)
         with open(timestamp_file_path, "w") as f:
-            for timestamp in self.event_timestamps:
-                f.write(timestamp + "\n")
+            for event, timestamp in self.event_timestamps:
+                f.write("%s,%s\n" % event, timestamp)
 
 
     def capture_screenshots(self, timeout):
