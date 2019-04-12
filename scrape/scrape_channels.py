@@ -387,7 +387,7 @@ def fast_forward(surfer):
     surfer.capture_screenshots(1)
     surfer.press_key('Fwd')
     surfer.capture_screenshots(1)
-    sleep(3)
+    sleep(scrape_config.FWD_SLEEP_TO)
     log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
         % surfer.channel_id)
     surfer.press_key('Play')
@@ -499,16 +499,14 @@ def launch_channel(surfer, mitmrunner):
 
         if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
             launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
-            n_smart_crawls = 5  # run multiple smart crawls to discover the best number for the warmup
         else:
             surfer.timestamp_event("launch")
-            n_smart_crawls = 1
 
         time.sleep(scrape_config.SLEEP_TIMER)
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
             n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
-            for launch_idx in range(n_smart_crawls):
+            for launch_idx in range(scrape_config.SMART_CRAWLS_CNT):
                 for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
                     surfer.launch_channel()  # make sure we start from the homepage
                     log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
