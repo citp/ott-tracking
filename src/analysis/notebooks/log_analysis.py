@@ -8,7 +8,8 @@ import pandas as pd
 import json
 import traceback
 from glob import glob
-from os.path import join, sep
+from os.path import join, sep, isfile
+from _collections import defaultdict
 
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
@@ -279,24 +280,22 @@ def test():
     find_tls_failures_pcap(root_dir)
 
 
-##Load Timestamps
-def load_timestamp_json(root_dir):
-    global data
-    channel_timstamps = {}
+
+def load_timestamps_from_crawl_data(root_dir):
+    # Load Timestamps
+    timestamps = defaultdict(list)
     print("Loading timestamp data from %s" % root_dir)
     for txt_path in glob(root_dir + "/**/*-timestamps.txt", recursive=True):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
-        #print(txt_path)
         try:
-            with open(txt_path) as f:
-                data = json.load(f)
-                #df1 = pd.DataFrame(data)
-                channel_timstamps[channel_name] = data
+            for l in open(txt_path):
+                label, ts = l.split(",")
+                timestamps[channel_name].append((label, float(ts)))
         except Exception:
             print("Couldn't open %s" % filename)
             traceback.print_exc()
-    return channel_timstamps
+    return timestamps
 
 
 '''Older version
