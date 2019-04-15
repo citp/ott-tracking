@@ -60,7 +60,7 @@ class ChannelSurfer(object):
         self.launch_iter = 1
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
-        self.event_timestamp = {}
+        self.event_timestamps = []
 
 
     def log(self, *args):
@@ -232,13 +232,16 @@ class ChannelSurfer(object):
         self.log('Capturing packets:', self.pcap_filename)
 
     def timestamp_event(self, event_name):
-        self.event_timestamp[event_name] = time.time()
+        self.event_timestamps.append((event_name, time.time()))
 
     def write_timestamps(self):
-        timestamp_file_addr = join(self.log_dir,
-             "%s-timestamps.json" % self.channel_id)
-        self.log("Writing timestamps to %s" %  timestamp_file_addr)
-        dump_as_json(self.event_timestamp, timestamp_file_addr)
+        timestamp_file_path = join(self.log_dir,
+             "%s-timestamps.txt" % self.channel_id)
+        self.log("Writing timestamps to %s" %  timestamp_file_path)
+        with open(timestamp_file_path, "w") as f:
+            for event, timestamp in self.event_timestamps:
+                f.write("%s,%s\n" % (event, timestamp))
+
 
     def capture_screenshots(self, timeout):
 

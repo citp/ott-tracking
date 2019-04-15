@@ -3,7 +3,7 @@ import os
 Crawl settings
 '''
 
-ENABLE_SMART_CRAWLER = False  # remove after testing
+ENABLE_SMART_CRAWLER = True  # remove after testing
 MITMPROXY_ENABLED = True
 MITMABLE_DOMAINS_WARM_UP_CRAWL = True
 remove_dup = False
@@ -13,15 +13,16 @@ SSL_STRIP = False
 THREADED_SCRAPE = False
 
 
-
-
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
-    LAUNCH_RETRY_CNT = 5  # detect and store unmitmable domains and IPs
+    LAUNCH_RETRY_CNT = 15  # detect and store unmitmable domains and IPs
+    SMART_CRAWLS_CNT = 5 # run multiple smart crawls to discover the best number for the warmup
 else:
     LAUNCH_RETRY_CNT = 2  # load unmitmable domains and IPs from files
+    SMART_CRAWLS_CNT = 1
 
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
 SLEEP_TIMER = 20
+FWD_SLEEP_TO = 3 # Used in Smart Crawl to stop Fast Forwarding after few seconds
 DATA_DIR = os.path.abspath(os.getenv("DATA_DIR"))
 PLAT = os.getenv("PLATFORM")
 PLATFORM_DIR = os.path.abspath(os.getenv("PLATFORM_DIR"))
@@ -46,7 +47,11 @@ RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/
 
 
 CUTOFF_TRESHOLD=100000
-SCRAPE_TO = 900
+
+if MITMABLE_DOMAINS_WARM_UP_CRAWL:
+    SCRAPE_TO = 1800  # timeout
+else:
+    SCRAPE_TO = 900
 
 PLAT = os.getenv("PLATFORM")
 

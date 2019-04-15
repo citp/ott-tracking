@@ -362,10 +362,10 @@ KEY_SEQUENCES = {
 }
 
 
-def play_key_sequence(surfer, key_sequence):
+def play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx):
     n_keys = len(key_sequence)
     for idx, key in enumerate(key_sequence, 1):
-        surfer.timestamp_event("key-seq-%s" % idx)
+        surfer.timestamp_event("launch-%02d-key-seq-%02d-key-%02d" % (launch_idx, key_seq_idx, idx))
         log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
@@ -387,7 +387,7 @@ def fast_forward(surfer):
     surfer.capture_screenshots(1)
     surfer.press_key('Fwd')
     surfer.capture_screenshots(1)
-    sleep(10)
+    sleep(scrape_config.FWD_SLEEP_TO)
     log("SMART_CRAWLER: will press Play after fast forwarding on channel %s"
         % surfer.channel_id)
     surfer.press_key('Play')
@@ -506,23 +506,23 @@ def launch_channel(surfer, mitmrunner):
         if scrape_config.ENABLE_SMART_CRAWLER:
             playback_detected = False
             n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
-            for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
-                surfer.launch_channel()  # make sure we start from the homepage
-                log("SMART_CRAWLER: Will play key seq (%d of %d) for channel:"
-                    " %s %s" % (idx, n_key_seqs, surfer.channel_id,
-                                "-".join(key_sequence)))
-                playback_detected = play_key_sequence(surfer, key_sequence)
-                if playback_detected:
-                    log('SMART_CRAWLER: Playback detected on channel: %s' %
-                        surfer.channel_id)
-                    fast_forward(surfer)
-                    break
+            for launch_idx in range(scrape_config.SMART_CRAWLS_CNT):
+                for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
+                    surfer.launch_channel()  # make sure we start from the homepage
+                    log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
+                        " %s %s" % (launch_idx, idx, n_key_seqs, surfer.channel_id,
+                                    "-".join(key_sequence)))
+                    playback_detected = play_key_sequence(surfer, key_sequence, idx, launch_idx)
+                    if playback_detected:
+                        log('SMART_CRAWLER: Playback detected on channel: %s' %
+                            surfer.channel_id)
+                        fast_forward(surfer)
+                        break
 
-                time.sleep(4)
-                # TODO: should we restart audio recording here?
-            else:
-                log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
-                    surfer.channel_id)
+                    time.sleep(4)
+                else:
+                    log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
+                        surfer.channel_id)
         else:
             for okay_ix in range(0, 3):
                 if not surfer.channel_is_active():

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# set -x
+set -x
 #
 # Extract requested fields from pcaps and write to separate files.
 #

@@ -1,137 +1,248 @@
-import requests
-import base64
-import os
-import json
-import argparse
-import logging
+#!/usr/bin/env python3
+
 import io
-from os.path import join, basename, abspath
-from glob import glob
-from _collections import defaultdict
-import binascii
-import pytesseract
-from celery import Celery
+import os
+import argparse
+import imutils
+import copy
+import cv2
+import threading
+from queue import Queue
+from google_auth_oauthlib import flow
+from google.cloud import vision
+from google.cloud.vision import types
+from skimage.measure import compare_ssim
+from itertools import tee, islice, chain
+from itertools import zip_longest as izip
 
 
-class FailedToQueryError(Exception):
-    '''Cloud API returned non 200 status code'''
-    pass
+class OCRHelper(object):
+
+    def __init__(self, keyFile):
+        self.LOGIN =        ["WATCH FREE", 
+                            "SIGN IN", 
+                            "TRIAL", 
+                            "REGISTER",
+                            "CUSTOMERS",
+                            "EMAIL ADDRESS",
+                            "PASSWORD",
+                            "NEW USER",
+                            "JOIN FOR FREE",
+                            "PREMIUM",
+                            "PER MONTH"]
+
+        self.ACTIVATION =    ["ACTIVATE DEVICE",
+                            "DEVICES",
+                            "TV PROVIDER",
+                            "ACTIVATION CODE",
+                            "ACTIVATE",
+                            "CONNECT",
+                            "AUTOMATICALLY REFRESH"]
+
+        self.ENTRYDEVICE =   ["SPACE BAR",
+                            "KEYBOARD",
+                            "KEYPAD",
+                            "INPUT DEVICE"]
+
+        self.ROKUACCOUNT =   ["FROM YOUR ROKU ACCOUNT",
+                            "GO.ROKU.COM/CHANNELSIGNUP"]
+
+        self.DUPLICATE =     .95
+
+        self.cloudVisionClient = vision.ImageAnnotatorClient.from_service_account_json(keyFile)
+
+        self.screenshotList = []
+        self.screenshot =  {    'timestamp' : "",
+                                'customLabels' : [],
+                                'labels' : [],
+                                'labelScores': {},
+                                'textBody' : "",
+                                'textBodyBoundsX' : [],
+                                'textBodyBoundsY' : [],
+                                'words' : [],
+                                'wordBoundsX' : {},
+                                'wordBoundsY' : {},
+                                'SSIM' : ""}
 
 
-logger = logging.getLogger(__name__)
-lf_handler = logging.FileHandler('text_extraction.log')
-lf_format = logging.Formatter('%(asctime)s - %(message)s')
-lf_handler.setFormatter(lf_format)
-logger.addHandler(lf_handler)
-logger.setLevel(logging.INFO)
-
-payload = '''{
-  'requests': [
-    {
-      'image': {
-        'content': '%s'
-      },
-      'features': [
-        {
-          'type': 'TEXT_DETECTION'
-        }
-      ]
-    }
-  ]
-}'''
-
-headers = {'Content-Type': 'application/json; charset=utf-8'}
-endpoint = 'https://vision.googleapis.com/v1/images:annotate?key=%s'
+    def previous_and_next(self, some_iterable):
+        prevs, items, nexts = tee(some_iterable, 3)
+        prevs = chain([None], prevs)
+        nexts = chain(islice(nexts, 1, None), [None])
+        return izip(prevs, items, nexts)
 
 
-FILTER_TEXTLESS_IMGS_USING_TESSERACT = True
+    def imageDiff(self, firstImagePath, secondImagePath, secondImageName):
+        imageA = cv2.imread(firstImagePath)
+        imageB = cv2.imread(secondImagePath)
+        
+        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+
+        (score, diff) = compare_ssim(grayA, grayB, full=True)
+        diff = (diff * 255).astype("uint8")
+        self.screenshot["SSIM"] = float(score)
 
 
-def get_img_base64(img_file_path):
-    img_file = open(img_file_path, 'rb')
-    return base64.b64encode(img_file.read())
+    def cloudVision(self, imageFile, currentScreenshotName):
+        with io.open(imageFile, 'rb') as image_file:
+            content = image_file.read()
+
+        image = types.Image(content=content)
+
+        response = self.cloudVisionClient.label_detection(image=image)
+        labels = response.label_annotations
+
+        for label in labels:
+            self.screenshot["labels"].append(str(label.description))
+            self.screenshot["labelScores"][label.description] = float(label.score)
+
+        response = self.cloudVisionClient.text_detection(image=image)
+        texts = response.text_annotations
+
+        self.screenshot["textBody"] = texts[0].description
+        for vertex in texts[0].bounding_poly.vertices:
+            self.screenshot["textBodyBoundsX"].append(int(vertex.x))
+            self.screenshot["textBodyBoundsY"].append(int(vertex.y))
+
+        for text in texts[1:]:
+            self.screenshot["words"].append(str(text.description))
+            self.screenshot["wordBoundsX"][text.description] = []
+            self.screenshot["wordBoundsY"][text.description] = []
+            for vertex in text.bounding_poly.vertices:
+                self.screenshot["wordBoundsX"][text.description].append(int(vertex.x))
+                self.screenshot["wordBoundsY"][text.description].append(int(vertex.y))
 
 
-app = Celery('cloudvisiontextparser', broker='pyamqp://guest@localhost//')
+    def processImage(self, screenshotDirectory, previousScreenshotName, currentScreenshotName):
+        imagePathPrefix = screenshotDirectory + '/'
+        currentScreenshot = imagePathPrefix + currentScreenshotName
+
+        if previousScreenshotName != None:
+            previousScreenshot = imagePathPrefix + previousScreenshotName
+            self.imageDiff(previousScreenshot, currentScreenshot, currentScreenshotName)
+        else:
+            self.screenshot["SSIM"] = None
+        self.cloudVision(currentScreenshot, currentScreenshotName)
+        self.applyCustomLabels()
 
 
-@app.task
-def call_make_request(img_path, img_base64, key, output_dir):
-    try:
-        img_basename = basename(img_path)
-        json_str = make_request(img_path, img_base64, key)
-        json_path = join(output_dir, img_basename + '.json')
-        with io.open(abspath(json_path), 'w', encoding='utf-8') as f:
-            f.write(unicode(json.dumps(json_str, ensure_ascii=False)))
-    except Exception:
-        logger.exception(
-            'Exception while extracting text for %s' % img_basename)
+    def isInt(self, character):
+        try: 
+            int(character)
+            return True
+        except ValueError:
+            return False
 
 
-def make_request(img_file, img_file_base64, key):
-    r = requests.post(endpoint % key, data=payload % img_file_base64,
-                      headers=headers)
+    def applyCustomLabels(self):
+        for keyword in self.LOGIN:
+            if keyword in self.screenshot["textBody"].upper():
+                if "LOGIN" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("LOGIN")
+        for keyword in self.ENTRYDEVICE:
+            if keyword in self.screenshot["textBody"].upper():
+                if "ENTRY DEVICE" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("ENTRYDEVICE")
+        for keyword in self.ROKUACCOUNT:
+            if keyword in self.screenshot["textBody"].upper():
+                if "ROKUACCOUNT" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("ROKUACCOUNT")
+        for keyword in self.ACTIVATION:
+            if keyword in self.screenshot["textBody"].upper():
+                if "ACTIVATION" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("ACTIVATION")
+            for word in self.screenshot["words"]:
+                if len(word) == 6 or len(word) == 7:
+                    for letter in word:
+                        if self.isInt(letter):
+                            if "ENTRYDEVICE" not in self.screenshot["customLabels"]:
+                                if "ACTIVATION" not in self.screenshot["customLabels"]:
+                                    self.screenshot["customLabels"].append("ACTIVATION")
+        if self.screenshot["SSIM"] != None:    
+            if self.screenshot["SSIM"] > self.DUPLICATE:
+                if "DUPLICATE" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("DUPLICATE")
+        
 
-    if r.status_code == 200:
-        logger.info('%s successfully queried. Code: %d %s.' % (
-            img_file, r.status_code,
-            requests.status_codes._codes[r.status_code][0]))
-        mrjson = json.loads(r.text)
-        return mrjson
-    else:
-        logger.error('%s failed to query. Code: %d %s.' % (
-            img_file, r.status_code,
-            requests.status_codes._codes[r.status_code][0]))
-        raise FailedToQueryError()
+    def customPrinterDict(self, d, indent=0):
+        OKGREEN = '\033[92m'
+        ENDC = '\033[0m'
+        for key, value in d.items():
+            if str(key) != "timestamp":
+                print(OKGREEN + '\t' * indent + str(key) + ENDC)
+                if isinstance(value, dict):
+                    self.customPrinterDict(value, indent+1)
+                else:
+                    print('\t' * (indent+1) + str(value).replace("\n", "\n\t\t"))
 
 
-def compile_text(img_dir, output_dir, key):
-    # for f in os.listdir(img_dir):
-    channel_crcs = defaultdict(set)  # set of image checksums seen
-    for img_path in sorted(glob(join(img_dir, '*.png'))):
-        img_basename = basename(img_path)
-        channel_id = img_basename.split("-")[0]
-        img_base64 = get_img_base64(img_path)
-        img_crc32 = binascii.crc32(img_base64)
+    def printChannel(self):
+        OKGREEN = '\033[92m'
+        ENDC = '\033[0m'
+        for item in self.screenshotList:
+            print(OKGREEN + "timestamp" + '  -  ' + item["timestamp"] + ENDC + "\n")
+            self.customPrinterDict(item, 1)
+            print("\n")
 
-        if img_crc32 in channel_crcs[channel_id]:
-            logger.info(
-                "Image seen before, will skip API call %s" % img_basename)
-            continue
-        channel_crcs[channel_id].add(img_crc32)
 
-        if FILTER_TEXTLESS_IMGS_USING_TESSERACT:
-            text = pytesseract.image_to_string(img_path, lang='eng')
-            if not text:
-                logger.info(
-                    "Image doesn't contain text (by tesseract) %s, will skip."
-                    % img_basename)
-                continue
-            txt_path = join(output_dir, img_basename + '.txt')
-            with io.open(abspath(txt_path), 'w', encoding='utf-8') as f:
-                f.write(text)
+    def processChannel(self, screenshotDirectory, channelName):
+        directoryFiles = os.listdir(screenshotDirectory)
+        channelList = []
+        for file in directoryFiles:
+            if file.startswith(channelName + '-'):
+                try:
+                    cv2.imread(screenshotDirectory + '/' + file)
+                except:
+                    continue
+                channelList.append(file)
+        channelList.sort()
+        for previousScreenshot, currentScreenshot, _ in self.previous_and_next(channelList):
+            if currentScreenshot != None:
+                self.screenshot["timestamp"] = currentScreenshot.split('-', 1)[-1].split('.')[0]
+                self.processImage(screenshotDirectory, previousScreenshot, currentScreenshot)    
+                self.screenshotList.append(copy.deepcopy(self.screenshot))
+        return self.screenshotList
 
-        logger.info("Will run text recognition %s" % img_basename)
-        call_make_request.delay(img_path, img_base64, key, output_dir)
+class OCRManager(object):
+    def __init__(self, keyFile, screenshotDirectory, threadCount):
+        self.keyFile = keyFile
+        self.screenshotDirectory = screenshotDirectory
+        self.threadCount = threadCount
+
+        self.q = Queue()
+        self.result = {}
+
+
+    def threader(self):
+        while True:
+            channelName = self.q.get()
+
+            OCRWorker = OCRHelper(self.keyFile)
+            self.result[channelName] = OCRWorker.processChannel(self.screenshotDirectory, channelName)
+
+            self.q.task_done()
+
+
+    def processChannels(self, channelList, result):
+        self.result = result
+        for thread in range(self.threadCount):
+            t = threading.Thread(target=self.threader)
+            t.daemon = True
+            t.start()       
+        for channel in channelList:
+            self.q.put(channel)
+        self.q.join()  
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="Gets the text in all the image files in the given"
-        " directory using the Google Cloud Vision API")
-    parser.add_argument('image_dir', help='Folder containing the images')
-    parser.add_argument(
-        'output_dir',
-        help='Name of the output folder where the results will be dumped')
-    parser.add_argument('key', help='Google Cloud API Key')
+    channelList = ['12', '8679']
+    OCRResult = {}
+    OCR = OCRManager("service_key.json", "screenshots/", 4)
+    OCR.processChannels(channelList, OCRResult)
+    print(OCRResult['12'])
+    print()
+    print()
+    print()
 
-    args = parser.parse_args()
-
-    img_dir = args.image_dir
-    key = args.key
-    output_dir = args.output_dir
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    compile_text(img_dir, output_dir, key)
+    print(OCRResult['8679'])
