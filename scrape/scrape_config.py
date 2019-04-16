@@ -4,14 +4,15 @@ Crawl settings
 '''
 
 ENABLE_SMART_CRAWLER = True  # remove after testing
-MITMPROXY_ENABLED = True
 MITMABLE_DOMAINS_WARM_UP_CRAWL = True
 remove_dup = False
 RSYNC_EN = False
 REC_AUD = True
+TLS_INTERCEPT = True
 SSL_STRIP = False
 THREADED_SCRAPE = False
 
+MITMPROXY_ENABLED = SSL_STRIP or TLS_INTERCEPT
 
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
     LAUNCH_RETRY_CNT = 15  # detect and store unmitmable domains and IPs

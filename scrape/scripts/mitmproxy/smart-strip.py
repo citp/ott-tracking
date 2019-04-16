@@ -205,6 +205,9 @@ def load(l):
     l.add_option(
         "ssl_strip", int, 1, "Enable SSL Strip option: 0 for False and other values for True",
     )
+    l.add_option(
+        "tls_intercept", int, 1, "Enable TLS intercept option: 0 for False and other values for True",
+    )
     '''
     try:
         os.remove(mitmableFileName)
@@ -226,7 +229,7 @@ def my_log(*args, write_to_file = True):
 
 def configure(updated):
     global tls_strategy, channel_id, data_dir, mitmableFileName, unMitmableFileNameIn, unMitmableFileNameOut,\
-        strip_log_file, lock_obj, ssl_strip_en
+        strip_log_file, lock_obj, ssl_strip_en, tls_intercept_en
     #if ctx.options.tlsstrat > 0:
     #    tls_strategy = ProbabilisticStrategy(float(ctx.options.tlsstrat) / 100.0)
     #else:
@@ -237,6 +240,7 @@ def configure(updated):
         channel_id = ctx.options.channel_id
         data_dir = ctx.options.data_dir
         ssl_strip_en = bool(ctx.options.ssl_strip)
+        tls_intercept_en = bool(ctx.options.tls_intercept)
 
         base_filename = '{}-{}'.format(
             channel_id,
@@ -257,6 +261,7 @@ def configure(updated):
 
         mitmproxy.ctx.log('Successfully loaded smart tls script!')
         mitmproxy.ctx.log('SSL strip set to %s' % str(ssl_strip_en))
+        mitmproxy.ctx.log('TLS intercept set to %s' % str(tls_intercept_en))
         #os.environ['SSLKEYLOGFILE'] = "~/.mitmproxy/sslkeylogfile.txt"
     except Exception as e:
         mitmproxy.ctx.log('Error loading the smart tls script!')
@@ -270,6 +275,14 @@ def next_layer(next_layer):
     """
     if isinstance(next_layer, TlsLayer) and next_layer._client_tls:
         server_address = next_layer.server_conn.address
+
+        global tls_intercept_en
+        if not tls_intercept_en:
+            timestamp = '[{}] '.format(datetime.today())
+            mitmproxy.ctx.log(
+                timestamp + "TLS intercept is disabled! Skipping TLS interception for %s " % str(server_address))
+            return
+
         #cert = next_layer._find_cert())
         hostname = tls_strategy.getAssociatedDomain(server_address[0])
         timestamp = '[{}] '.format(datetime.today())
