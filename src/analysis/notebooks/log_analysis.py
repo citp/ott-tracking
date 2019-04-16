@@ -327,6 +327,7 @@ def gen_global_df(root_dir):
         #print(txt_path)
         channel_name = filename.split("-")[0]
         #print(channel_name)
+        #print(txt_path)
         df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
         df['channel_name'] = channel_name
         df['mitm_attempt'] = 0
