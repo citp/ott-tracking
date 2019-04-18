@@ -281,6 +281,9 @@ def next_layer(next_layer):
             timestamp = '[{}] '.format(datetime.today())
             mitmproxy.ctx.log(
                 timestamp + "TLS intercept is disabled! Skipping TLS interception for %s " % str(server_address))
+            next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
+            next_layer.reply.send(next_layer_replacement)
+            tls_strategy.record_skipped(server_address)
             return
 
         #cert = next_layer._find_cert())
