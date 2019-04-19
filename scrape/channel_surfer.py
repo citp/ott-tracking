@@ -267,9 +267,13 @@ class ChannelSurfer(object):
                 continue
 
             # The screenshot we need is the 2nd latest file
-            FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, screenshot_list[-2])
+            second_latest_file = screenshot_list[-2]
+            FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, second_latest_file)
+
+            # Extract the unix timestamp from the screenshot's filename (assuming that we're on Eastern Time)
+            human_timestamp = second_latest_file.replace('continuous_screenshot-', '').replace('.png', '')
+            t0 = int((datetime.datetime.strptime(human_timestamp, '%Y-%m-%d_%H-%M-%S') - datetime.datetime(1969, 12, 31, 20, 0)).total_seconds())
             
-            t0 = time.time()
             screenshot_filename = join(
                 self.screenshot_folder,
                 '{}-{}.png'.format(self.channel_id, int(t0)))
