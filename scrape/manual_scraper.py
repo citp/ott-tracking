@@ -21,10 +21,12 @@ def get_key():
             return key
 
 
-def scrape_channel():
+def scrape_channel(username):
+    channels = read_channels_for_user(username)
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
-    while True:
+    for channel_name in channels:
+        print("Will scrape %s" % channel_name)
         #key = get_key()
         #ch = KEY_MAP.get(key, key)
         #restart if "r" is pressed
@@ -44,7 +46,8 @@ def scrape_channel():
         else:
             print("CONSOLE>>> Not a valid input, try again!")
             continue
-        channel_name = input("What is the name of the channel(exact application name): ")
+        # channel_name = input("What is the name of the channel(exact application name): ")
+        # channel_name = channel
         date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                 channel_name) + ".txt"
@@ -121,11 +124,22 @@ def scrape_channel():
             print("CONSOLE>>> Error in scrapping channel %s" % channel_name)
 
 
-def main_loop():
+def read_channels_for_user(username):
+    apk_names = []
+    for l in open("manual_interaction_channel_lists/%s.csv" % username):
+        apk_name = (l.rstrip().split(",")[2])
+        apk_names.append(apk_name)
+
+    return apk_names
+
+
+def main_loop(username):
     start_screenshot()
-    scrape_channel()
+    scrape_channel(username)
     dns_sniffer_stop()
     stop_screenshot()
 
 if __name__ == '__main__':
-    main_loop()
+    username = sys.argv[1]
+    print("CHs", read_channels_for_user(username))
+    main_loop(username)
