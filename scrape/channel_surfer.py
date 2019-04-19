@@ -251,8 +251,24 @@ class ChannelSurfer(object):
 
         start_time = time.time()
         err_reported = False
-        FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, 'continuous_screenshot.png')
+
         while time.time() - start_time <= timeout:
+
+            # Find all the screenshots, sorted by creation time
+            screenshot_list = []
+            for screenshot_raw_file in os.listdir(LOCAL_LOG_DIR):
+                if screenshot_raw_file.startswith('continuous_screenshot-') and screenshot_raw_file.endswith('.png'):
+                    screenshot_list.append(screenshot_raw_file)
+            screenshot_list.sort()
+
+            # Wait till we have at least two screenshot files
+            if len(screenshot_list) < 2:
+                time.sleep(0.5)
+                continue
+
+            # The screenshot we need is the 2nd latest file
+            FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, screenshot_list[-2])
+            
             t0 = time.time()
             screenshot_filename = join(
                 self.screenshot_folder,
