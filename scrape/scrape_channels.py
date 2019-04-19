@@ -229,14 +229,14 @@ def main(channel_list=None):
                 scrape_success = False
                 if scrape_config.THREADED_SCRAPE:
                     que = queue.Queue()
-                    t = PropagatingThread(target=lambda q, arg1, arg2: q.put(scrape(arg1, arg2)),
+                    t = PropagatingThread(target=lambda q, arg1, arg2: q.put(automatic_scrape(arg1, arg2)),
                                          args=(que, channel['id'], date_prefix,))
 
                     t.start()
                     t.join(timeout=scrape_config.SCRAPE_TO)
                     channel_state = que.get()
                 else:
-                    channel_state = scrape(channel['id'], date_prefix)
+                    channel_state = automatic_scrape(channel['id'], date_prefix)
                 log("Crawl result: " + str(channel_state))
                 if channel_state == channel_state.TERMINATED:
                     scrape_success = True
@@ -493,6 +493,11 @@ def manual_crawl_screenshot(surfer):
 def launch_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
     if manual_crawl:
+        if scrape_config.MITMPROXY_ENABLED:
+            launch_mitm(mitmrunner)
+
+        time.sleep(5)
+        surfer.launch_channel()
         p = Process(target=manual_crawl_screenshot, args=(surfer,))
         p.start()
         return p
@@ -598,7 +603,7 @@ def collect_data(surfer, mitmrunner, date_prefix):
     return err_occurred
 
 @timeout(scrape_config.SCRAPE_TO)
-def scrape(channel_id, date_prefix):
+def automatic_scrape(channel_id, date_prefix):
     try:
         channel_state = CrawlState.PREINSTALL
         ret = setup_channel(channel_id, date_prefix)
@@ -637,7 +642,7 @@ if __name__ == '__main__':
         else:
             channel_id = int(sys.argv[1])
             date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
-            scrape(channel_id, date_prefix)
+            automatic_scrape(channel_id, date_prefix)
     else:
 
         main()

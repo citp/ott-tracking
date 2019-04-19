@@ -44,7 +44,7 @@ def scrape_channel():
         else:
             print("CONSOLE>>> Not a valid input, try again!")
             continue
-        channel_name = input("What is the name of the channel: ")
+        channel_name = input("What is the name of the channel(exact application name): ")
         date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                 channel_name) + ".txt"
@@ -62,22 +62,40 @@ def scrape_channel():
                 mitmrunner = None
         nextKey = ""
         #while nextKey != 'n':
-        key = ""
-        while key!= 'n':
-            print("CONSOLE>>> Install the channel manually then press \'n\'.")
+        #key = ""
+        #while key!= 'n':
+        #    print("CONSOLE>>> Install the channel manually then press \'n\'.")
+        #    key = get_key()
+        #    if key == "r":
+        #        print("CONSOLE>>> Restarting!")
+        #        collect_data(surfer, mitmrunner, date_prefix)
+        #        break
+        #    elif key == "q":
+        #        print("CONSOLE>>> Quiting!")
+        #        collect_data(surfer, mitmrunner, date_prefix)
+        #        return
+        #if key == "r":
+        #    continue
+        print("CONSOLE>>> Installing channel %s" %channel_name)
+        err_occurred = install_channel(surfer)
+        if err_occurred:
+            print("CONSOLE>>> Error during installing channel %s, restarting" %channel_name)
+            continue
+        while key!= 'l':
+            print("CONSOLE>>> The channel installation is done. Press \'l\' to launch channel.")
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
+                screensot_process.terminate()
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
+                screensot_process.terminate()
                 return
         if key == "r":
             continue
-        if scrape_config.MITMPROXY_ENABLED:
-            launch_mitm(mitmrunner)
         screensot_process = launch_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
