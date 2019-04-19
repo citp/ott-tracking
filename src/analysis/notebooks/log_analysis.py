@@ -225,8 +225,7 @@ def load_dns_data(root_dir):
     rIP2NameDB = {}
     rName2IPDB = {}
     db_folder_name = os.path.join(root_dir, "db")
-    for txt_path in glob(join(db_folder_name, "*.json")):
-        file_name = txt_path.split(sep)[-1]
+    for file_name in glob(join(db_folder_name, "*.json")):
         try:
             with open(file_name) as f:
                 if file_name.endswith("rIP2NameDB.json"):
@@ -285,7 +284,7 @@ def load_timestamps_from_crawl_data(root_dir):
     # Load Timestamps
     timestamps = defaultdict(list)
     print("Loading timestamp data from %s" % root_dir)
-    for txt_path in glob(root_dir + "/**/*-timestamps.txt", recursive=True):
+    for txt_path in glob(root_dir + "/logs/*timestamps.txt", recursive=True):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
         try:
@@ -319,7 +318,7 @@ def load_timestamp_json(root_dir):
 
 
 #Create global_df, containing all SSL/TCP streams SYN packets
-def gen_global_df(root_dir):
+def gen_network_df(root_dir):
     print("Generating Global DF from %s " % root_dir)
     global_df = None
     for txt_path in glob(join(root_dir, "*.uniq")):

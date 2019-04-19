@@ -5,7 +5,8 @@ from glob import glob
 
 def process_wave_files(wave_dir):
     results = {}
-    for wave_path in glob(wave_dir):
+    for wave_path in glob(wave_dir + "/*.wav"):
+        #print("Will process", wave_path)
         _ch_id = int(wave_path.split("/")[-1].split("-")[0])
         _result = audio_recorder.audio_played_second(wave_path, 9)
         results[_ch_id] = _result
