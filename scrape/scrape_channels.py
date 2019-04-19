@@ -485,70 +485,78 @@ def install_channel(surfer):
 def launch_mitm(mitmrunner):
     mitmrunner.run_mitmproxy()
 
+def manual_crawl_screenshot(surfer):
+    log("Capturing screenshots every 5 seconds")
+    while True:
+        surfer.capture_screenshots(5)
 
-def launch_channel(surfer, mitmrunner):
+def launch_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
-    err_occurred = False
-    try:
+    if manual_crawl:
+        p = Process(target=manual_crawl_screenshot, args=(surfer,))
+        p.start()
+        return p
+    else:
+        err_occurred = False
+        try:
+            if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
+                launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
+            else:
+                surfer.timestamp_event("launch")
 
-        if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
-            launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
-        else:
-            surfer.timestamp_event("launch")
+            time.sleep(scrape_config.SLEEP_TIMER)
+            if scrape_config.ENABLE_SMART_CRAWLER:
+                playback_detected = False
+                n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
+                for launch_idx in range(scrape_config.SMART_CRAWLS_CNT):
+                    for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
+                        surfer.launch_channel()  # make sure we start from the homepage
+                        log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
+                            " %s %s" % (launch_idx, idx, n_key_seqs, surfer.channel_id,
+                                        "-".join(key_sequence)))
+                        playback_detected = play_key_sequence(surfer, key_sequence, idx, launch_idx)
+                        if playback_detected:
+                            log('SMART_CRAWLER: Playback detected on channel: %s' %
+                                surfer.channel_id)
+                            fast_forward(surfer)
+                            break
 
-        time.sleep(scrape_config.SLEEP_TIMER)
-        if scrape_config.ENABLE_SMART_CRAWLER:
-            playback_detected = False
-            n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
-            for launch_idx in range(scrape_config.SMART_CRAWLS_CNT):
-                for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
-                    surfer.launch_channel()  # make sure we start from the homepage
-                    log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
-                        " %s %s" % (launch_idx, idx, n_key_seqs, surfer.channel_id,
-                                    "-".join(key_sequence)))
-                    playback_detected = play_key_sequence(surfer, key_sequence, idx, launch_idx)
-                    if playback_detected:
-                        log('SMART_CRAWLER: Playback detected on channel: %s' %
+                        time.sleep(4)
+                    else:
+                        log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
                             surfer.channel_id)
-                        fast_forward(surfer)
-                        break
+            else:
+                for okay_ix in range(0, 3):
+                    if not surfer.channel_is_active():
+                        surfer.launch_channel()
+                    surfer.timestamp_event('select-{}'.format(okay_ix))
+                    surfer.press_select()
+                    surfer.capture_screenshots(20)
+        except SurferAborted as e:
+            err_occurred = True
+            log('Channel failed during launch! Aborting scarping of channel')
+            if scrape_config.MITMPROXY_ENABLED:
+                try:
+                    mitmrunner.kill_mitmproxy()
+                except Exception as e:
+                    log('Error killing MTIM!')
+                    traceback.print_exc()
 
-                    time.sleep(4)
-                else:
-                    log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
-                        surfer.channel_id)
-        else:
-            for okay_ix in range(0, 3):
-                if not surfer.channel_is_active():
-                    surfer.launch_channel()
-                surfer.timestamp_event('select-{}'.format(okay_ix))
-                surfer.press_select()
-                surfer.capture_screenshots(20)
-    except SurferAborted as e:
-        err_occurred = True
-        log('Channel failed during launch! Aborting scarping of channel')
-        if scrape_config.MITMPROXY_ENABLED:
-            try:
-                mitmrunner.kill_mitmproxy()
-            except Exception as e:
-                log('Error killing MTIM!')
-                traceback.print_exc()
-
-        if scrape_config.REC_AUD:
-            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+            if scrape_config.REC_AUD:
+                audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
+                recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
 
-        surfer.uninstall_channel()
-        surfer.kill_all_tcpdump()
-    except TimeoutError:
-        log('Timeout for crawl expired in launch_channel!')
-        raise
-    except Exception:
-        err_occurred = True
-        log('Error!')
-        traceback.print_exc()
-    return err_occurred
+            surfer.uninstall_channel()
+            surfer.kill_all_tcpdump()
+        except TimeoutError:
+            log('Timeout for crawl expired in launch_channel!')
+            raise
+        except Exception:
+            err_occurred = True
+            log('Error!')
+            traceback.print_exc()
+        return err_occurred
 
 def cleanup_data_folder(data_dir, channel_id):
     for filename in glob.iglob(data_dir + '/**/' + str(channel_id) + '*', recursive=True):

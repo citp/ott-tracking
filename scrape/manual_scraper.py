@@ -78,20 +78,27 @@ def scrape_channel():
             continue
         if scrape_config.MITMPROXY_ENABLED:
             launch_mitm(mitmrunner)
+        screensot_process = launch_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
+                screensot_process.terminate()
+                screensot_process.kill()
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
+                screensot_process.terminate()
+                screensot_process.kill()
                 return
         if key == "r":
             continue
         err_occurred = collect_data(surfer, mitmrunner,  date_prefix)
+        screensot_process.terminate()
+        screensot_process.kill()
         write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
