@@ -279,14 +279,6 @@ def check_folders():
             print (fullpath + " doesn't exist! Creating it!")
             os.makedirs(fullpath)
 
-def strip_null_chr(output_path):
-    from_file = open(output_path)
-    line = from_file.readline().replace('\x00', '')
-
-    to_file = open(output_path,mode="w")
-    to_file.write(line)
-    copyfileobj(from_file, to_file)
-
 
 def copy_log_file(channel_id, output_file_desc, is_rsync_res):
     filename = '{}-{}'.format(
@@ -410,7 +402,7 @@ SCREENSHOT_PROCESS = None
 def start_screenshot():
     # On Roku: Start a background process that continuously captures screenshots to
     # the same file: ${LogDir}/continuous_screenshot.png
-    if scrape_config.PLAT == "ROKU":
+    if scrape_config.PLAT == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
         global SCREENSHOT_PROCESS
         if SCREENSHOT_PROCESS is None:
             cmd = join(scrape_config.PLATFORM_DIR,'scripts') + '/capture_screenshot.sh'
@@ -418,7 +410,7 @@ def start_screenshot():
             SCREENSHOT_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
 
 def stop_screenshot():
-    if scrape_config.PLAT == "ROKU":
+    if scrape_config.PLAT == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
         global SCREENSHOT_PROCESS
         if SCREENSHOT_PROCESS is not None:
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
@@ -435,7 +427,8 @@ def setup_channel(channel_id, date_prefix):
 
         check_folders()
 
-        surfer = ChannelSurfer(scrape_config.TV_IP_ADDR,
+        surfer = ChannelSurfer(scrape_config.PLAT,
+                               scrape_config.TV_IP_ADDR,
                                channel_id, str(scrape_config.DATA_DIR),
                                str(scrape_config.LOG_PREFIX),
                                str(scrape_config.PCAP_PREFIX), date_prefix,

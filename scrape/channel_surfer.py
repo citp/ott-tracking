@@ -16,13 +16,15 @@ import json
 from shutil import copy2
 from os.path import join
 import fcntl, socket, struct
+import scrape_config
+
 
 LOCAL_LOG_DIR = os.getenv("LogDir")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = True
 
-PLAT = os.getenv("PLATFORM")
+#PLAT = os.getenv("PLATFORM")
 ADB_PORT_NO = "5555"
 
 
@@ -41,12 +43,14 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, tv_ip, channel_id, data_dir, log_prefix ,pcap_prefix, date_prefix, screenshot_folder):
+    def __init__(self, platform, tv_ip, channel_id, data_dir, log_prefix ,pcap_prefix,
+                 date_prefix, screenshot_folder):
 
         self.pcap_filename = None
-        if PLAT == "ROKU":
+        self.platform = platform
+        if self.platform == "ROKU":
             self.rrc = RokuRemoteControl(tv_ip)
-        elif PLAT == "AMAZON":
+        elif self.platform == "AMAZON":
             self.rrc = AmazonRemoteControl(tv_ip)
         self.tv_ip = tv_ip
         self.channel_id = str(channel_id)
@@ -205,9 +209,9 @@ class ChannelSurfer(object):
 
         mac_filter = ' ether host ' +  wlan_eth_mac
         protocol_filter = ' and not arp and port not ssh'
-        if PLAT == "ROKU":
+        if self.platform == "ROKU":
             host_filter = ' and host ' + self.tv_ip
-        elif PLAT == "AMAZON":
+        elif self.platform == "AMAZON":
             #Filter out ADB packets
             host_filter = ' and (' +\
                           '(src ' + self.tv_ip + ' and not src port ' + ADB_PORT_NO +')'+\
@@ -257,14 +261,14 @@ class ChannelSurfer(object):
 
             # capture_screenshot.sh continuously writes the latest screenshot
             # images to continuous_screenshot
-            if PLAT == "ROKU":
+            if self.platform == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
                 if os.path.exists(FFMPEG_SCREENSHOT_NAME):
                     copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
                 else:
                     if not err_reported:
                         self.log("Error! Screenshot file %s is missing." % FFMPEG_SCREENSHOT_NAME)
                         err_reported = True
-            elif PLAT == "AMAZON":
+            elif self.platform == "AMAZON":
                 self.rrc.take_screenshot(screenshot_filename)
 
             self.deduplicate_screenshots(screenshot_filename)
