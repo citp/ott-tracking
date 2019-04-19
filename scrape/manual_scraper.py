@@ -86,19 +86,16 @@ def scrape_channel():
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
                 screensot_process.terminate()
-                screensot_process.kill()
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
                 screensot_process.terminate()
-                screensot_process.kill()
                 return
         if key == "r":
             continue
         err_occurred = collect_data(surfer, mitmrunner,  date_prefix)
         screensot_process.terminate()
-        screensot_process.kill()
         write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
@@ -107,8 +104,10 @@ def scrape_channel():
 
 
 def main_loop():
+    start_screenshot()
     scrape_channel()
     dns_sniffer_stop()
+    stop_screenshot()
 
 if __name__ == '__main__':
     main_loop()

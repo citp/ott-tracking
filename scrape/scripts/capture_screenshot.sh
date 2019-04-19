@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 # Terminate existing ffmpeg captures
 pkill -2 -f ffmpeg
 
@@ -13,7 +13,7 @@ rm ${LogDir}/continuous_screenshot-*.png
 while true
 do
     echo "Continuous screenshot capturing to ${ScreenshotFile}"
-    ffmpeg -i /dev/video0 -vf scale=1280:720,fps=1,eq=brightness=-0.1 -r 1 -hide_banner -f image2 -strftime 1 "$ScreenshotFile" >> $ScreenshotLogFile 2>&1
+    ffmpeg -nostdin -loglevel quiet -i /dev/video0 -vf scale=1280:720,fps=1,eq=brightness=-0.1 -r 1 -hide_banner -f image2 -strftime 1 "$ScreenshotFile" 
     echo "Screenshot script stopped!"
     echo "Retrying in 2 seconds"
     sleep 2s

@@ -405,7 +405,7 @@ def start_screenshot():
     if scrape_config.PLAT == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
         global SCREENSHOT_PROCESS
         if SCREENSHOT_PROCESS is None:
-            cmd = join(scrape_config.PLATFORM_DIR,'scripts') + '/capture_screenshot.sh'
+            cmd = join('./scripts') + '/capture_screenshot.sh'
             log('Starting screenshot process with %s ' % cmd)
             SCREENSHOT_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
 
