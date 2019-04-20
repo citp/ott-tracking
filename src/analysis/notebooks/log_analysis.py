@@ -368,6 +368,10 @@ def get_epoch(row, channel_timestamps):
         # print(type(timestamp))
         if packet_timestamp > timestamp:
             ret_label = label
+    # for backwards compatibility: we expect label of the smart crawl stage to start with smart
+    # this makes plotting much easier since alphabetical order mirrors the temporal order.
+    if "key-seq" in ret_label and not ret_label.startswith("smart"):
+        return "smart%s" % ret_label
     else:
         return ret_label
 
