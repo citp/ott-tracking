@@ -64,7 +64,20 @@ FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="ssl_fail"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
-#Post processing of files
+
+# All TLS streams with client sending at least some data
+# To prevent overcounting, we expect there to be some SSL data communication
+# from the client side.
+# In some cases, immediately after the handshake, the client sends a FIN to terminate the
+# connection.
+FORMAT="fields"
+FILTER="ssl and ((ssl.record.content_type == 23) && (ip.src==$TV_IP_ADDR))"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+SUFFIX="ssl_http_success"  # rename to ssl_success
+./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
+#Post processing
+
 ./post_process.sh $OUT_DIR
 
 #python3 pcap_analysis.py $DATA_DIR $OUT_DIR

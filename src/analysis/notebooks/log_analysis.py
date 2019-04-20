@@ -8,7 +8,7 @@ import pandas as pd
 import json
 import traceback
 from glob import glob
-from os.path import join, sep, isfile
+from os.path import join, sep, isfile, basename
 from _collections import defaultdict
 
 
@@ -343,7 +343,7 @@ def gen_network_df(root_dir):
 def get_tcp_conns(post_process_dir, suffix):
     # Find all tls failure due to invalid cert:
     unique_tcp_conn_ids = {}
-    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt"]
+    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_http_success"]
     for txt_path in glob(join(post_process_dir, suffix)):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
@@ -352,9 +352,24 @@ def get_tcp_conns(post_process_dir, suffix):
     return unique_tcp_conn_ids
 
 
-def str_to_int_key(text):
-    return int(text.split('-')[1])
+def get_crawl_status(crawl_dir):
+    status_dict = {}
+    for f in glob(join(crawl_dir, "finished", "*.txt")):
+        channel_name = basename(f).rsplit(".", 1)[0]
+        status = open(f).read().rstrip()
+        status_dict[channel_name] = status
+    return status_dict
 
+def get_epoch(row, channel_timestamps):
+    ch_timestamps = channel_timestamps[row["channel_name"]]
+    packet_timestamp = row["frame.time_epoch"]
+    ret_label = "unknown"
+    for label, timestamp in ch_timestamps:
+        # print(type(timestamp))
+        if packet_timestamp > timestamp:
+            ret_label = label
+    else:
+        return ret_label
 
 if __name__ == '__main__':
     test()
