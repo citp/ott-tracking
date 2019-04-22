@@ -4,7 +4,9 @@ Extracts channel names from APKs in the apk_cache.
 """
 import subprocess
 import re
-from scrape_amazon_stick_app_page import get_standard_channel_name
+
+
+KIDS = True
 
 
 def main():
@@ -13,7 +15,11 @@ def main():
     reader = open('pull_apks.log')
 
     # Write result to CSV
-    writer = open('channel_names.csv', 'w')
+    if KIDS:
+        writer = open('channel_names_kids.csv', 'w')
+    else:
+        writer = open('channel_names.csv', 'w')
+
     print >>writer, 'amazon_ranking,channel_name,apk_id'
 
     ranking = None
@@ -52,7 +58,23 @@ def main():
             print 'No name:', apk_id
 
     writer.close()
-    reader.close(0)
+    reader.close()
+
+
+def get_standard_channel_name(channel_name):
+
+    channel_name = channel_name.lower()
+
+    # Keep only alpha numeric characters
+    output = ''
+    for ch in channel_name:
+        if 'a' <= ch <= 'z' or '0' <= ch <= '9':
+            output += ch
+        else:
+            output += ' '
+
+    # Remove extra spaces
+    return ' '.join(output.split())
 
 
 if __name__ == '__main__':
