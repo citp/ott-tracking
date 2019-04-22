@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+# set -x  # uncomment to debug
 DATA_DIR=`realpath $1`
 OUT_DIR=$DATA_DIR/post-process
 
@@ -29,6 +29,7 @@ SUFFIX="http.csv"
 FIELDS="-e frame.time_epoch -e eth.src -e ip.dst -e http.request.method -e http.request.full_uri -e http.user_agent -e http.referer -e http.cookie"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 python correct_http_pipelining.py $OUT_DIR
+
 ####################################
 ######HTTP POST ANALYSIS######
 ####################################
@@ -43,11 +44,23 @@ FIELDS="-e frame.time_epoch -e eth.src -e ip.dst -e http.request.method -e http.
 #######TLS INTERCEPT ANALYSIS#######
 ####################################
 #List all SSL/TCP streams SYN packets
+# FORMAT="fields"
+#FILTER="tcp.flags.syn==1 && tcp.flags.ack==0 && tcp.port ==443"
+#FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+#SUFFIX="tcp_streams"
+#./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
+
+####################################
+#######TCP CONNECTION ANALYSIS#######
+####################################
+#List all TCP streams with SYN packets
 FORMAT="fields"
-FILTER="tcp.flags.syn==1 && tcp.flags.ack==0 && tcp.port ==443"
-FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+FILTER="tcp.flags.syn==1 and tcp.flags.ack==0 and not ((ip.src == $TV_IP_ADDR && tcp.srcport == $TV_TCP_PORT) || (ip.dst == $TV_IP_ADDR && tcp.dstport == $TV_TCP_PORT))"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst -e tcp.dstport"
 SUFFIX="tcp_streams"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
 
 #MITM attemps (we search for all x509 certs that have mitmproxy in their name)
 FORMAT="fields"
@@ -56,14 +69,17 @@ FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="mitmproxy-attempt"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
-#All TLS handshake failures
-#Full list: https://tools.ietf.org/html/rfc5246#appendix-A.3
-FORMAT="fields"
-FILTER="ssl.alert_message.desc==46 or ssl.alert_message.desc==48"
-FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
-SUFFIX="ssl_fail"
-./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
+# We don't use handshake failures as a proxy for SSL failures anymore.
+if []; then
+	#All TLS handshake failures
+	#Full list: https://tools.ietf.org/html/rfc5246#appendix-A.3
+	FORMAT="fields"
+	FILTER="ssl.alert_message.desc==46 or ssl.alert_message.desc==48"
+	FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+	SUFFIX="ssl_fail"
+	./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+fi
 
 # All TLS streams with client sending at least some data
 # To prevent overcounting, we expect there to be some SSL data communication
@@ -73,8 +89,9 @@ SUFFIX="ssl_fail"
 FORMAT="fields"
 FILTER="ssl and ((ssl.record.content_type == 23) && (ip.src==$TV_IP_ADDR))"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
-SUFFIX="ssl_http_success"  # rename to ssl_success
+SUFFIX="ssl_success"  # rename to ssl_success
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
 
 #Post processing
 

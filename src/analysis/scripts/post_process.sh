@@ -7,7 +7,7 @@ fi
 
 for file in $DATA_DIR/*.pcap.tcp_streams
 do
-  head -n +1 "$file" > "$file".uniq
-  tail -n +2 "$file" | sort -n -u -t, -k1,1  >> "$file".uniq
+  head -n 1 "$file" > "$file".uniq_tcp_conns  # copy column names
+  tail -n +2 "$file" | sort -n -u -t, -k1,1  >> "$file".uniq_tcp_conns  # take unique tcp connections using TCP stream number
   rm "$file"
 done

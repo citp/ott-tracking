@@ -318,32 +318,30 @@ def load_timestamp_json(root_dir):
 
 
 #Create global_df, containing all SSL/TCP streams SYN packets
-def gen_network_df(root_dir):
+# def gen_network_df(root_dir):
+def gen_distinct_tcp_conns(root_dir):    
     print("Generating Global DF from %s " % root_dir)
-    global_df = None
-    for txt_path in glob(join(root_dir, "*.uniq")):
-        filename = txt_path.split(sep)[-1]
+    df = pd.DataFrame([])
+    for txt_path in glob(join(root_dir, "*.uniq_tcp_conns")):
+        filename = basename(txt_path)
         #print(txt_path)
         channel_name = filename.split("-")[0]
         #print(channel_name)
         #print(txt_path)
-        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        df['channel_name'] = channel_name
-        df['mitm_attempt'] = 0
-        df['mitm_fail'] = 0
-        if global_df is None:
-            global_df = df
-        else:
-            global_df = global_df.append(df)
+        tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+        tmp_df['channel_name'] = channel_name
+        tmp_df['mitm_attempt'] = 0
+        tmp_df['mitm_fail'] = 0
+        df = df.append(tmp_df)
         #print(len(global_df.index))
         #print(global_df)
-    return global_df
+    return df
 
 
 def get_tcp_conns(post_process_dir, suffix):
     # Find all tls failure due to invalid cert:
     unique_tcp_conn_ids = {}
-    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_http_success"]
+    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_success"]
     for txt_path in glob(join(post_process_dir, suffix)):
         filename = txt_path.split(sep)[-1]
         channel_name = filename.split("-")[0]
