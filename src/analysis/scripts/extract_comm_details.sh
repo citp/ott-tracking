@@ -90,10 +90,3 @@ FILTER="ssl and ((ssl.record.content_type == 23) && (ip.src==$TV_IP_ADDR))"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
 SUFFIX="ssl_success"  # rename to ssl_success
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
-
-
-#Post processing
-
-./post_process.sh $OUT_DIR
-
-#python3 pcap_analysis.py $DATA_DIR $OUT_DIR
