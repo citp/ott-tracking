@@ -99,7 +99,7 @@ def scrape_channel(username):
                 return
         if key == "r":
             continue
-        screensot_process = launch_channel(surfer, mitmrunner, True)
+        screensot_process = crawl_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
             key = get_key()
