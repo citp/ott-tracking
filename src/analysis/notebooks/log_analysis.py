@@ -319,7 +319,7 @@ def load_timestamp_json(root_dir):
 
 #Create global_df, containing all SSL/TCP streams SYN packets
 # def gen_network_df(root_dir):
-def gen_distinct_tcp_conns(root_dir):    
+def get_distinct_tcp_conns(root_dir):
     print("Generating Global DF from %s " % root_dir)
     df = pd.DataFrame([])
     for txt_path in glob(join(root_dir, "*.uniq_tcp_conns")):
