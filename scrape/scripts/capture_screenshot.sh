@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 # Terminate existing ffmpeg captures
 pkill -2 -f ffmpeg
 
@@ -10,6 +9,7 @@ ScreenshotLogFile=${LogDir}/continuous_screenshot.log
 # Remove previous screenshot files
 rm ${LogDir}/continuous_screenshot-*.png
 
+set -x
 while true
 do
     echo "Continuous screenshot capturing to ${ScreenshotFile}"

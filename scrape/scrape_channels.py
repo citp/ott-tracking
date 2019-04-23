@@ -488,7 +488,8 @@ def launch_mitm(mitmrunner):
 def manual_crawl_screenshot(surfer):
     log("Capturing screenshots every 5 seconds")
     while True:
-        surfer.capture_screenshots(5)
+        surfer.capture_screenshots(1)
+        time.sleep(4)
 
 def launch_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
