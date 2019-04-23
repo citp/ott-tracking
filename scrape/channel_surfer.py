@@ -291,7 +291,8 @@ class ChannelSurfer(object):
             elif self.platform == "AMAZON":
                 self.rrc.take_screenshot(screenshot_filename)
 
-            self.deduplicate_screenshots(screenshot_filename)
+            if scrape_config.DEDUPLICATE_SCREENSHOTS:
+                self.deduplicate_screenshots(screenshot_filename)
             time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
 
 
