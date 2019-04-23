@@ -14,6 +14,10 @@ while true
 do
     echo "Continuous screenshot capturing to ${ScreenshotFile}"
     ffmpeg -nostdin -loglevel quiet -i /dev/video0 -vf scale=1280:720,fps=1,eq=brightness=-0.1 -r 1 -hide_banner -f image2 -strftime 1 "$ScreenshotFile" 
+    if [ -f /tmp/SMART_TV_KILL_SCREENSHOT ]
+    then
+      exit 0
+    fi
     echo "Screenshot script stopped!"
     echo "Retrying in 2 seconds"
     sleep 2s
