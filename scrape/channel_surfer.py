@@ -253,35 +253,36 @@ class ChannelSurfer(object):
         err_reported = False
 
         while time.time() - start_time <= timeout:
-
-            # Find all the screenshots, sorted by creation time
-            screenshot_list = []
-            for screenshot_raw_file in os.listdir(LOCAL_LOG_DIR):
-                if screenshot_raw_file.startswith('continuous_screenshot-') and screenshot_raw_file.endswith('.png'):
-                    screenshot_list.append(screenshot_raw_file)
-            screenshot_list.sort()
-
-            # Wait till we have at least two screenshot files
-            if len(screenshot_list) < 2:
-                time.sleep(0.5)
-                continue
-
-            # The screenshot we need is the 2nd latest file
-            second_latest_file = screenshot_list[-2]
-            FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, second_latest_file)
-
-            # Extract the unix timestamp from the screenshot's filename (assuming that we're on Eastern Time)
-            human_timestamp = second_latest_file.replace('continuous_screenshot-', '').replace('.png', '')
-            t0 = int((datetime.datetime.strptime(human_timestamp, '%Y-%m-%d_%H-%M-%S') - datetime.datetime(1969, 12, 31, 20, 0)).total_seconds())
-            
-            screenshot_filename = join(
-                self.screenshot_folder,
-                '{}-{}.png'.format(self.channel_id, int(t0)))
-            #self.log('Taking screenshot to:', screenshot_filename)
-
-            # capture_screenshot.sh continuously writes the latest screenshot
-            # images to continuous_screenshot
             if self.platform == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
+                # Find all the screenshots, sorted by creation time
+                screenshot_list = []
+                for screenshot_raw_file in os.listdir(LOCAL_LOG_DIR):
+                    if screenshot_raw_file.startswith('continuous_screenshot-') and screenshot_raw_file.endswith(
+                            '.png'):
+                        screenshot_list.append(screenshot_raw_file)
+                screenshot_list.sort()
+
+                # Wait till we have at least two screenshot files
+                if len(screenshot_list) < 2:
+                    time.sleep(0.5)
+                    continue
+
+                # The screenshot we need is the 2nd latest file
+                second_latest_file = screenshot_list[-2]
+                FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, second_latest_file)
+
+                # Extract the unix timestamp from the screenshot's filename (assuming that we're on Eastern Time)
+                human_timestamp = second_latest_file.replace('continuous_screenshot-', '').replace('.png', '')
+                t0 = int((datetime.datetime.strptime(human_timestamp, '%Y-%m-%d_%H-%M-%S') - datetime.datetime(1969, 12,
+                                                                                                               31, 20,
+                                                                                                               0)).total_seconds())
+                screenshot_filename = join(
+                    self.screenshot_folder,
+                    '{}-{}.png'.format(self.channel_id, int(t0)))
+                # self.log('Taking screenshot to:', screenshot_filename)
+
+                # capture_screenshot.sh continuously writes the latest screenshot
+                # images to continuous_screenshot
                 if os.path.exists(FFMPEG_SCREENSHOT_NAME):
                     copy2(FFMPEG_SCREENSHOT_NAME, screenshot_filename)
                 else:
@@ -289,6 +290,11 @@ class ChannelSurfer(object):
                         self.log("Error! Screenshot file %s is missing." % FFMPEG_SCREENSHOT_NAME)
                         err_reported = True
             elif self.platform == "AMAZON":
+                t0 = time.time()
+                screenshot_filename = join(
+                    self.screenshot_folder,
+                    '{}-{}.png'.format(self.channel_id, int(t0)))
+                # self.log('Taking screenshot to:', screenshot_filename)
                 self.rrc.take_screenshot(screenshot_filename)
 
             if scrape_config.DEDUPLICATE_SCREENSHOTS:
