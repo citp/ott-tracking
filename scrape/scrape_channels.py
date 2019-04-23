@@ -490,7 +490,8 @@ def launch_mitm(mitmrunner):
 def manual_crawl_screenshot(surfer):
     log("Capturing screenshots every 5 seconds")
     while True:
-        surfer.capture_screenshots(5)
+        surfer.capture_screenshots(1)
+        time.sleep(4)
 
 
 def remove_file(file_path):

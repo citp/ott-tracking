@@ -6,6 +6,8 @@ import subprocess
 from scapy.all import *
 from datetime import datetime
 
+#sudo setcap cap_net_raw=eip `which python3.6`
+#sudo setcap cap_net_raw=eip `which tcpdump`
 
 def querysniff(pkt):
     global Name2IPDic, IP2NameDic, rName2IPDic, rIP2NameDic
@@ -30,8 +32,7 @@ def querysniff(pkt):
                         IP2NameDic[IPAddr].add(DomainName)
                         rIP2NameDic.set(IPAddr, DomainName)
                         timestamp = '[{}] '.format(datetime.today())
-                        print(timestamp + DomainName + " mapped to IP address " + IPAddr + ":" + str(p[DNSRR][x].type))
-                    #name = p.an.rdata
+                        #print(timestamp + DomainName + " mapped to IP address " + IPAddr + ":" + str(p[DNSRR][x].type))
                     #print(name)
 
 
