@@ -1,20 +1,21 @@
 0,The CW,com.cw.tv.android
-1,FIRE TV,com.onemainstream.nbcunivers.android
-2,FOX NOW,com.fox.now
-3,CBS,com.cbs.ott
-4,Tubi TV,com.tubitv.ott
-5,Pluto TV,tv.pluto.android
-6,Tube Videos,com.kyy.tubevideos
-7,Lifetime,com.aetn.lifetime.watch
-8,ABC,com.disney.datg.videoplatforms.android.amazon.kindle.abc
-9,STARZ,com.starz.starzplay.firetv
-10,PlayStation Vue,com.snei.vue.firetv
-11,HBO GO,com.HBO
-12,HISTORY,com.aetn.history.watch
-13,TNT,com.turner.tnt.android.networkapp
-14,AMC,com.amctve.amcfiretv
-15,HGTV,tv.accedo.hgtv
-16,Philo,com.philo.philo
-17,Mobile Tube,com.kyy.mobilevideosforyoutube
-18,Boomerang,com.dramafever.boom_hybrid
-19,Showtime Anytime,com.showtime.showtimeanytime
+0,tubi tv,com.tubitv.ott
+1,hbo go,com.HBO
+2,cbs,com.cbs.ott
+3,hbo now,com.hbo.hbonow
+4,nbc,com.onemainstream.nbcunivers.android
+5,pluto tv,tv.pluto.android
+6,the cw,com.cw.tv.android
+7,amc,com.amctve.amcfiretv
+8,fox now,com.fox.now
+9,abc,com.disney.datg.videoplatforms.android.amazon.kindle.abc
+10,starz,com.starz.starzplay.firetv
+11,history,com.aetn.history.watch
+12,playstation vue,com.snei.vue.firetv
+13,tnt,com.turner.tnt.android.networkapp
+14,boomerang,com.dramafever.boom_hybrid
+15,videos for youtube,com.kyy.tubevideos
+16,philo,com.philo.philo
+17,xumo,com.xumo.xumo.tv
+18,player,com.tube8
+19,cartoon network,com.turner.cnvideoapp

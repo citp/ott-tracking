@@ -1,20 +1,20 @@
-20,HBO NOW,com.hbo.hbonow
-21,AE,com.aetn.aetv.watch
-22,Food Network,tv.accedo.foodnetwork
-23,DisneyNOW,com.disney.datg.videoplatforms.android.amazon.kindle.watchdc
-24,SHOWTIME,com.showtime.standalone
-25,USA,com.amazon.webapps.nbc.usa
-26,Freeform,com.disney.datg.videoplatforms.android.amazon.kindle.abcf
-27,Bravo,com.amazon.webapps.nbc.bravo
-28,Hallmark,com.feeln.androidapp
-29,TLC GO,com.discovery.firetv.tlcgo
-30,YouTube,org.chromium.youtube_apk
-31,DC Universe,com.wb.amzn.dcuniverse
-32,Cartoon Network,com.turner.cnvideoapp
-33,TBS,com.turner.tbs.android.networkapp
-34,Hulu,com.hulu.plus
-35,SYFY,com.amazon.webapps.nbc.syfy
-36,FXNOW,com.fxnetworks.fxnow
-37,OWN,com.own.firetv.owntve
-38,Hallmark Channel,com.hallmarkchannel.tv
-39,MTV,com.mtvn.mtvPrimeAndroid
+20,showtime anytime,com.showtime.showtimeanytime
+21,nick,com.nickonline.android.nickapp
+22,epix now,com.epixnow.firetvapp
+23,a e,com.aetn.aetv.watch
+24,showtime,com.showtime.standalone
+25,youtube,org.chromium.youtube_apk
+26,tbs,com.turner.tbs.android.networkapp
+27,lifetime,com.aetn.lifetime.watch
+28,hulu,com.hulu.plus
+29,freeform,com.disney.datg.videoplatforms.android.amazon.kindle.abcf
+30,mtv,com.mtvn.mtvPrimeAndroid
+31,usa,com.amazon.webapps.nbc.usa
+32,syfy,com.amazon.webapps.nbc.syfy
+33,disneynow,com.disney.datg.videoplatforms.android.amazon.kindle.watchdc
+34,bbc america,com.bbca.firetv
+35,stirr,com.sbgtv.stirr.amazon
+36,movies anywhere,com.moviesanywhere.ama
+37,sundance tv,com.sundancetv.firetv
+38,vh1,com.mtvn.vh1android
+39,bravo,com.amazon.webapps.nbc.bravo
