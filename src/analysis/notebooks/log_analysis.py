@@ -352,11 +352,24 @@ def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
 
 def get_unique_tcp_stream_ids(post_process_dir, suffix):
     unique_tcp_conn_ids = {}
-    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_success"]
+    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_connections"]
     for txt_path in glob(join(post_process_dir, suffix)):
         filename = basename(txt_path)
         channel_name = filename.split("-")[0]
-        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+
+        if suffix.endswith("ssl_connections"):
+            df = pd.read_csv(txt_path, sep='|', encoding='utf-8', index_col=None)
+            # ssl_connections csv includes both handshakes and SSL payloads
+            # select payloads only (ssl.record.content_type=23)
+            # Some packets have multiple payloads which appear as 23,23
+            # That's why we are using "str.contains" instead of equality (==23)
+            df["ssl.record.content_type"] = df["ssl.record.content_type"].astype(str)
+            # print(df["ssl.record.content_type"].value_counts())
+            # print("before", len(df))
+            df = df[df["ssl.record.content_type"].str.contains("23")]
+            # print("after", len(df))
+        else:
+            df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
         unique_tcp_conn_ids[channel_name] = df['tcp.stream'].unique()
     return unique_tcp_conn_ids
 
