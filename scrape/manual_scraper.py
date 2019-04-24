@@ -24,7 +24,7 @@ def get_key():
 
 
 question_list = [
-"0. Did the app open?",
+"0. Did the app open? (Y/N)",
 "1. Did the channel need a signup of any sort to view content? (Y/N)",
 "2. Did you sign up to view content? (Y/N)",
 "3. What was the sign up link? (Leave blank if there was no link)",
@@ -32,10 +32,12 @@ question_list = [
 "5. How many ads did you watch? (0 for no Ad)",
 "6. Additional comments."
 ]
+Q_BANNER = "<><><><>PLEASE ANSWER THE FOLLOWING QUESTIONS!<><><><>"
 
 def questionnaire(channel_name):
     q_filename = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                 str(channel_name + "_questionnaire")) + ".txt"
+    print(Q_BANNER)
     with open(q_filename, 'w') as f:
         for question in question_list:
             f.write(question + "\n")
