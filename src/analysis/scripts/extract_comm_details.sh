@@ -53,7 +53,7 @@ FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e
 ####################################
 #######TLS INTERCEPT ANALYSIS#######
 ####################################
-#List all SSL/TCP streams SYN packets
+# List all SSL/TCP streams SYN packets
 # FORMAT="fields"
 # FILTER="tcp.flags.syn==1 && tcp.flags.ack==0 && tcp.port ==443"
 # FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
@@ -64,15 +64,17 @@ FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e
 ####################################
 #######TCP CONNECTION ANALYSIS#######
 ####################################
-#List all TCP streams with SYN packets
+# List all TCP streams with SYN packets
 FORMAT="fields"
 FILTER="tcp.flags.syn==1 and tcp.flags.ack==0 and not ((ip.src == $TV_IP_ADDR && tcp.srcport == $TV_TCP_PORT) || (ip.dst == $TV_IP_ADDR && tcp.dstport == $TV_TCP_PORT))"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst -e tcp.dstport"
 SUFFIX="tcp_streams"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
-
-#MITM attemps (we search for all x509 certs that have mitmproxy in their name)
+######################################
+###### MITM Attempts ######
+######################################
+# MITM attemps (we search for all x509 certs that have mitmproxy in their name)
 FORMAT="fields"
 FILTER="x509sat.uTF8String==mitmproxy"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
@@ -90,36 +92,38 @@ SUFFIX="mitmproxy-attempt"
 # ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
 
-# All TLS streams with client sending at least some data
+########################################
+###### Successful SSL connections ######
+########################################
+# All TLS streams with client sending at least some data.
 # To prevent overcounting, we expect there to be some SSL data communication
 # from the client side.
 # In some cases, immediately after the handshake, the client sends a FIN to terminate the
 # connection.
+# FORMAT="fields"
+# FILTER="ssl and ((ssl.record.content_type == 23) && (ip.src==$TV_IP_ADDR))"
+# FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
+# SUFFIX="ssl_success"
+# ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+
+
+##################################################################
+###### SSL Client handshakes and Successful SSL connections ######
+##################################################################
+# TODO: this CSV will contain 2 types of SSL frames. Filter in pandas using ssl.record.content_type
+# 1- TLS streams with client sending at least some data: (filter: ssl.record.content_type == 23) 
+# 2- TLS client handshakes: (filter: ssl.record.content_type == 22)
 FORMAT="fields"
-FILTER="ssl and ((ssl.record.content_type == 23) && (ip.src==$TV_IP_ADDR))"
-FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst"
-SUFFIX="ssl_success"
-./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
-
-
-# All TLS streams with client sending at least some data
-# To prevent overcounting, we expect there to be some SSL data communication
-# from the client side.
-# In some cases, immediately after the handshake, the client sends a FIN to terminate the
-# connection.
-FORMAT="fields"
-FILTER="((ssl.record.content_type == 22) && (ip.src==$TV_IP_ADDR))"
-FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst -e ssl.handshake.extensions_server_name"
-SUFFIX="ssl_client_handshake"
-./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
+FILTER="((ssl.handshake.type == 1) || (ssl.record.content_type == 23)) && (ip.src==$TV_IP_ADDR)"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.dst -e ssl.record.content_type -e ssl.handshake.extensions_server_name"
+SUFFIX="ssl_connections"
+./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 
 
 
-# All TLS streams with client sending at least some data
-# To prevent overcounting, we expect there to be some SSL data communication
-# from the client side.
-# In some cases, immediately after the handshake, the client sends a FIN to terminate the
-# connection.
+########################################################
+###### DNS responses (A and AAAA) ######
+########################################################
 FORMAT="fields"
 FILTER="((dns.flags.response==1) && (ip.dst==$TV_IP_ADDR))"
 FIELDS="-e frame.time_epoch -e ip.dst -e dns.qry.name -e dns.a -e dns.aaaa"
