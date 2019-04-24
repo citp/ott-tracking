@@ -111,7 +111,7 @@ SUFFIX="mitmproxy-attempt"
 ###### SSL Client handshakes and Successful SSL connections ######
 ##################################################################
 # TODO: this CSV will contain 2 types of SSL frames. Filter in pandas using ssl.record.content_type
-# 1- TLS streams with client sending at least some data: (filter: ssl.record.content_type == 23) 
+# 1- TLS streams with client sending at least some data: (filter: ssl.record.content_type == 23)
 # 2- TLS client handshakes: (filter: ssl.record.content_type == 22)
 FORMAT="fields"
 FILTER="((ssl.handshake.type == 1) || (ssl.record.content_type == 23)) && (ip.src==$TV_IP_ADDR)"
