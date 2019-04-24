@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
-from _collections import defaultdict
+from collections import defaultdict
 
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
@@ -326,6 +326,8 @@ def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
     print("Loading distinct TCP connections from %s " % post_process_dir)
     if name_resolution:
         rIP2NameDB, _ = load_dns_data(crawl_data_dir)
+        _, ip_2_domains_by_channel = load_dns_data_from_pcap_csvs(crawl_data_dir)
+
     for txt_path in glob(join(post_process_dir, "*.tcp_streams")):
         filename = basename(txt_path)
         channel_name = filename.split("-")[0]
@@ -342,8 +344,8 @@ def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
     df.rename(columns=mapping, inplace=True)
 
     if name_resolution and rIP2NameDB is not None:
-        df["hostname"] = df["ip_dst"].map(lambda x: get_domain_by_ip(x, rIP2NameDB))
-
+        # df["hostname"] = df["ip_dst"].map(lambda x: get_domain_by_ip(x, rIP2NameDB))
+        df["hostname"] = df.apply(lambda x: ip_2_domains_by_channel[x["channel_name"]].get(x["ip_dst"], ''), axis=1)
     # add human readable timestamps
     df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
             int(x)).strftime('%Y-%m-%d %H:%M:%S'))
@@ -403,6 +405,40 @@ def get_domain_by_ip(ip_address, ip2name_db):
         return ip2name_db[ip_address][0].rstrip('.')
     else:
         return "unknown"
+
+
+def get_ip_domain_mapping_from_dns_df(dns_df):
+    ip_2_domains = defaultdict(dict)
+    local_qrys = set()
+    for idx, row in dns_df.iterrows():
+        domain = row["dns.qry.name"]
+        if domain.endswith("in-addr.arpa"):
+            local_qrys.add(domain)
+            continue
+        channel_name = row["channel_name"]
+        dns_answers = row["dns.a"]
+        try:
+            ips = dns_answers.split(",")
+        except Exception:
+            continue
+        for ip in ips:
+            ip_2_domains[channel_name][ip] = domain
+    return ip_2_domains
+
+
+def load_dns_data_from_pcap_csvs(crawl_data_dir):
+    """Load IP address-to-domain mapping keyed by channel.
+
+    Isolating DNS data by channel helps us avoid collisions.
+    """
+    dns_df = pd.DataFrame([])
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    for dns_csv in glob(join(post_process_dir, "*dns.csv")):
+        tmp_df = pd.read_csv(dns_csv, sep="|")
+        channel_name = basename(dns_csv).split("-")[0]
+        tmp_df['channel_name'] = channel_name
+        dns_df = dns_df.append(tmp_df)
+    return dns_df, get_ip_domain_mapping_from_dns_df(dns_df)
 
 
 if __name__ == '__main__':
