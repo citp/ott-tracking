@@ -160,11 +160,17 @@ class ConservativeStrategy(_TlsStrategy):
         if server_address in self.unMitmableIps:
             print("Server %s in the pre-whitelist!" % str(server_address))
             return False
-
+        MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+        if not isfile(MITM_LEARNED_NEW_ENDPOINT):
+            try:
+                open(MITM_LEARNED_NEW_ENDPOINT, 'a').close()
+            except Exception:
+                print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
         if hostname:
             print("Hostname %s not in any whitelist! Intercepting" % hostname)
         else:
             print("Server %s not in any whitelist! Intercepting" %  str(server_address))
+
         return True
 
 

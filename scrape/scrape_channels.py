@@ -36,6 +36,9 @@ from time import sleep
 if scrape_config.REC_AUD:
     from audio_recorder import AudioRecorder
 
+MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+
+
 #repeat = {}
 # To get this list use this command:
 # ls -larSt /mnt/iot-house/keys |  awk '{print $9}' | tr '\n' ','
@@ -43,7 +46,6 @@ channels_done = {}
 
 #This is a global env that needs to be set in bash
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
-
 
 
 class CrawlState(enum.Enum):
@@ -488,9 +490,18 @@ def launch_mitm(mitmrunner):
 def manual_crawl_screenshot(surfer):
     log("Capturing screenshots every 5 seconds")
     while True:
-        surfer.capture_screenshots(5)
+        surfer.capture_screenshots(1)
+        time.sleep(4)
 
-def launch_channel(surfer, mitmrunner, manual_crawl=False):
+
+def remove_file(file_path):
+    try:
+        os.remove(file_path)
+    except OSError:
+        pass
+
+
+def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
     if manual_crawl:
         if scrape_config.MITMPROXY_ENABLED:
@@ -511,9 +522,19 @@ def launch_channel(surfer, mitmrunner, manual_crawl=False):
 
             time.sleep(scrape_config.SLEEP_TIMER)
             if scrape_config.ENABLE_SMART_CRAWLER:
+                remove_file(MITM_LEARNED_NEW_ENDPOINT)
                 playback_detected = False
                 n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
                 for launch_idx in range(1, scrape_config.SMART_CRAWLS_CNT + 1):
+                    if launch_idx > 1:
+                        if isfile(MITM_LEARNED_NEW_ENDPOINT):
+                            # we recently learned about a domain, continue
+                            remove_file(MITM_LEARNED_NEW_ENDPOINT)
+                        else:
+                            # no new domain found recently, stop crawling
+                            remove_file(MITM_LEARNED_NEW_ENDPOINT)
+                            break
+
                     for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
                         surfer.timestamp_event('smartlaunch-%02d' % launch_idx)
                         surfer.launch_channel()  # make sure we start from the homepage
@@ -621,7 +642,7 @@ def automatic_scrape(channel_id, date_prefix):
                 channel_state = CrawlState.LAUNCHING
                 if scrape_config.MITMPROXY_ENABLED:
                     launch_mitm(mitmrunner)
-                err_occurred = launch_channel(surfer, mitmrunner)
+                err_occurred = crawl_channel(surfer, mitmrunner)
                 if not err_occurred:
                     channel_state = CrawlState.TERMINATING
                     err_occurred = collect_data(surfer, mitmrunner, date_prefix)

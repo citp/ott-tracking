@@ -7,6 +7,7 @@ import sys
 import pandas as pd
 import json
 import traceback
+from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
 from _collections import defaultdict
@@ -318,34 +319,42 @@ def load_timestamp_json(root_dir):
 
 
 #Create global_df, containing all SSL/TCP streams SYN packets
-def gen_network_df(root_dir):
-    print("Generating Global DF from %s " % root_dir)
-    global_df = None
-    for txt_path in glob(join(root_dir, "*.uniq")):
-        filename = txt_path.split(sep)[-1]
-        #print(txt_path)
+# def gen_network_df(root_dir):
+def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
+    df = pd.DataFrame([])
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    print("Loading distinct TCP connections from %s " % post_process_dir)
+    if name_resolution:
+        rIP2NameDB, _ = load_dns_data(crawl_data_dir)
+    for txt_path in glob(join(post_process_dir, "*.tcp_streams")):
+        filename = basename(txt_path)
         channel_name = filename.split("-")[0]
-        #print(channel_name)
-        #print(txt_path)
-        df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        df['channel_name'] = channel_name
-        df['mitm_attempt'] = 0
-        df['mitm_fail'] = 0
-        if global_df is None:
-            global_df = df
-        else:
-            global_df = global_df.append(df)
-        #print(len(global_df.index))
-        #print(global_df)
-    return global_df
+        tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
+        tmp_df['channel_name'] = channel_name
+        tmp_df['mitm_attempt'] = 0
+        # tmp_df['mitm_fail'] = 0
+        # take distinct TCP connections
+        df = df.append(tmp_df.drop_duplicates("tcp.stream"))
+    assert len(df)
+
+    # replace dots in column names with underscores
+    mapping = {old_col:old_col.replace(".", "_") for old_col in df.columns}
+    df.rename(columns=mapping, inplace=True)
+
+    if name_resolution and rIP2NameDB is not None:
+        df["hostname"] = df["ip_dst"].map(lambda x: get_domain_by_ip(x, rIP2NameDB))
+
+    # add human readable timestamps
+    df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
+            int(x)).strftime('%Y-%m-%d %H:%M:%S'))
+    return df
 
 
-def get_tcp_conns(post_process_dir, suffix):
-    # Find all tls failure due to invalid cert:
+def get_unique_tcp_stream_ids(post_process_dir, suffix):
     unique_tcp_conn_ids = {}
-    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_http_success"]
+    assert suffix in ["*.pcap.ssl_fail", "*.pcap.mitmproxy-attempt", "*.pcap.ssl_success"]
     for txt_path in glob(join(post_process_dir, suffix)):
-        filename = txt_path.split(sep)[-1]
+        filename = basename(txt_path)
         channel_name = filename.split("-")[0]
         df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
         unique_tcp_conn_ids[channel_name] = df['tcp.stream'].unique()
@@ -362,7 +371,7 @@ def get_crawl_status(crawl_dir):
 
 def get_epoch(row, channel_timestamps):
     ch_timestamps = channel_timestamps[row["channel_name"]]
-    packet_timestamp = row["frame.time_epoch"]
+    packet_timestamp = row["frame_time_epoch"]
     ret_label = "unknown"
     for label, timestamp in ch_timestamps:
         # print(type(timestamp))
@@ -374,6 +383,14 @@ def get_epoch(row, channel_timestamps):
         return "smart%s" % ret_label
     else:
         return ret_label
+
+
+def get_domain_by_ip(ip_address, ip2name_db):
+    if ip_address in ip2name_db:
+        return ip2name_db[ip_address][0].rstrip('.')
+    else:
+        return "unknown"
+
 
 if __name__ == '__main__':
     test()

@@ -1,6 +1,7 @@
 from curtsies import Input
 from scrape_channels import *
 from datetime import datetime
+from os.path import join, isfile
 import time
 
 
@@ -26,6 +27,11 @@ def scrape_channel(username):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     for channel_name in channels:
+        channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
+                                str(channel_name)) + ".txt"
+        if isfile(channel_res_file):
+            print('Skipping', channel_name, ' due to:', channel_res_file)
+            continue
         print("Will scrape %s" % channel_name)
         #key = get_key()
         #ch = KEY_MAP.get(key, key)
@@ -99,7 +105,7 @@ def scrape_channel(username):
                 return
         if key == "r":
             continue
-        screensot_process = launch_channel(surfer, mitmrunner, True)
+        screensot_process = crawl_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
             key = get_key()
