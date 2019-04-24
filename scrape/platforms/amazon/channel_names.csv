@@ -1,0 +1,338 @@
+amazon_ranking,channel_name,apk_id
+0,tubi tv,com.tubitv.ott
+1,hbo go,com.HBO
+2,cbs,com.cbs.ott
+3,hbo now,com.hbo.hbonow
+4,nbc,com.onemainstream.nbcunivers.android
+5,pluto tv,tv.pluto.android
+6,the cw,com.cw.tv.android
+7,amc,com.amctve.amcfiretv
+8,fox now,com.fox.now
+9,abc,com.disney.datg.videoplatforms.android.amazon.kindle.abc
+10,starz,com.starz.starzplay.firetv
+11,history,com.aetn.history.watch
+12,playstation vue,com.snei.vue.firetv
+13,tnt,com.turner.tnt.android.networkapp
+14,boomerang,com.dramafever.boom_hybrid
+15,videos for youtube,com.kyy.tubevideos
+16,philo,com.philo.philo
+17,xumo,com.xumo.xumo.tv
+18,player,com.tube8
+19,cartoon network,com.turner.cnvideoapp
+20,showtime anytime,com.showtime.showtimeanytime
+21,nick,com.nickonline.android.nickapp
+22,epix now,com.epixnow.firetvapp
+23,a e,com.aetn.aetv.watch
+24,showtime,com.showtime.standalone
+25,youtube,org.chromium.youtube_apk
+26,tbs,com.turner.tbs.android.networkapp
+27,lifetime,com.aetn.lifetime.watch
+28,hulu,com.hulu.plus
+29,freeform,com.disney.datg.videoplatforms.android.amazon.kindle.abcf
+30,mtv,com.mtvn.mtvPrimeAndroid
+31,usa,com.amazon.webapps.nbc.usa
+32,syfy,com.amazon.webapps.nbc.syfy
+33,disneynow,com.disney.datg.videoplatforms.android.amazon.kindle.watchdc
+34,bbc america,com.bbca.firetv
+35,stirr,com.sbgtv.stirr.amazon
+36,movies anywhere,com.moviesanywhere.ama
+37,sundance tv,com.sundancetv.firetv
+38,vh1,com.mtvn.vh1android
+39,bravo,com.amazon.webapps.nbc.bravo
+40,tlc go,com.discovery.firetv.tlcgo
+41,fxnow,com.fxnetworks.fxnow
+42,discovery go,com.discovery.firetv.dscgo
+43,hgtv,tv.accedo.hgtv
+44,comedy central,com.vmn.android.comedycentral
+45,bet now,com.bet.shows
+46,bigstarmovies,com.bigstar.movie
+47,twitch,tv.twitch.android.viewer
+48,wwe,com.mlbam.wwe_asb_app
+49,id go,com.discovery.firetv.idsgo
+50,plex,com.plexapp.android
+51,adult swim,com.adultswim.firetv
+52,sling tv,com.sling
+53,amazing classics,stormcastcinema.amazing.classics
+54,food network,tv.accedo.foodnetwork
+55,hallmark channel,com.hallmarkchannel.tv
+56,e,com.amazon.webapps.nbc.e
+57,hallmark,com.feeln.androidapp
+58,pbs,com.pbs.video
+59,at t watchtv,com.att.tv.watchtv
+60,hd video for youtube,com.kyy.desktoptube
+61,dc universe,com.wb.amzn.dcuniverse
+62,directv now,com.att.tv
+63,airscreen,com.ionitech.airscreen
+64,nat geo tv,com.natgeo.tv
+65,trutv,com.turner.truTV
+66,own,com.own.firetv.owntve
+67,tube for youtube,com.kyy.tube
+68,blackworldcinema,blackcinema.bigstar.tv
+69,we tv,com.wetv.firetv
+70,animal planet,com.discovery.firetv.aplgo
+71,western mania,stormcastcinema.westernmania
+72,telemundo,com.amazon.webapps.nbc.telemundo
+73,criterion,com.criterionchannel
+74,allcast receiver,com.koushikdutta.cast.receiver
+75,tcm,com.tcm.apps.tv
+76,sony crackle movies tv,com.gotv.crackle.handset
+77,travel channel,tv.accedo.travelchannel
+78,cw seed,com.cwseed.tv.android
+79,funimationnow,com.Funimation.FunimationNow.firetv
+80,vrv,com.ellation.vrv
+81,oxygen,com.amazon.webapps.nbc.oxygen
+82,dish anywhere,com.sm.SlingGuide.Dish
+83,hotstar,in.startv.hotstar
+84,pureflix,com.rollingstorm.pureflixFTV
+85,viki,com.viki.kindle
+86,popcornflix,tv.clasp.firetv
+87,diy network,tv.accedo.diy
+88,filmrise sci fi,com.future.filmrisescifi
+89,airtv,net.airtv
+90,acorn tv,com.amazon.rialto.cordova.webapp.webapp03147576921f40378cbc1cc7db4af8b8
+91,allconnect firetv,com.tuxera.streambels.receiver
+92,at t u verse,com.att.labs.uversetv.android.tablet
+93,flix premiere,com.amazon.rialto.cordova.webapp.webappd7d7d5eb1634479abcb52eee08afe810
+94,iwebtv player,com.swishly.webtv.fireosplayer
+95,tubeplus,com.ihanghai.boxtube
+96,cooking channel,tv.accedo.cookingchannel
+97,movies by fawesome tv,com.future.moviesByFawesomeAndroidTV
+98,brown sugar,com.brownsugar.apps.svod
+99,epix,com.amazon.rialto.cordova.webapp.webappebaff62698e4422da601235d5a704f45
+100,247horror,horror.bigstar.tv
+101,motor trend ondemand,com.motortrendondemand.firetv
+102,red bull tv,com.redbull.rbtv
+103,science go,com.discovery.firetv.scigo
+104,martial arts and kung fu movie channel,com.martial.arts.and.kung.fu.movies
+105,shudder,com.onemainstream.shudderprod.android
+106,netflix,com.netflix.ninja
+107,ifc,com.ifc.firetv
+108,reelz,com.brightcoveps.reelz.androidtv
+109,247comedy,firetv.bigstartv.comedy
+110,filmrise free movies tv,com.future.filmrise
+111,vimeo,com.vimeo.android.tv
+112,sundance now,com.onemainstream.docclubtes.android
+113,snagfilms,air.com.snagfilms
+114,player,com.liveplayer
+115,urban movie channel,com.amazon.rialto.cordova.webapp.webapp29771723480a4f05a4afd07b0a7add95
+116,nettv plus,vlaf.android.player.nettv
+117,zeus,com.thezeusnetwork.firetv
+118,cartoon lane,stormcastcinema.cartoonlane
+119,tbn,tbn_firetv.android
+120,tpg westernflix,com.amazon.rialto.webapp.A60e69d715cb9acf62994fcad68f7837303161488
+121,locast,com.tvapp.locast
+122,wicked horror tv,com.thunderroad.wickedhorrortv
+123,dailymotion,com.dailymotion.dailymotion
+124,smithsonian,com.onemainstream.smithsonia.android
+125,247drama,firetv.bigstartv.drama
+126,byutv for fire tv,com.ratio.ratiotv.firetv.byutv
+127,historyhit tv,com.historyhit
+128,yahoo,com.amazon.rialto.cordova.webapp.webapp5fe0c357499c4d77919182e6455c0714
+129,player,com.tube9
+130,azteca,com.azteca.aztecatv
+131,mytv,com.hauppauge.hauppaugemytv
+132,fitzytv,com.fitzytv.android
+133,destination america,com.discovery.firetv.damgo
+134,velocity go,com.discovery.firetv.velgo
+135,the movie channel,com.amazon.rialto.cordova.webapp.webapp0f0e28b923a64e23bf70b0180d1d0fe0
+136,kanopy,com.kanopy.tvapp
+137,the film detective,com.thefilmdetective.firetv
+138,bookmarker for the roku channel,com.esaba.bookmarkerrk
+139,discovery en espa ol,com.discovery.firetv.desgo
+140,halloween flix,com.amazon.rialto.cordova.webapp.webapp194d686d82114e45b177ff262967ca84
+141,daystar tv,com.amazon.rialto.cordova.webapp.webappe31e7be41071458087ef6cbb8b9f9a39
+142,hdhomerun,com.silicondust.view
+143,hungama play,com.hungama.movies
+144,erosnow,com.eros.now
+145,localcast on fire,de.stefanpledl.localcastreceiver
+146,jw broadcasting,com.amazon.rialto.cordova.webapp.webapp77de0d87e08947b7a1c2a37cbd056e1b
+147,tvfplay,com.tvf.tvfplay.fire
+148,cordless cable,com.amazon.rialto.cordova.webapp.webapp305d5e85ba6943538f957b26e6e5cc07
+149,asiancrush,com.dmr.asiancrush.tv
+150,frightpix,net.screenmedia.popcornflix.frightpix.firetv
+151,real stories,com.realstories.android
+152,filmrise free tv,com.future.filmrisefreetv
+153,filmrise western,com.future.filmrisewest
+154,filmrise true crime,com.future.filmrisecrime
+155,yuyu,com.dmr.yuyu.tv
+156,rural tv,com.amazon.rialto.cordova.webapp.webapp6a6a5ccebfce4abf9350a1bb6023b2ae
+157,hooq,tv.hooq.android
+158,yupptv,com.yupptv.firetv
+159,247 love stories,firetv.bigstartv.love
+160,altbalaji,com.balaji.alt
+161,hotlist,com.amazon.rialto.cordova.webapp.webapp062a82c7f12c41e69ca5f1050b1cca66
+162,emby,tv.emby.embyatv
+163,klowdtv,com.klowdtv.activity
+164,bigstarlatino,firetv.bigstartv.bigstarlatino
+165,jaggedentertainmen,firetv.bigstartv.jagged
+166,mormon channel videos,com.amazon.rialto.cordova.webapp.webapp27b622d1a34a4f3c896c44a4848ce4f7
+167,christiancinema,com.christiancinema.christiancinema
+168,living scriptures,com.example.admin.newliving
+169,movie and tv trailers,com.amazon.rialto.cordova.webapp.webapp032115eb7d8643ac8df1facb05ae1783
+170,viewster,com.viewster.androidapp
+171,slingplayer,com.slingmedia.slingPlayerFireTV
+172,lego tv,com.lego.legotv.tv
+173,4k nature relax tv,xyz.gameoff.relaxation
+174,artofseduction,firetv.bigstartv.seduction
+175,popular science,com.amazon.rialto.cordova.webapp.webapp247b2a37a66944ccac00f6942f72efb8
+176,ewtn,com.ewtn.truthandlife.amazon
+177,pongalo novelaclub,com.pongalonovelaclub.aftv
+178,great movie classics,com.amazon.rialto.webapp.Ab0a63f416574924c1b812c18b52138f9fe8879cd
+179,hidive,com.twentyfouri.tvbridge.sentai
+180,vivoplay,com.smartboxtv.firetv
+181,traceplay,com.traceplay.tv.amazon
+182,jellytelly,com.jellytelly
+183,fibe tv,ca.bell.tv.firetv
+184,filmrise horror,com.future.filmrisehorror
+185,bingehorror,com.amazon.rialto.cordova.webapp.webappba4ad1febb4e44a2b8630919801e3132
+186,instatv,com.keyitech.instatv.pro
+187,filmrise thriller,com.future.filmrisethriller
+188,lyca tv pro,co.appmastery.lycatvpro
+189,timeline,com.littledot.timeline
+190,conspiracy channel plus edition,com.amazon.android.calypso
+191,ahc go,com.discovery.firetv.ahcgo
+192,cinehome,com.cinesoft.cinehome.androidtv
+193,waypoint tv,com.waypointtv
+194,hunt channel,com.amazon.rialto.cordova.webapp.webapp7e2fd0e7f3a34ea9a8a559454b8eae86
+195,avava,com.amazon.rialto.cordova.webapp.webappe080bcc769894809a0da2f47198146a7
+196,shemaroome,com.firestick.shemaroome
+197,tablo,com.nuvyyo.TabloCordova
+198,maury show,com.amazon.rialto.cordova.webapp.webapp3ac7b7428712481ea2041eae3b1c76f0
+199,bumblebee tv,com.amazon.rialto.cordova.webapp.webappee032cd68c624a5180bfb3fd111c1cf1
+200,filmrise action,com.future.filmriseaction
+201,fuse,com.twentyfouri.tvbridge.fuse
+202,bollywoodmovies,firetv.bigstartv.bollywood
+203,faithlife tv,com.faithlife.tvapp.android
+204,airplaymirror demo,com.neoyantra.airplaymirror.airplaymirrorappdemo
+205,docworldentertainment,firetv.bigstartv.docworld
+206,channels dvr,com.getchannels.dvr.app
+207,queercinemaentertainment,firetv.bigstartv.lgbt
+208,vemox,tv.accedo.vemox.b2c
+209,filipino entertainment tv fetv,com.amazon.rialto.cordova.webapp.webappe990f541f24242baa17ff95138c6b664
+210,dove channel,com.jtv.aftv.dovechannel
+211,sun nxt,com.suntv.sunnxt
+212,tablo preview,com.nuvyyo.tablo
+213,dg upnp player,com.deepsgamestudio.dlnafree
+214,pov horror,com.povhorror.aftv
+215,stand up comedy by fawesome tv,com.future.standupcomedybyfawesome
+216,kortv,com.amazon.rialto.cordova.webapp.webapp5469692d0a7a4ad295db93ba3655911e
+217,digital drive in,com.amazon.rialto.webapp.Ab3c582b431e923e00c90f13670440ba053fcb125
+218,xplore tv,at.a1telekom.android.multiscreen
+219,discovery life,com.discovery.firetv.dlfgo
+220,nc go,com.netcomgo.android.player
+221,mubi,com.mubi
+222,filmrise documentary,com.future.filmrisedocumentary
+223,thirteen explore,com.amazon.rialto.cordova.webapp.webapp2c0ba09f0bea464c984932db170cdafc
+224,jerry springer show,com.amazon.rialto.cordova.webapp.webapp813734e074424dc3bdd40d04013a2303
+225,clearstream tv,com.antennasdirect.clearstreamtv
+226,riding the rails tv live,com.amazon.rialto.cordova.webapp.webappa1cff5bca1154a46b5aedaba7c7220a6
+227,filmrise paranormal,com.future.filmriseparanormal
+228,carbontv,com.amazon.rialto.cordova.webapp.webappc3e29ff47b27451cb99029faf522aa3e
+229,hope channel,com.amazon.rialto.cordova.webapp.webapp29a4ee1392c3493ebcf243af29f3aa88
+230,filmfestivalfavorites,firetv.bigstartv.filmfest
+231,steve wilkos show,com.amazon.rialto.cordova.webapp.webappa54eae912bb344479bb421756a21d8f6
+232,bob ross the joy of painting,com.amazon.rialto.cordova.webapp.webapp4c963f2c9caf4330b1323444a13e84b6
+233,aeom,com.aeom.fireTv
+234,moovimex,com.moovimex.aftv
+235,documentary films by fawesome tv,com.future.documentarybyfawesome
+236,filmrise mysteries,com.future.filmrisemysteries
+237,gospel music presents videos,com.main.badamitv.gmpandroid
+238,dream player tv,de.cyberdream.dreamepg.tv.player
+239,couchland,com.amazon.rialto.webapp.A4e7c8a8892d342bcdff99754ceb5ae396ed188d1
+240,tvmosaic live,com.dvblogic.tvmosaic.live
+241,here tv,com.tfi.heretv
+242,atmosphere,tv.atmosphere
+243,foreignfilmfavorites,firetv.bigstartv.foreignfilm
+244,filmrise comedy,com.future.filmrisecomedy
+245,auto revolution,com.amazon.rialto.cordova.webapp.webapp72f8f3716bb94fdc9324a0a43a10bed6
+246,jadoo tv,tv.amazon.jadoo
+247,extremesportsentertainment,extreme.bigstar.tv
+248,reelz,com.reelz.svod.androidtvwebapp
+249,the aviation channel,com.amazon.rialto.cordova.webapp.webappf21e780bbe1f44dba2c8cccaa71d114c
+250,christmas zone,com.amazon.rialto.cordova.webapp.webapp16803e6c9e294e42883e237f1f387716
+251,midnight pulp,com.dmr.midnightpulp.tv
+252,filmrise kids,com.future.filmrisekids
+253,air link tv,net.airlinktt.stb.internettv
+254,localbtv,com.didja.btv
+255,pupilhd,com.pupilhd.mobile
+256,damai tv,com.hiveview.damaitv
+257,country road tv,com.countryroad.countryroadtv
+258,filmrise classics,com.future.classic
+259,colombiatv,com.mycompany.colombiatv
+260,filmrise family,com.future.filmrisefamily
+261,mixer streams only,com.zackhow.mixerstreamsonly
+262,easytv,de.tks.mobiletv
+263,fight tyme live,com.amazon.rialto.cordova.webapp.webappde0b2b7accb345c0b32c81f881cde39c
+264,uyan k tv box for fire tv,tv.euroturk.uyanikfiretv
+265,caavo companion,com.caavo.catalyst
+266,arte,tv.arte.plus7
+267,vidlink,com.dalton.tv.platform
+268,arablivetv,com.amazon.rialto.cordova.webapp.webapp1ac05b377985405286d0a861fa2b3f02
+269,epic on,com.epicchannel.epicon.fire
+270,filmrise history,com.future.filmrisehistory
+271,perutv,com.mycompany.perutv
+272,monster movie app,com.amazon.rialto.cordova.webapp.webapp93306fc9c614450e89d356e55dfe5978
+273,argentinatv,com.mycompany.argentinatv
+274,youtv,com.keepinmind.youtv
+275,tentkotta,com.tentkotta.android
+276,dekkoo,tv.vhx.dekkoo
+278,hoichoi,com.viewlift.hoichoiprod
+279,hindi movies,com.amazon.rialto.cordova.webapp.webapp785695cc3d4445b18c6a4d9b9952e2f1
+280,iptvtenino,org.xbmc.iptvtenino
+281,gravitas movies,com.gravitas
+282,tct tv,com.tcttv.tv.android
+283,fiction fantasy films by fawesome tv,com.future.fictionfantasy
+284,filmrise world cinema,com.future.filmriseworld
+285,trashy horror movies,com.zype.trashyhorrormovies
+286,balkaniyum tv,com.balkaniyum.balkaniyumtv
+287,fidelity tv,com.fidelity.tv.platform
+288,mhz choice,tv.vhx.mhzchoice
+289,bookmarker for youtube,com.esaba.bookmarkeryt
+290,kmtv,com.dmr.kmtv.tv
+291,mohu,tv.floatleft.apps.mohu.tv
+292,discovering the jewish jesus,com.amazon.rialto.cordova.webapp.webappabd1cdebec4f4b6e85f6b60cb11fd3ba
+293,mutant sorority pictures,com.future.mutant
+294,stream uno,com.streamuno.tv
+295,usa tv,com.usacommunications.tv.platform
+296,horror films by fawesome tv,com.future.horrorbyfawesome
+297,killer movie channel,com.dotstudioz.dotstudioPRO.killermoviechannel
+298,c spire tv,com.cspire.tv.platform
+299,failarmy,com.viewlift.failarmy2
+300,atresplayer,com.antena3.atresplayer.tv
+301,arvig wifi tv,com.arvigwifi.tv.platform
+302,espanatv,com.mycompany.espanatv
+303,movieland tv,com.amazon.rialto.cordova.webapp.webapp467ff4ecb88844219b6cfe41064f10a1
+304,degrassi,com.future.degrassi
+305,hunt channel,com.amazon.rialto.cordova.webapp.webapp9dc0f0dd79004fccb408e3904a7d9574
+306,beyond the brick,com.vlogbox.beyondthebrick
+307,giniko arabic tv for firetv,com.tulix.ginikoarabicfiretv
+308,tello films,com.tellofilms
+309,pokergo,com.pokercentral.poker
+310,ride tv go,com.ridetvgo
+311,discovery familia,com.discovery.firetv.dsfgo
+312,telekaribe dominican tv channel,com.amazon.rialto.cordova.webapp.webapp642aae7f5bb74f9c97db45254aaf6dfd
+313,tatort,de.daserste.tv.tatort
+314,tpg chillerflix,com.amazon.rialto.webapp.Aaaa1e9b7f430608c0966bda63aa230342678f8fb
+315,ptci tv,net.ptci.ptcitv.android.itvfusion.firetv
+316,scoopwhoop,com.scoopwhoop.tv.app
+317,revry,com.dotstudioz.dotstudioPRO.revrytv
+318,kweli tv,com.kwelitv.android
+319,night flight,com.amazon.rialto.cordova.webapp.webapp0ae05df4a37949e2882fc6a9beb6a547
+320,zaaptv,com.zaaptv.mw.client.ftv
+321,bucking bull tv,com.amazon.rialto.cordova.webapp.webappd6bb1ced6a874bc99d644a429b5f832f
+322,zingoiptv,com.rbox.zingofire
+323,the digital ticket,tv.digitalboxoffice.DBO
+324,free game movies,com.amazon.rialto.cordova.webapp.webapp21d296791d5740059ac39a9a70cef68b
+325,cars com reviews,com.amazon.rialto.cordova.webapp.webapp9b6cae7753734861b931bc57909e5842
+326,vtvgo tv,vn.vtv.vtvgotv.firetv
+327,farm and ranch tv,com.amazon.rialto.cordova.webapp.webappf1554e30f1b54f5cbd2bc9bfcd8807b4
+328,military war archives,com.amazon.rialto.webapp.A1cc6446186150355e6931d223d9f496ab9576651
+329,viet channels,com.tulix.vietchannelsfiretv
+330,filmrise drama,com.future.filmrisedrama
+331,arre,com.amazon.rialto.cordova.webapp.webappf8208ebf313d448081ded1a563e684cc
+332,jesus 101,com.amazon.rialto.webapp.A800602804dad5ea2e8623bbcbb1dd37a3869730d
+333,kinetic tv,com.windstream.tv.platform
+334,the autism channel,tv.theautismchannel.amazon
+335,,com.almamlka.amazon
+336,brasil play tv,com.brasilplay.tv
+337,the sentinel project,com.amazon.rialto.cordova.webapp.webappf6ba1e5bf16744aca1f5f9f2e270bf3e
