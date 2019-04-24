@@ -288,6 +288,7 @@ class MITMRunner(object):
 
     def clean_iptables(self):
         self.log("Flushing iptables")
+        subprocess.call('./scripts/iptables_flush_all.sh', shell=True)
         subprocess.call('./scripts/iptables_flush.sh', shell=True)
 
     def set_iptables(self):

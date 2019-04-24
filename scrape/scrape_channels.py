@@ -658,8 +658,13 @@ def automatic_scrape(channel_id, date_prefix):
     return channel_state
 
 
+def flushall_iptables():
+    log("Flushing all iptables")
+    subprocess.call('./scripts/iptables_flush_all.sh', shell=True)
+
 if __name__ == '__main__':
     start_screenshot()
+    flushall_iptables()
     if len(sys.argv) > 1:
         if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
