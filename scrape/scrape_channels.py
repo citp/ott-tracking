@@ -28,7 +28,7 @@ import signal
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 from dns_sniffer import dns_sniffer_call
-from multiprocessing import Process
+from multiprocessing import Process, Event
 from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 from timeout import timeout
@@ -487,9 +487,10 @@ def install_channel(surfer):
 def launch_mitm(mitmrunner):
     mitmrunner.run_mitmproxy()
 
-def manual_crawl_screenshot(surfer):
+def manual_crawl_screenshot(surfer, terminateEvent):
     log("Capturing screenshots every 5 seconds")
-    while True:
+    while not terminateEvent.is_set():
+        log("Capturing next screenshot")
         surfer.capture_screenshots(1)
         time.sleep(4)
 
@@ -509,9 +510,10 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
 
         time.sleep(5)
         surfer.launch_channel()
-        p = Process(target=manual_crawl_screenshot, args=(surfer,))
+        terminateEvent = Event()
+        p = Process(target=manual_crawl_screenshot, args=(surfer, terminateEvent,))
         p.start()
-        return p
+        return terminateEvent, p
     else:
         err_occurred = False
         try:

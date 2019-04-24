@@ -22,6 +22,34 @@ def get_key():
             return key
 
 
+
+question_list = [
+"0. Did the app open?",
+"1. Did the channel need a signup of any sort to view content? (Y/N)",
+"2. Did you sign up to view content? (Y/N)",
+"3. What was the sign up link? (Leave blank if there was no link)",
+"4. How many videos did you watch? (0 if you couldn't watch video)",
+"5. How many ads did you watch? (0 for no Ad)",
+"6. Additional comments."
+]
+
+def questionnaire(channel_name):
+    q_filename = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
+                                str(channel_name + "_questionnaire")) + ".txt"
+    with open(q_filename, 'w') as f:
+        for question in question_list:
+            f.write(question + "\n")
+            answer = input(question)
+            f.write(answer + "\n")
+
+def terminat_screenshot(screenshot_process_terminate_event, screenshot_process):
+    screenshot_process_terminate_event.set()
+    time.sleep(7)
+    try:
+        screenshot_process.terminate()
+    except:
+        print("Screenshot process not found!")
+
 def scrape_channel(username):
     channels = read_channels_for_user(username)
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
@@ -96,33 +124,34 @@ def scrape_channel(username):
             if key == "r":
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                screensot_process.terminate()
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                screensot_process.terminate()
                 return
         if key == "r":
             continue
-        screensot_process = crawl_channel(surfer, mitmrunner, True)
+        sc_tuple = crawl_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                screensot_process.terminate()
+                terminat_screenshot(sc_tuple)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                screensot_process.terminate()
+                terminat_screenshot(sc_tuple)
                 return
         if key == "r":
             continue
         err_occurred = collect_data(surfer, mitmrunner,  date_prefix)
-        screensot_process.terminate()
+
+        terminat_screenshot(sc_tuple)
+
+        questionnaire(channel_name)
         write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
