@@ -112,7 +112,7 @@ for f in $PCAP_DIR/*.pcap; do
 
   if [ "$WRITE_TO_FILE" = true ] ; then
     FILE_ADDR=${OUTDIR}/${basename}.${SUFFIX}
-    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPARATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq > ${FILE_ADDR} && chmod 777 ${FILE_ADDR} && echo 'Finished processing ${FILE_ADDR}' &
+    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPARATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq > ${FILE_ADDR} && chmod 777 ${FILE_ADDR} && echo Finished processing "${FILE_ADDR}" &
   else
     tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPARATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
   fi
