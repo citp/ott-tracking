@@ -138,18 +138,18 @@ def scrape_channel(username):
             if key == "r":
                 print("CONSOLE>>> Restarting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                terminat_screenshot(sc_tuple)
+                terminat_screenshot(sc_tuple[0], sc_tuple[1])
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
                 collect_data(surfer, mitmrunner, date_prefix)
-                terminat_screenshot(sc_tuple)
+                terminat_screenshot(sc_tuple[0], sc_tuple[1])
                 return
         if key == "r":
             continue
         err_occurred = collect_data(surfer, mitmrunner,  date_prefix)
 
-        terminat_screenshot(sc_tuple)
+        terminat_screenshot(sc_tuple[0], sc_tuple[1])
 
         questionnaire(channel_name)
         write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")

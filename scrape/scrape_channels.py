@@ -598,7 +598,6 @@ def collect_data(surfer, mitmrunner, date_prefix):
 
     err_occurred = False
     try:
-        surfer.go_home()
         if scrape_config.MITMPROXY_ENABLED:
             try:
                 mitmrunner.kill_mitmproxy()
@@ -610,8 +609,10 @@ def collect_data(surfer, mitmrunner, date_prefix):
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
             recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
-        surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
+        time.sleep(3)
+        surfer.go_home()
+        surfer.uninstall_channel()
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
         surfer.write_timestamps()
