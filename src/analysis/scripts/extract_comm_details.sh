@@ -110,7 +110,7 @@ SUFFIX="ssl_success"
 FORMAT="fields"
 FILTER="((ssl.record.content_type == 22) && (ip.src==$TV_IP_ADDR))"
 FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst -e ssl.handshake.extensions_server_name"
-SUFFIX="ssl_client_handshake.csv"
+SUFFIX="ssl_client_handshake"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
 
@@ -122,7 +122,7 @@ SUFFIX="ssl_client_handshake.csv"
 # connection.
 FORMAT="fields"
 FILTER="((dns.flags.response==1) && (ip.dst==$TV_IP_ADDR))"
-FIELDS="-e frame.time_epoch -e ip.dst -e dns.qry.name -e dns.a"
+FIELDS="-e frame.time_epoch -e ip.dst -e dns.qry.name -e dns.a -e dns.aaaa"
 SUFFIX="dns.csv"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 
