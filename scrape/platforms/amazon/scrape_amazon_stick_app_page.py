@@ -11,7 +11,7 @@ import re
 import subprocess
 
 
-KIDS = True
+KIDS = False
 
 
 # We start scraping using this template URL.

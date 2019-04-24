@@ -6,7 +6,7 @@ import subprocess
 import re
 
 
-KIDS = True
+KIDS = False
 
 
 def main():
