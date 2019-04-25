@@ -112,6 +112,8 @@ class _TlsStrategy:
         hostname = ""
         if IPAddress in self.rIP2NameDic:
             hostname = self.rIP2NameDic.get(IPAddress)
+            if hostname and USE_DOMAINS_FOR_SSL_WHITELISTING:
+                hostname = get_domain(hostname)
         return hostname
 
 
@@ -127,9 +129,6 @@ class _TlsStrategy:
         self.historyIP[server_address].append(InterceptionResult.success)
         hostname = self.getAssociatedDomain(str(server_address[0]))
         if hostname:
-            if USE_DOMAINS_FOR_SSL_WHITELISTING:
-                hostname = get_domain(hostname)
-
             self.historyDomain[hostname].append(InterceptionResult.success)
 
         append_to_file(mitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
@@ -141,9 +140,6 @@ class _TlsStrategy:
 
         self.historyIP[server_address].append(InterceptionResult.failure)
         if hostname:
-            if USE_DOMAINS_FOR_SSL_WHITELISTING:
-                hostname = get_domain(hostname)
-
             self.historyDomain[hostname].append(InterceptionResult.failure)
 
         append_to_file(unMitmableFileNameOut, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
@@ -155,9 +151,6 @@ class _TlsStrategy:
         hostname = str(self.getAssociatedDomain(server_address[0]))
         self.historyIP[server_address].append(InterceptionResult.skipped)
         if hostname:
-            if USE_DOMAINS_FOR_SSL_WHITELISTING:
-                hostname = get_domain(hostname)
-
             self.historyDomain[hostname].append(InterceptionResult.skipped)
 
 
@@ -170,8 +163,6 @@ class ConservativeStrategy(_TlsStrategy):
 
     def should_intercept(self, server_address):
         hostname = self.getAssociatedDomain(str(server_address[0]))
-        if hostname and USE_DOMAINS_FOR_SSL_WHITELISTING:
-            hostname = get_domain(hostname)
 
         if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
             print("Hostname %s already whitelisted!" % hostname)
@@ -322,9 +313,6 @@ def next_layer(next_layer):
 
         timestamp = '[{}] '.format(datetime.today())
         if hostname:
-            if USE_DOMAINS_FOR_SSL_WHITELISTING:
-                hostname = get_domain(hostname)
-
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s mapped to %s " % (str(server_address), hostname))
         else:
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s " % str(server_address))
