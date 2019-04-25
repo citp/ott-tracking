@@ -648,7 +648,7 @@ def automatic_scrape(channel_id, date_prefix):
                 err_occurred = crawl_channel(surfer, mitmrunner)
                 if not err_occurred:
                     channel_state = CrawlState.TERMINATING
-                    err_occurred = terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+                    err_occurred = terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                     if not err_occurred:
                         channel_state = CrawlState.TERMINATED
     except TimeoutError:

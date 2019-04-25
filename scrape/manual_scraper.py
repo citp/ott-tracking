@@ -107,11 +107,11 @@ def scrape_channel(username):
         #    key = get_key()
         #    if key == "r":
         #        print("CONSOLE>>> Restarting!")
-        #        terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+        #        terminate_and_collect_data(surfer, mitmrunner, date_prefix)
         #        break
         #    elif key == "q":
         #        print("CONSOLE>>> Quiting!")
-        #        terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+        #        terminate_and_collect_data(surfer, mitmrunner, date_prefix)
         #        return
         #if key == "r":
         #    continue
@@ -125,11 +125,11 @@ def scrape_channel(username):
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
-                terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+                terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
-                terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+                terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                 return
         if key == "r":
             continue
@@ -139,17 +139,17 @@ def scrape_channel(username):
             key = get_key()
             if key == "r":
                 print("CONSOLE>>> Restarting!")
-                terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+                terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                 terminat_screenshot(sc_tuple[0], sc_tuple[1])
                 break
             elif key == "q":
                 print("CONSOLE>>> Quiting!")
-                terminate_and_collect_datasurfer, mitmrunner, date_prefix)
+                terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                 terminat_screenshot(sc_tuple[0], sc_tuple[1])
                 return
         if key == "r":
             continue
-        err_occurred = terminate_and_collect_datasurfer, mitmrunner,  date_prefix)
+        err_occurred = terminate_and_collect_data(surfer, mitmrunner,  date_prefix)
 
         terminat_screenshot(sc_tuple[0], sc_tuple[1])
 
