@@ -177,11 +177,11 @@ class ConservativeStrategy(_TlsStrategy):
         if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
             print("Hostname %s already whitelisted!" % hostname)
             return False
-        if InterceptionResult.failure in self.historyIP[server_address]:
-            print("Server %s already whitelisted!" % str(server_address))
-            return False
         if hostname and hostname in self.unMitmableHosts:
             print("Hostname %s in the pre-whitelist!" % hostname)
+            return False
+        if InterceptionResult.failure in self.historyIP[server_address]:
+            print("Server %s already whitelisted!" % str(server_address))
             return False
         if server_address in self.unMitmableIps:
             print("Server %s in the pre-whitelist!" % str(server_address))
