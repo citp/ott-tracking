@@ -1,6 +1,9 @@
 #!/bin/bash
 # Terminate existing ffmpeg captures
-pkill -2 -f ffmpeg
+touch /tmp/SMART_TV_KILL_SCREENSHOT
+pkill -9 -f ffmpeg
+sleep 2s
+rm /tmp/SMART_TV_KILL_SCREENSHOT
 
 # Capture screenshot continuously and write to same file
 ScreenshotFile="${LogDir}/continuous_screenshot-%Y-%m-%d_%H-%M-%S.png"

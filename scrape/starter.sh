@@ -3,8 +3,8 @@
 source global.conf
 
 #creating local log folder
+rm -rf ${LogDir} 2> /dev/null
 mkdir -p ${LogDir} 2> /dev/null
-rm -rf ${LogDir}/*
 
 set -x
 #echo 'Clearing Data Folder!'
