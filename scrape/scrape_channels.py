@@ -537,13 +537,13 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
                             remove_file(MITM_LEARNED_NEW_ENDPOINT)
                             break
 
-                    for idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
-                        surfer.timestamp_event('smartlaunch-%02d' % launch_idx)
+                    for key_seq_idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
+                        surfer.timestamp_event('smartlaunch-%02d-key-seq-%02d' % (launch_idx, key_seq_idx))
                         surfer.launch_channel()  # make sure we start from the homepage
                         log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
-                            " %s %s" % (launch_idx, idx, n_key_seqs, surfer.channel_id,
+                            " %s %s" % (launch_idx, key_seq_idx, n_key_seqs, surfer.channel_id,
                                         "-".join(key_sequence)))
-                        playback_detected = play_key_sequence(surfer, key_sequence, idx, launch_idx)
+                        playback_detected = play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx)
                         if playback_detected:
                             log('SMART_CRAWLER: Playback detected on channel: %s' %
                                 surfer.channel_id)

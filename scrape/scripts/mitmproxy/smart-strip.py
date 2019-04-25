@@ -17,7 +17,10 @@ from mitmproxy import ctx
 from mitmproxy.exceptions import TlsProtocolException
 from mitmproxy.proxy.protocol import TlsLayer, RawTCPLayer
 from mitmproxy import http
+from tld import get_fld
 
+
+USE_DOMAINS_FOR_SSL_WHITELISTING = True
 
 try:
     UNMITMABLE_HOST_DIR = os.environ['UNMITMABLE_HOST_DIR']
@@ -77,6 +80,11 @@ def loadUnMitmableHostsAndIps(filename):
                 ips.add(ip)
     return hosts, ips
 
+def get_domain(hostname):
+    if not hostname.startswith("http"):
+        hostname = "http://" + hostname
+    return get_fld(hostname , fail_silently=True)
+
 
 class _TlsStrategy:
     """
@@ -89,6 +97,7 @@ class _TlsStrategy:
         self.historyDomain = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
         self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
+        # TODO: rename to unMitmableHosts -> unMitmableDomains...
         self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileNameIn)
         my_log("Loaded %d unmitmable hosts, %d unmitmable IPs from %s" % (
             len(self.unMitmableHosts), len(self.unMitmableIps), unMitmableFileNameIn), write_to_file=False)
@@ -115,11 +124,17 @@ class _TlsStrategy:
         raise NotImplementedError()
 
     def record_success(self, server_address):
-        self.historyIP[server_address].append(InterceptionResult.success)
+        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+            server_address = (get_domain(server_address[0]), server_address[1])
 
+        self.historyIP[server_address].append(InterceptionResult.success)
         hostname = self.getAssociatedDomain(str(server_address[0]))
         if hostname:
+            if USE_DOMAINS_FOR_SSL_WHITELISTING:
+                hostname = get_domain(hostname)
+
             self.historyDomain[hostname].append(InterceptionResult.success)
+
 
         append_to_file(mitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
         # with open(mitmableFileName, 'a') as the_file:
@@ -127,6 +142,10 @@ class _TlsStrategy:
 
     def record_failure(self, server_address):
         hostname = str(self.getAssociatedDomain(server_address[0]))
+        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+            hostname = get_domain(hostname)
+            server_address = (get_domain(server_address[0]), server_address[1])
+
         self.historyIP[server_address].append(InterceptionResult.failure)
         if hostname:
             self.historyDomain[hostname].append(InterceptionResult.failure)
@@ -137,6 +156,9 @@ class _TlsStrategy:
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
+        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+            server_address = (get_domain(server_address[0]), server_address[1])
+
         self.historyIP[server_address].append(InterceptionResult.skipped)
 
 
@@ -148,6 +170,10 @@ class ConservativeStrategy(_TlsStrategy):
 
     def should_intercept(self, server_address):
         hostname = self.getAssociatedDomain(str(server_address[0]))
+        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+            hostname = get_domain(hostname)
+            server_address = (get_domain(server_address[0]), server_address[1])
+
         if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
             print("Hostname %s already whitelisted!" % hostname)
             return False
@@ -294,6 +320,9 @@ def next_layer(next_layer):
 
         #cert = next_layer._find_cert())
         hostname = tls_strategy.getAssociatedDomain(server_address[0])
+        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+            hostname = get_domain(hostname)
+
         timestamp = '[{}] '.format(datetime.today())
         if hostname:
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s mapped to %s " % (str(server_address), hostname))
