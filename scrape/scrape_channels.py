@@ -593,7 +593,7 @@ def cleanup_data_folder(data_dir, channel_id):
         os.remove(filename)
 
 
-def terminate_and_collect_datasurfer, mitmrunner, date_prefix):
+def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
     log('Collecting data for channel %s' % str(surfer.channel_id))
 
     err_occurred = False
