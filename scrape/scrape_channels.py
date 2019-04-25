@@ -595,6 +595,7 @@ def cleanup_data_folder(data_dir, channel_id):
 
 def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
     log('Collecting data for channel %s' % str(surfer.channel_id))
+    surfer.timestamp_event("terminate")
 
     err_occurred = False
     try:
