@@ -124,9 +124,6 @@ class _TlsStrategy:
         raise NotImplementedError()
 
     def record_success(self, server_address):
-        if USE_DOMAINS_FOR_SSL_WHITELISTING:
-            server_address = (get_domain(server_address[0]), server_address[1])
-
         self.historyIP[server_address].append(InterceptionResult.success)
         hostname = self.getAssociatedDomain(str(server_address[0]))
         if hostname:
@@ -135,19 +132,18 @@ class _TlsStrategy:
 
             self.historyDomain[hostname].append(InterceptionResult.success)
 
-
         append_to_file(mitmableFileName, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
         # with open(mitmableFileName, 'a') as the_file:
         #    the_file.write("Channel \"%s\": {\"%s\": \"%s\"} \n" % (str(channel_id), hostname, str(server_address)))
 
     def record_failure(self, server_address):
         hostname = str(self.getAssociatedDomain(server_address[0]))
-        if USE_DOMAINS_FOR_SSL_WHITELISTING:
-            hostname = get_domain(hostname)
-            server_address = (get_domain(server_address[0]), server_address[1])
 
         self.historyIP[server_address].append(InterceptionResult.failure)
         if hostname:
+            if USE_DOMAINS_FOR_SSL_WHITELISTING:
+                hostname = get_domain(hostname)
+
             self.historyDomain[hostname].append(InterceptionResult.failure)
 
         append_to_file(unMitmableFileNameOut, "%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname))
@@ -156,10 +152,14 @@ class _TlsStrategy:
             #the_file.write(str(server_address)+":" + str(tls_strategy.should_intercept(server_address)) +'\n')
 
     def record_skipped(self, server_address):
-        if USE_DOMAINS_FOR_SSL_WHITELISTING:
-            server_address = (get_domain(server_address[0]), server_address[1])
-
+        hostname = str(self.getAssociatedDomain(server_address[0]))
         self.historyIP[server_address].append(InterceptionResult.skipped)
+        if hostname:
+            if USE_DOMAINS_FOR_SSL_WHITELISTING:
+                hostname = get_domain(hostname)
+
+            self.historyDomain[hostname].append(InterceptionResult.skipped)
+
 
 
 class ConservativeStrategy(_TlsStrategy):
@@ -170,9 +170,8 @@ class ConservativeStrategy(_TlsStrategy):
 
     def should_intercept(self, server_address):
         hostname = self.getAssociatedDomain(str(server_address[0]))
-        if USE_DOMAINS_FOR_SSL_WHITELISTING:
+        if hostname and USE_DOMAINS_FOR_SSL_WHITELISTING:
             hostname = get_domain(hostname)
-            server_address = (get_domain(server_address[0]), server_address[1])
 
         if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
             print("Hostname %s already whitelisted!" % hostname)
@@ -320,17 +319,20 @@ def next_layer(next_layer):
 
         #cert = next_layer._find_cert())
         hostname = tls_strategy.getAssociatedDomain(server_address[0])
-        if USE_DOMAINS_FOR_SSL_WHITELISTING:
-            hostname = get_domain(hostname)
 
         timestamp = '[{}] '.format(datetime.today())
         if hostname:
+            if USE_DOMAINS_FOR_SSL_WHITELISTING:
+                hostname = get_domain(hostname)
+
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s mapped to %s " % (str(server_address), hostname))
         else:
             mitmproxy.ctx.log(timestamp + "Deciding TLS strategy for %s " % str(server_address))
+
         if not tls_strategy:
              mitmproxy.ctx.log("tls_strategy is None for %s" % repr(next_layer.server_conn.address), "info")
              return
+
         if tls_strategy.should_intercept(server_address):
             # We try to intercept.
             # Monkey-Patch the layer to get feedback from the TLSLayer if interception worked.
