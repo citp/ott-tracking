@@ -253,6 +253,7 @@ class ChannelSurfer(object):
         err_reported = False
 
         while time.time() - start_time <= timeout:
+            t_loop_begin = time.time()
             if self.platform == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
                 # Find all the screenshots, sorted by creation time
                 screenshot_list = []
@@ -290,7 +291,6 @@ class ChannelSurfer(object):
                         self.log("Error! Screenshot file %s is missing." % FFMPEG_SCREENSHOT_NAME)
                         err_reported = True
             elif self.platform == "AMAZON":
-                t0 = time.time()
                 screenshot_filename = join(
                     self.screenshot_folder,
                     '{}-{}.png'.format(self.channel_id, int(t0)))
@@ -299,7 +299,7 @@ class ChannelSurfer(object):
 
             if scrape_config.DEDUPLICATE_SCREENSHOTS:
                 self.deduplicate_screenshots(screenshot_filename)
-            time.sleep(max([0, 1-(time.time() - t0)]))  # try to spend 1s on each loop
+            time.sleep(max([0, 1-(time.time() - t_loop_begin)]))  # try to spend 1s on each loop
 
 
     def deduplicate_screenshots(self, screenshot_filename):

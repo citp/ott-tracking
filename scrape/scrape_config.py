@@ -18,7 +18,7 @@ MITMPROXY_ENABLED = SSL_STRIP or TLS_INTERCEPT
 
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
     LAUNCH_RETRY_CNT = 15  # detect and store unmitmable domains and IPs
-    SMART_CRAWLS_CNT = 15 # run multiple smart crawls to discover the best number for the warmup
+    SMART_CRAWLS_CNT = 15  # run multiple smart crawls to discover the best number for the warmup
 else:
     LAUNCH_RETRY_CNT = 2  # load unmitmable domains and IPs from files
     SMART_CRAWLS_CNT = 1
