@@ -1,6 +1,4 @@
 #!/bin/bash
-set -x
-
 #We have to run source twice to write to a file
 source global.conf
 
@@ -8,6 +6,7 @@ source global.conf
 mkdir -p ${LogDir} 2> /dev/null
 rm -rf ${LogDir}/*
 
+set -x
 #echo 'Clearing Data Folder!'
 mkdir ${DATA_DIR} 2> /dev/null
 #rm -rf ${DATA_DIR}/*
