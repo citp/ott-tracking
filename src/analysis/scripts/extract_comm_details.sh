@@ -27,6 +27,7 @@ FILTER="tcp.payload and not ((ip.src == $TV_IP_ADDR && tcp.srcport == $TV_TCP_PO
 FORMAT="json"
 SUFFIX="http.json"
 FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport  -e ip.src -e tcp.srcport -e http.host -e http.request.method -e http.request.full_uri -e http.user_agent -e http.referer -e http.cookie -e http.set_cookie -e http.response.code -e http.location -e http.file_data -e data"
+FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e ip.src -e tcp.srcport -e http.host -e http.request.method -e http.request.full_uri -e http.request.uri -e http.user_agent -e http.referer -e http.cookie -e http.set_cookie -e http.response.code -e http.location -e http.file_data -e data"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 python correct_http_pipelining.py $OUT_DIR
 
@@ -34,9 +35,10 @@ python correct_http_pipelining.py $OUT_DIR
 ###### HTTP2 HEADER/URL/POST ANALYSIS ######
 ######################################
 FILTER="tcp.payload and not ((ip.src==$TV_IP_ADDR&&tcp.srcport==$TV_TCP_PORT)||(ip.dst==$TV_IP_ADDR&&tcp.dstport==$TV_TCP_PORT))"
-FORMAT="fields"
-SUFFIX="http2.csv"
-FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e http2.type -e http2.header.name -e http2.header.value -e http2.data.data"
+FORMAT="json"
+SUFFIX="http2.json"
+# FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e http2.type -e http2.header.name -e http2.header.value -e http2.data.data"
+FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e ip.src -e tcp.srcport -e http2.type -e http2.header.name -e http2.header.value -e http2.data.data"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 
 
