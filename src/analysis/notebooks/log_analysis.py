@@ -1,5 +1,7 @@
 from urllib.parse import urlparse
 import ntpath
+import ujson
+import numpy as np
 import re
 import os
 import ipaddress
@@ -439,6 +441,177 @@ def load_dns_data_from_pcap_csvs(crawl_data_dir):
         tmp_df['channel_name'] = channel_name
         dns_df = dns_df.append(tmp_df)
     return dns_df, get_ip_domain_mapping_from_dns_df(dns_df)
+
+
+def get_tv_ip_addr(craw_dir):
+    for crawl_config in glob(join(craw_dir, "crawl_info-*")):
+        for line in open(crawl_config):
+            if "TV_IP_ADDR" in line:
+                return line.rstrip().split("=")[-1]
+
+# pip3 install ujson
+def load_json_file(json_path):
+    with open(json_path) as json_file:
+        return ujson.load(json_file)
+
+    
+# Load all (All HTTP data)
+def get_http_df(crawl_data_dir):
+    print (crawl_data_dir)
+    post_process_dir = join(crawl_data_dir, '*post-process')
+    requests = []
+    responses = []
+    multiple_msg_cnt = 0
+    dns_df, ip_2_domains = load_dns_data_from_pcap_csvs(crawl_data_dir)
+    tv_ip = get_tv_ip_addr(crawl_data_dir)
+
+    for json_path in glob(join(post_process_dir, "*http.json")):
+        # print(json_path)
+        channel_name = basename(json_path).split("-")[0]
+        tcp_payloads = load_json_file(json_path)
+        for tcp_payload in tcp_payloads:
+            # payload has 6 fields when it doesn't contain any HTTP payload
+            if len(tcp_payload['_source']['layers']) <= 7:
+                continue
+            payload = tcp_payload['_source']['layers']
+            # some responses have multiple
+            if any([len(x)>1 for x in payload.values()]):
+                multiple_msg_cnt += 1
+                if "http.response.code" not in payload:
+                    print ("Pipelined request", payload)
+                # print ("Multiple payload", ("http.response.code" in payload))
+            payload['channel_name'] = [channel_name]
+            
+            if payload["ip.dst"][0] == tv_ip:
+                responses.append({field.replace(".", "_"): value[0] for field, value in payload.items()})
+            else:
+                requests.append({field.replace(".", "_"): value[0] for field, value in payload.items()})
+    
+    assert len(requests)
+    assert len(responses)
+    print ("Multiple messages", multiple_msg_cnt)
+    req_df = pd.DataFrame(requests)
+    resp_df = pd.DataFrame(responses)
+
+    #req_df["hostname"] = req_df["ip_dst"].map(lambda x: get_domain_by_ip(x, rIP2NameDB))
+    req_df["hostname"] = req_df.apply(lambda x: ip_2_domains[x["channel_name"]].get(x["ip_dst"], ''), axis=1)
+    resp_df["hostname"] = resp_df.apply(lambda x: ip_2_domains[x["channel_name"]].get(x["ip_src"], ''), axis=1)
+
+    req_df.rename(columns={'http_file_data':'post_data'}, inplace=True)
+    resp_df.rename(columns={'http_file_data':'response_body'}, inplace=True)
+
+    for df in [req_df, resp_df]:
+        mapping = {col_name:col_name.replace("http_", "") for col_name in df.columns}
+        df.rename(columns=mapping, inplace=True)
+    req_df["request_full_uri"] = req_df.apply(lambda x: x['request_full_uri'] if x['request_full_uri'] else x['request_uri'], axis=1)
+    return (req_df.drop("eth_src", axis=1).replace(np.nan, '', regex=True),
+            resp_df.drop("eth_src", axis=1).replace(np.nan, '', regex=True),
+            dns_df)
+
+# https://www.iana.org/assignments/http2-parameters/http2-parameters.xhtml#frame-type
+HTTP2_FRAME_TYPE_DATA = "0"
+HTTP2_FRAME_TYPE_DATA = "1"
+
+# Load all (All HTTP data)
+
+def get_http2_df(crawl_data_dir):
+    print ("get_http2_df", crawl_data_dir)
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    requests = []
+    responses = []
+    decode_errors = 0
+    channels = set()
+    tv_ip = get_tv_ip_addr(crawl_data_dir)
+    dns_df, ip_2_domains = load_dns_data_from_pcap_csvs(crawl_data_dir)
+
+    for json_path in glob(join(post_process_dir, "*http2.json")):
+        # print(json_path)
+        channel_name = basename(json_path).split("-")[0]
+        tcp_payloads = load_json_file(json_path)
+        for tcp_payload in tcp_payloads:
+            # payload has 7 fields when it doesn't contain any HTTP payload
+            HTTP2_MIN_NUM_FIELDS = 7  # num. of required fields, HTTP packets have more
+            if len(tcp_payload['_source']['layers']) <= HTTP2_MIN_NUM_FIELDS:
+                continue
+
+            payload = {}
+            payload['channel_name'] = channel_name
+            channels.add(channel_name)
+            for field, value in tcp_payload['_source']['layers'].items():
+                field = field.replace(".", "_")
+                if field == "http2_data_data":
+                    if payload["ip_dst"] == tv_ip:
+                        continue
+                    if isinstance(value, list):
+                        value = ":".join(value)
+                    try:
+                        payload[field] = bytearray.fromhex(value.replace(":", "")).decode()
+                    except:
+                        print("DEC ERR", json_path, tcp_payload)
+                        decode_errors += 1
+                elif field == "http2_type":
+                    payload[field] = ",".join(value)
+                elif field in ["http2_header_name", "http2_header_value"]:  # list based fields
+                    payload[field] = value
+                else:  # fields extracted as lists but contain only one element
+                    assert len(value) == 1
+                    payload[field] = value[0]
+
+            if HTTP2_FRAME_TYPE_DATA not in payload["http2_type"] and HTTP2_FRAME_TYPE_DATA not in payload["http2_type"]:
+                continue
+
+            if "http2_header_name" not in payload:
+                # DATA frame without any header
+                if payload["ip_dst"] == tv_ip:
+                    responses.append(payload)
+                else:
+                    requests.append(payload)
+                continue
+            # frames with headers
+            header_names = payload["http2_header_name"]
+            header_values = payload["http2_header_value"]
+            assert len(header_names) == len(header_values)
+            headers = {}
+
+            for idx, header_name in enumerate(header_names):
+                headers[header_name.strip(":").lower()] = header_values[idx]
+            
+            if "status" in headers:  # response
+                assert payload["ip_dst"] == tv_ip
+                payload["content_type"] = headers["content-type"]
+                payload["response_code"] = headers["status"]
+                payload["set-cookie"] = headers.get("set-cookie", "")
+                payload["location"] = headers.get("location", "")
+                responses.append(payload)
+            else:  # request
+                # payload["host"] = headers["authority"]
+                payload["user_agent"] = headers["http.useragent"]
+                payload["request_full_uri"] = "%s://%s%s" %(headers["scheme"], headers["authority"], headers["path"])
+                payload["request_method"] = headers["method"]
+                payload["cookie"] = headers.get("cookie", "")
+                payload["referer"] = headers.get("referer", "")
+                requests.append(payload)
+
+    req_df = pd.DataFrame(requests)
+    resp_df = pd.DataFrame(responses)
+
+    #req_df["hostname"] = req_df["ip_dst"].map(lambda x: get_domain_by_ip(x, rIP2NameDB))
+    req_df["hostname"] = req_df.apply(lambda x: ip_2_domains[x["channel_name"]].get(x["ip_dst"], ''), axis=1)
+    resp_df["hostname"] = resp_df.apply(lambda x: ip_2_domains[x["channel_name"]].get(x["ip_src"], ''), axis=1)
+
+    req_df.rename(columns={'http2_data_data':'post_data'}, inplace=True)
+    resp_df.rename(columns={'http2_data_data':'response_body'}, inplace=True)
+
+    for df in [req_df, resp_df]:
+        mapping = {col_name:col_name.replace("http_", "") for col_name in df.columns}
+        df.rename(columns=mapping, inplace=True)
+    HTTP2_REQ_DROP = ["http2_header_name", "http2_header_value", "ip_src", "tcp_srcport", "eth_src"]
+    HTTP2_RESP_DROP = ["http2_header_name", "http2_header_value", "ip_dst", "tcp_dstport", "eth_src"]
+    print ("Decode errors", decode_errors)
+    print ("channels", channels)
+    return (req_df.drop(HTTP2_REQ_DROP, axis=1).replace(np.nan, '', regex=True),
+            resp_df.drop(HTTP2_RESP_DROP, axis=1).replace(np.nan, '', regex=True),
+            dns_df)
 
 
 if __name__ == '__main__':
