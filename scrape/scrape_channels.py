@@ -524,20 +524,27 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
 
             time.sleep(scrape_config.SLEEP_TIMER)
             if scrape_config.ENABLE_SMART_CRAWLER:
+                no_new_endpoint_counter = 0
                 remove_file(MITM_LEARNED_NEW_ENDPOINT)
                 playback_detected = False
                 n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
                 for launch_idx in range(1, scrape_config.SMART_CRAWLS_CNT + 1):
                     if launch_idx > 1:
                         if isfile(MITM_LEARNED_NEW_ENDPOINT):
+                            no_new_endpoint_counter = 0
                             # we recently learned about a domain, continue
                             log("SMART_CRAWLER: Found new uninterceptable endpoints! Continuing...")
                             remove_file(MITM_LEARNED_NEW_ENDPOINT)
                         else:
-                            # no new domain found recently, stop crawling
-                            log("SMART_CRAWLER: Found now new endpoints! Stopping smart crawl!")
-                            remove_file(MITM_LEARNED_NEW_ENDPOINT)
-                            break
+                            no_new_endpoint_counter += 1
+                            log("SMART_CRAWLER: Found no new endpoints in last"
+                                " %d rounds!" % no_new_endpoint_counter)
+                            if no_new_endpoint_counter > 1:
+                                # no new domain found recently, stop crawling
+                                log("SMART_CRAWLER: Found no new endpoints "
+                                    "twice! Stopping smart crawl!")
+                                remove_file(MITM_LEARNED_NEW_ENDPOINT)
+                                break
 
                     for key_seq_idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
                         surfer.timestamp_event('smartlaunch-%02d-key-seq-%02d' % (launch_idx, key_seq_idx))

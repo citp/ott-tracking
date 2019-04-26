@@ -25,7 +25,7 @@ USE_DOMAINS_FOR_SSL_WHITELISTING = True
 try:
     UNMITMABLE_HOST_DIR = os.environ['UNMITMABLE_HOST_DIR']
 except Exception as e:
-        print("Error! Env variable UNMITMABLE_HOST_DIR not defined!")
+    print("Error! Env variable UNMITMABLE_HOST_DIR not defined!")
 
 
 class InterceptionResult(Enum):
