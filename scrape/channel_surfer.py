@@ -301,7 +301,7 @@ class ChannelSurfer(object):
             time.sleep(max([0, 1-(time.time() - t_loop_begin)]))  # try to spend 1s on each loop
 
 
-    def deduplicate_screenshots(self, screenshot_filename):
+    def deduplicate_screenshots(self):
         if scrape_config.DEDUPLICATE_SCREENSHOTS:
             self.log("Deduplicating screenshots!")
             for screenshot_filename in sorted(glob.iglob(join(self.data_dir, self.screenshot_folder) +
