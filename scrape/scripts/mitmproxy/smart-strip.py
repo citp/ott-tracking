@@ -69,16 +69,19 @@ def convert_unmitmable(filename, outdir):
 def loadUnMitmableHostsAndIps(filename):
     hosts = set()
     ips = set()
+    domains = set()
     if isfile(filename):
         for line in open(filename):
             line = line.rstrip("\n")
             append_to_file(mitmableFileName, line)
-            _, ip, host = line.split("\t")
+            _, ip, host, domain = line.split("\t")
             if host:
                 hosts.add(host)
             if ip:
                 ips.add(ip)
-    return hosts, ips
+            if domain:
+                domains.add(domain)
+    return hosts, ips, domains
 
 def get_domain(hostname):
     hostname = hostname.rstrip(".")
@@ -95,14 +98,21 @@ class _TlsStrategy:
 
     def __init__(self, unMitmableFileNameIn):
         # A server_address -> interception results mapping
-        self.historyIP = collections.defaultdict(lambda: collections.deque(maxlen=200))
-        self.historyDomain = collections.defaultdict(lambda: collections.deque(maxlen=200))
         self.rName2IPDic = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
         self.rIP2NameDic = redis.StrictRedis(host='localhost', port=6379, db=1, charset="utf-8", decode_responses=True)
         # TODO: rename to unMitmableHosts -> unMitmableDomains...
-        self.unMitmableHosts, self.unMitmableIps = loadUnMitmableHostsAndIps(unMitmableFileNameIn)
-        my_log("Loaded %d unmitmable hosts, %d unmitmable IPs from %s" % (
-            len(self.unMitmableHosts), len(self.unMitmableIps), unMitmableFileNameIn), write_to_file=False)
+        self.unMitmableHosts, self.unMitmableIps, self.unMitmableDomains = \
+            loadUnMitmableHostsAndIps(unMitmableFileNameIn)
+
+        my_log("Loaded %d unmitmable domains, %d unmitmable hosts, %d "
+               "unmitmable IPs from %s" % (
+            len(self.unMitmableDomains), len(self.unMitmableHosts),
+            len(self.unMitmableIps), unMitmableFileNameIn),
+               write_to_file=False)
+
+        self.mitmableHosts = set()
+        self.mitmableIps = set()
+        self.mitmableDomains = set()
 
     def getAssocitatedIPs(self, IPAddress):
         IPList = set([str(IPAddress)])
@@ -132,33 +142,28 @@ class _TlsStrategy:
         raise NotImplementedError()
 
     def record_success(self, server_address):
-        self.historyIP[server_address].append(InterceptionResult.success)
-        hostname, effective_tld = self.getAssociatedDomain(str(server_address[0]))
-        if effective_tld:
-            self.historyDomain[effective_tld].append(InterceptionResult.success)
+        ip = server_address[0]
+        hostname, effective_tld = self.getAssociatedDomain(ip)
+        self.mitmableIps.add(ip)
         if hostname:
-            self.historyDomain[hostname].append(InterceptionResult.success)
-
-        append_to_file(mitmableFileName, "%s\t%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname, effective_tld))
+            self.mitmableHosts.add(hostname)
+        if effective_tld:
+            self.mitmableDomains.add(effective_tld)
+        append_to_file(
+            mitmableFileName,
+            "%s\t%s\t%s\t%s\n" % (str(channel_id), ip, hostname, effective_tld))
 
     def record_failure(self, server_address):
-        self.historyIP[server_address].append(InterceptionResult.failure)
-        hostname, effective_tld = self.getAssociatedDomain(server_address[0])
-        if effective_tld:
-            self.historyDomain[effective_tld].append(InterceptionResult.failure)
+        ip = server_address[0]
+        hostname, effective_tld = self.getAssociatedDomain(ip)
+        self.unMitmableIps.add(ip)
         if hostname:
-            self.historyDomain[hostname].append(InterceptionResult.failure)
-
-        append_to_file(unMitmableFileNameOut, "%s\t%s\t%s\t%s\n" % (str(channel_id), str(server_address[0]), hostname, effective_tld))
-
-    def record_skipped(self, server_address):
-        self.historyIP[server_address].append(InterceptionResult.skipped)
-        hostname, effective_tld = self.getAssociatedDomain(server_address[0])
+            self.unMitmableHosts.add(hostname)
         if effective_tld:
-            self.historyDomain[effective_tld].append(InterceptionResult.skipped)
-        if hostname:
-            self.historyDomain[hostname].append(InterceptionResult.skipped)
-
+            self.unMitmableDomains.add(effective_tld)
+        append_to_file(
+            unMitmableFileNameOut,
+            "%s\t%s\t%s\t%s\n" % (str(channel_id), ip, hostname, effective_tld))
 
 
 class ConservativeStrategy(_TlsStrategy):
@@ -168,31 +173,22 @@ class ConservativeStrategy(_TlsStrategy):
     """
 
     def should_intercept(self, server_address):
-        hostname, effective_tld = self.getAssociatedDomain(str(server_address[0]))
+        ip = server_address[0]
+        hostname, effective_tld = self.getAssociatedDomain(ip)
 
         #TLD level
-        if effective_tld and InterceptionResult.failure in self.historyDomain[effective_tld]:
+        if effective_tld and effective_tld in self.unMitmableDomains:
             print("Effective TLD %s already whitelisted!" % effective_tld)
             return False
-        if effective_tld and effective_tld in self.unMitmableHosts:
-            print("Effective TLD %s in the pre-whitelist!" % effective_tld)
-            return False
-
 
         #Hostname level
-        if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
+        if hostname and hostname in self.unMitmableHosts:
             print("Hostname %s already whitelisted!" % hostname)
             return False
-        if hostname and hostname in self.unMitmableHosts:
-            print("Hostname %s in the pre-whitelist!" % hostname)
-            return False
 
-        #Server level
-        if InterceptionResult.failure in self.historyIP[server_address]:
-            print("Server %s already whitelisted!" % str(server_address))
-            return False
-        if server_address in self.unMitmableIps:
-            print("Server %s in the pre-whitelist!" % str(server_address))
+        #IP level
+        if ip and ip in self.unMitmableIps:
+            print("IP %s already whitelisted!" % ip)
             return False
 
         MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
@@ -202,7 +198,8 @@ class ConservativeStrategy(_TlsStrategy):
             except Exception:
                 print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
 
-        print("Server not in any whitelist! Intercepting %s:(%s:%s)" % str(server_address), hostname, effective_tld)
+        print("Server not in any whitelist! Intercepting %s:(%s:%s)"
+              % str(server_address), hostname, effective_tld)
         return True
 
 
@@ -321,7 +318,7 @@ def next_layer(next_layer):
                 timestamp + "TLS intercept is disabled! Skipping TLS interception for %s " % str(server_address))
             next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
             next_layer.reply.send(next_layer_replacement)
-            tls_strategy.record_skipped(server_address)
+            # tls_strategy.record_skipped(server_address)
             return
 
         #cert = next_layer._find_cert())
@@ -350,7 +347,7 @@ def next_layer(next_layer):
                 mitmproxy.ctx.log(timestamp + "TLS passthrough for %s" % repr(next_layer.server_conn.address), "info")
             next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
             next_layer.reply.send(next_layer_replacement)
-            tls_strategy.record_skipped(server_address)
+            # tls_strategy.record_skipped(server_address)
 
 
 
