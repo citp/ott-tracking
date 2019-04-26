@@ -199,7 +199,7 @@ class ConservativeStrategy(_TlsStrategy):
                 print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
 
         print("Server not in any whitelist! Intercepting %s:(%s:%s)"
-              % str(server_address), hostname, effective_tld)
+              % (str(server_address), hostname, effective_tld))
         return True
 
 
