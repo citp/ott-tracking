@@ -170,17 +170,18 @@ class ConservativeStrategy(_TlsStrategy):
     def should_intercept(self, server_address):
         hostname, effective_tld = self.getAssociatedDomain(str(server_address[0]))
 
-        #Learned in this session
+        #TLD level
         if effective_tld and InterceptionResult.failure in self.historyDomain[effective_tld]:
             print("Effective TLD %s already whitelisted!" % effective_tld)
             return False
-        if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
-            print("Hostname %s already whitelisted!" % hostname)
-            return False
-
-        #Preloaded list
         if effective_tld and effective_tld in self.unMitmableHosts:
             print("Effective TLD %s in the pre-whitelist!" % effective_tld)
+            return False
+
+
+        #Hostname level
+        if hostname and InterceptionResult.failure in self.historyDomain[hostname]:
+            print("Hostname %s already whitelisted!" % hostname)
             return False
         if hostname and hostname in self.unMitmableHosts:
             print("Hostname %s in the pre-whitelist!" % hostname)
@@ -201,13 +202,7 @@ class ConservativeStrategy(_TlsStrategy):
             except Exception:
                 print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
 
-        if effective_tld:
-            print("Effective TLD %s not in any whitelist! Intercepting" % effective_tld)
-        elif hostname:
-            print("Hostname %s not in any whitelist! Intercepting" % hostname)
-        else:
-            print("Server %s not in any whitelist! Intercepting" % str(server_address))
-
+        print("Server not in any whitelist! Intercepting %s:(%s:%s)" % str(server_address), hostname, effective_tld)
         return True
 
 

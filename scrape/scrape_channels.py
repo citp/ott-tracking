@@ -531,9 +531,11 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
                     if launch_idx > 1:
                         if isfile(MITM_LEARNED_NEW_ENDPOINT):
                             # we recently learned about a domain, continue
+                            log("SMART_CRAWLER: Found new uninterceptable endpoints! Continuing...")
                             remove_file(MITM_LEARNED_NEW_ENDPOINT)
                         else:
                             # no new domain found recently, stop crawling
+                            log("SMART_CRAWLER: Found now new endpoints! Stopping smart crawl!")
                             remove_file(MITM_LEARNED_NEW_ENDPOINT)
                             break
 

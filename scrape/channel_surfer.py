@@ -305,7 +305,7 @@ class ChannelSurfer(object):
         if scrape_config.DEDUPLICATE_SCREENSHOTS:
             self.log("Deduplicating screenshots!")
             for screenshot_filename in sorted(glob.iglob(join(self.data_dir, self.screenshot_folder) +
-                                       "/" +  str(self.channel_id) + '*.png', recursive=True)):
+                                       "/" + str(self.channel_id) + '*.png', recursive=True)):
                 screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
                 if screenshot_crc == self.last_screenshot_crc:
                     if LOG_CRC_EN:
