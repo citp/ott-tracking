@@ -143,7 +143,7 @@ class _TlsStrategy:
 
     def record_failure(self, server_address):
         self.historyIP[server_address].append(InterceptionResult.failure)
-        hostname, effective_tld = str(self.getAssociatedDomain(server_address[0]))
+        hostname, effective_tld = self.getAssociatedDomain(server_address[0])
         if effective_tld:
             self.historyDomain[effective_tld].append(InterceptionResult.failure)
         if hostname:
@@ -153,7 +153,7 @@ class _TlsStrategy:
 
     def record_skipped(self, server_address):
         self.historyIP[server_address].append(InterceptionResult.skipped)
-        hostname, effective_tld = str(self.getAssociatedDomain(server_address[0]))
+        hostname, effective_tld = self.getAssociatedDomain(server_address[0])
         if effective_tld:
             self.historyDomain[effective_tld].append(InterceptionResult.skipped)
         if hostname:
