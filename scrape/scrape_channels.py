@@ -614,6 +614,7 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
         time.sleep(3)
         surfer.go_home()
         surfer.uninstall_channel()
+        surfer.deduplicate_screenshots()
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
         surfer.write_timestamps()

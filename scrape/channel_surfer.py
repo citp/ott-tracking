@@ -13,6 +13,7 @@ import datetime
 import os
 import binascii
 import json
+import glob
 from shutil import copy2
 from os.path import join
 import fcntl, socket, struct
@@ -297,20 +298,21 @@ class ChannelSurfer(object):
                 # self.log('Taking screenshot to:', screenshot_filename)
                 self.rrc.take_screenshot(screenshot_filename)
 
-            if scrape_config.DEDUPLICATE_SCREENSHOTS:
-                self.deduplicate_screenshots(screenshot_filename)
             time.sleep(max([0, 1-(time.time() - t_loop_begin)]))  # try to spend 1s on each loop
 
 
     def deduplicate_screenshots(self, screenshot_filename):
-        if os.path.exists(screenshot_filename):
-            screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
-            if screenshot_crc == self.last_screenshot_crc:
-                if LOG_CRC_EN:
-                    self.log('Will remove duplicate screenshot:', screenshot_filename)
-                os.remove(screenshot_filename)
+        if scrape_config.DEDUPLICATE_SCREENSHOTS:
+            self.log("Deduplicating screenshots!")
+            for screenshot_filename in sorted(glob.iglob(join(self.data_dir, self.screenshot_folder) +
+                                       "/" +  str(self.channel_id) + '*.png', recursive=True)):
+                screenshot_crc = binascii.crc32(open(screenshot_filename, 'rb').read())
+                if screenshot_crc == self.last_screenshot_crc:
+                    if LOG_CRC_EN:
+                        self.log('Will remove duplicate screenshot:', screenshot_filename)
+                    os.remove(screenshot_filename)
 
-            self.last_screenshot_crc = screenshot_crc
+                self.last_screenshot_crc = screenshot_crc
 
     def kill_all_tcpdump(self):
         if not self.tcpdump_proc:
