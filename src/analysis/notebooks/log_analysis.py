@@ -1,4 +1,7 @@
-from urllib.parse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib import parse
 import ntpath
 import ujson
 import numpy as np
@@ -540,14 +543,15 @@ def get_http2_df(crawl_data_dir):
             for field, value in tcp_payload['_source']['layers'].items():
                 field = field.replace(".", "_")
                 if field == "http2_data_data":
-                    if payload["ip_dst"] == tv_ip:
+                    # print(tcp_payload['_source']['layers'])
+                    if tcp_payload['_source']['layers']["ip.dst"] == tv_ip:
                         continue
                     if isinstance(value, list):
                         value = ":".join(value)
                     try:
                         payload[field] = bytearray.fromhex(value.replace(":", "")).decode()
                     except:
-                        print("DEC ERR", json_path, tcp_payload)
+                        # print("DEC ERR", json_path, tcp_payload)
                         decode_errors += 1
                 elif field == "http2_type":
                     payload[field] = ",".join(value)
@@ -591,7 +595,8 @@ def get_http2_df(crawl_data_dir):
                 payload["cookie"] = headers.get("cookie", "")
                 payload["referer"] = headers.get("referer", "")
                 requests.append(payload)
-
+    if not len(requests):
+        return pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
     req_df = pd.DataFrame(requests)
     resp_df = pd.DataFrame(responses)
 

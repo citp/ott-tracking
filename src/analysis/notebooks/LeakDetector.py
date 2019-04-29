@@ -1,37 +1,50 @@
+import html
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib import parse
+    
 from Crypto.Hash import MD2
 import pandas as pd
 import cookies as ck
-import hackercodecs  # noqa
+# import hackercodecs  # noqa
 import hashlib
-import pyblake2
+#import pyblake2
 import urllib
 import sha3
 import mmh3
-import mmhash
+# import mmhash
 import base64
 import base58
 import zlib
 import json
 import re
 
-from urllib import quote_plus
+try:
+    from urllib import quote_plus
+except ImportError:
+    from urllib.parse import quote_plus
+
 # DELIMITERS = re.compile('[&|\,]')
 DELIMITERS = re.compile('[&|\,]|%s|%s' % (quote_plus("="), quote_plus("&")))
 EXTENSION_RE = re.compile('\.[A-Za-z]{2,4}$')
 ENCODING_LAYERS = 3
 ENCODINGS_NO_ROT = ['base16', 'base32', 'base58', 'base64',
-                    'urlencode', 'yenc', 'entity',
+                    'urlencode',
+                    #'yenc',
+                    'entity',
                     'deflate', 'zlib', 'gzip']
 LIKELY_ENCODINGS = ['base16', 'base32', 'base58', 'base64',
-                    'urlencode', 'yenc', 'entity']
+                    'urlencode',
+                    #'yenc',
+                    'entity']
 HASHES = ['md2', 'md4', 'md5', 'sha1', 'sha256', 'sha224', 'sha384',
-          'sha512', 'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512', 'mmh2',
-          'mmh2_unsigned', 'mmh3_32', 'mmh3_64_1', 'mmh3_64_2', 'mmh3_128',
-          'ripemd160', 'whirlpool', 'blake2b', 'blake2s']
+          'sha512', 'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
+          #'mmh2', 'mmh2_unsigned',
+          'mmh3_32', 'mmh3_64_1', 'mmh3_64_2', 'mmh3_128',
+          'ripemd160', 'whirlpool'
+         # , 'blake2b', 'blake2s'
+         ]
 
 
 def load_requests_with_leaks(location):
@@ -73,16 +86,16 @@ class Hasher():
         hashes['sha3_256'] = lambda x: sha3.sha3_256(x).hexdigest()
         hashes['sha3_384'] = lambda x: sha3.sha3_384(x).hexdigest()
         hashes['sha3_512'] = lambda x: sha3.sha3_512(x).hexdigest()
-        hashes['mmh2'] = lambda x: str(mmhash.get_hash(x))
-        hashes['mmh2_unsigned'] = lambda x: str(mmhash.get_unsigned_hash(x))
+        #hashes['mmh2'] = lambda x: str(mmhash.get_hash(x))
+        #hashes['mmh2_unsigned'] = lambda x: str(mmhash.get_unsigned_hash(x))
         hashes['mmh3_32'] = lambda x: str(mmh3.hash(x))
         hashes['mmh3_64_1'] = lambda x: str(mmh3.hash64(x)[0])
         hashes['mmh3_64_2'] = lambda x: str(mmh3.hash64(x)[1])
         hashes['mmh3_128'] = lambda x: str(mmh3.hash128(x))
         hashes['ripemd160'] = lambda x: self._get_hashlib_hash('ripemd160', x)
         hashes['whirlpool'] = lambda x: self._get_hashlib_hash('whirlpool', x)
-        hashes['blake2b'] = lambda x: pyblake2.blake2b(x).hexdigest()
-        hashes['blake2s'] = lambda x: pyblake2.blake2s(x).hexdigest()
+        # hashes['blake2b'] = lambda x: pyblake2.blake2b(x).hexdigest()
+        # hashes['blake2s'] = lambda x: pyblake2.blake2s(x).hexdigest()
         hashes['crc32'] = lambda x: str(zlib.crc32(x))
         hashes['adler32'] = lambda x: str(zlib.adler32(x))
 
@@ -121,7 +134,8 @@ class Encoder():
         encodings['gzip'] = lambda x: self._compress_with_zlib('gzip', x)
         encodings['json'] = lambda x: json.dumps(x)
         encodings['binary'] = lambda x: x.encode('bin')
-        encodings['entity'] = lambda x: x.encode('entity')
+        # encodings['entity'] = lambda x: x.encode('entity')
+        encodings['entity'] = lambda x: html.escape(x)
         encodings['rot1'] = lambda x: x.encode('rot1')
         encodings['rot10'] = lambda x: x.encode('rot10')
         encodings['rot11'] = lambda x: x.encode('rot11')
@@ -147,7 +161,7 @@ class Encoder():
         encodings['rot7'] = lambda x: x.encode('rot7')
         encodings['rot8'] = lambda x: x.encode('rot8')
         encodings['rot9'] = lambda x: x.encode('rot9')
-        encodings['yenc'] = lambda x: x.encode('yenc')
+        # encodings['yenc'] = lambda x: x.encode('yenc')
         self._encodings = encodings
         self.supported_encodings = self._encodings.keys()
 
