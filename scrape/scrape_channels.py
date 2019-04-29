@@ -528,7 +528,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
         err_occurred = False
         try:
             if scrape_config.REC_AUD:
-                recorder.start_recording(scrape_config.SCRAPE_TO, channel_id)
+                recorder.start_recording(scrape_config.SCRAPE_TO, surfer.channel_id)
             if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
                 launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
             else:
