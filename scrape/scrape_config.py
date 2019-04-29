@@ -11,14 +11,15 @@ REC_AUD = True
 TLS_INTERCEPT = True
 SSL_STRIP = False
 THREADED_SCRAPE = False
-AMAZON_HDMI_SCREENSHOT = False
+AMAZON_HDMI_SCREENSHOT = True
 DEDUPLICATE_SCREENSHOTS = True
+MITM_STOP_NO_NEW_ENDPOINT = True
 
 MITMPROXY_ENABLED = SSL_STRIP or TLS_INTERCEPT
 
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
-    LAUNCH_RETRY_CNT = 15  # detect and store unmitmable domains and IPs
-    SMART_CRAWLS_CNT = 15  # run multiple smart crawls to discover the best number for the warmup
+    LAUNCH_RETRY_CNT = 10  # detect and store unmitmable domains and IPs
+    SMART_CRAWLS_CNT = 10  # run multiple smart crawls to discover the best number for the warmup
 else:
     LAUNCH_RETRY_CNT = 2  # load unmitmable domains and IPs from files
     SMART_CRAWLS_CNT = 1

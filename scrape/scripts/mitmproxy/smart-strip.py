@@ -161,6 +161,14 @@ class _TlsStrategy:
             self.unMitmableHosts.add(hostname)
         if effective_tld:
             self.unMitmableDomains.add(effective_tld)
+
+        MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+        if not isfile(MITM_LEARNED_NEW_ENDPOINT):
+            try:
+                print("New UnMITM endpoint detected. Touching %s file." % MITM_LEARNED_NEW_ENDPOINT)
+                open(MITM_LEARNED_NEW_ENDPOINT, 'a').close()
+            except Exception:
+                print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
         append_to_file(
             unMitmableFileNameOut,
             "%s\t%s\t%s\t%s\n" % (str(channel_id), ip, hostname, effective_tld))
@@ -190,13 +198,6 @@ class ConservativeStrategy(_TlsStrategy):
         if ip and ip in self.unMitmableIps:
             print("IP %s already whitelisted!" % ip)
             return False
-
-        MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
-        if not isfile(MITM_LEARNED_NEW_ENDPOINT):
-            try:
-                open(MITM_LEARNED_NEW_ENDPOINT, 'a').close()
-            except Exception:
-                print("Cannot create the MITM_LEARNED_NEW_ENDPOINT file")
 
         print("Server not in any whitelist! Intercepting %s:(%s:%s)"
               % (str(server_address), hostname, effective_tld))
