@@ -511,6 +511,47 @@ def remove_file(file_path):
     except OSError:
         pass
 
+def smart_crawl(surfer):
+    if scrape_config.MITM_STOP_NO_NEW_ENDPOINT:
+        no_new_endpoint_counter = 0
+        remove_file(MITM_LEARNED_NEW_ENDPOINT)
+    playback_detected = False
+    n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
+    for launch_idx in range(1, scrape_config.SMART_CRAWLS_CNT + 1):
+        if launch_idx > 1 and scrape_config.MITM_STOP_NO_NEW_ENDPOINT:
+            if isfile(MITM_LEARNED_NEW_ENDPOINT):
+                no_new_endpoint_counter = 0
+                # we recently learned about a domain, continue
+                log("SMART_CRAWLER: Found new uninterceptable endpoints! Continuing...")
+                remove_file(MITM_LEARNED_NEW_ENDPOINT)
+            else:
+                no_new_endpoint_counter += 1
+                log("SMART_CRAWLER: Found no new endpoints in last"
+                    " %d rounds!" % no_new_endpoint_counter)
+                if no_new_endpoint_counter > 1:
+                    # no new domain found recently, stop crawling
+                    log("SMART_CRAWLER: Found no new endpoints "
+                        "twice! Stopping smart crawl!")
+                    remove_file(MITM_LEARNED_NEW_ENDPOINT)
+                    break
+
+        for key_seq_idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
+            surfer.timestamp_event('smartlaunch-%02d-key-seq-%02d' % (launch_idx, key_seq_idx))
+            surfer.launch_channel()  # make sure we start from the homepage
+            log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
+                " %s %s" % (launch_idx, key_seq_idx, n_key_seqs, surfer.channel_id,
+                            "-".join(key_sequence)))
+            playback_detected = play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx)
+            if playback_detected:
+                log('SMART_CRAWLER: Playback detected on channel: %s' %
+                    surfer.channel_id)
+                fast_forward(surfer)
+                break
+
+            time.sleep(4)
+        else:
+            log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
+                surfer.channel_id)
 
 def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
@@ -536,46 +577,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
 
             time.sleep(scrape_config.SLEEP_TIMER)
             if scrape_config.ENABLE_SMART_CRAWLER:
-                if scrape_config.MITM_STOP_NO_NEW_ENDPOINT:
-                    no_new_endpoint_counter = 0
-                    remove_file(MITM_LEARNED_NEW_ENDPOINT)
-                    playback_detected = False
-                    n_key_seqs = len(KEY_SEQUENCES[scrape_config.PLAT])
-                    for launch_idx in range(1, scrape_config.SMART_CRAWLS_CNT + 1):
-                        if launch_idx > 1:
-                            if isfile(MITM_LEARNED_NEW_ENDPOINT):
-                                no_new_endpoint_counter = 0
-                                # we recently learned about a domain, continue
-                                log("SMART_CRAWLER: Found new uninterceptable endpoints! Continuing...")
-                                remove_file(MITM_LEARNED_NEW_ENDPOINT)
-                            else:
-                                no_new_endpoint_counter += 1
-                                log("SMART_CRAWLER: Found no new endpoints in last"
-                                    " %d rounds!" % no_new_endpoint_counter)
-                                if no_new_endpoint_counter > 1:
-                                    # no new domain found recently, stop crawling
-                                    log("SMART_CRAWLER: Found no new endpoints "
-                                        "twice! Stopping smart crawl!")
-                                    remove_file(MITM_LEARNED_NEW_ENDPOINT)
-                                    break
-
-                    for key_seq_idx, key_sequence in enumerate(KEY_SEQUENCES[scrape_config.PLAT], 1):
-                        surfer.timestamp_event('smartlaunch-%02d-key-seq-%02d' % (launch_idx, key_seq_idx))
-                        surfer.launch_channel()  # make sure we start from the homepage
-                        log("SMART_CRAWLER: Launch: %d Will play key seq (%d of %d) for channel:"
-                            " %s %s" % (launch_idx, key_seq_idx, n_key_seqs, surfer.channel_id,
-                                        "-".join(key_sequence)))
-                        playback_detected = play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx)
-                        if playback_detected:
-                            log('SMART_CRAWLER: Playback detected on channel: %s' %
-                                surfer.channel_id)
-                            fast_forward(surfer)
-                            break
-
-                        time.sleep(4)
-                    else:
-                        log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
-                            surfer.channel_id)
+                smart_crawl(surfer)
             else:
                 for okay_ix in range(0, 3):
                     if not surfer.channel_is_active():
