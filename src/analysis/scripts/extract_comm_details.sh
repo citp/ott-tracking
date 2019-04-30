@@ -128,7 +128,7 @@ SUFFIX="ssl_connections"
 ########################################################
 FORMAT="fields"
 FILTER="((dns.flags.response==1) && (ip.dst==$TV_IP_ADDR))"
-FIELDS="-e frame.time_epoch -e ip.dst -e dns.qry.name -e dns.a -e dns.aaaa"
+FIELDS="-e frame.time_epoch -e ip.src -e dns.qry.name -e dns.a -e dns.aaaa"
 SUFFIX="dns.csv"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 
