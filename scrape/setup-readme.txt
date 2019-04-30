@@ -13,3 +13,10 @@ sudo setcap cap_net_raw=eip `which tcpdump`
 
 #Install ADB Amazon:
 sudo apt install adb
+
+
+#Audio setting:
+pactl load-module module-loopback latency_msec=1
+
+add this command to /etc/pulse/default.pa
+
