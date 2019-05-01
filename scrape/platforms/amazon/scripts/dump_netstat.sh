@@ -1,10 +1,11 @@
+#!/usr/bin/python3
 """
 Continously dumps output from netstat and dumpsys to find:
 
 1. which process (user_id) makes what connections
 2. which app corresponds to which user_id
 
-To terminate, do `pkill -2 -f dump_netstat.py`.
+To terminate, do `pkill -2 -f dump_netstat.sh`.
 
 """
 import subprocess as sp
@@ -12,12 +13,17 @@ import time
 import re
 import json
 import threading
+import sys
+from datetime import datetime
+from os.path import join
 
 
-def main():
 
-    netstat_fp = open('netstat_output.txt', 'w')
-    dumpsys_fp = open('dumpsys_output.txt', 'w')
+def main(save_path):
+    date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    netstat_fp = open(join(save_path, 'netstat_%s.txt' % date_prefix), 'w')
+    dumpsys_fp = open(join(save_path, 'dumpsys_%s.txt' % date_prefix), 'w')
 
     th = threading.Thread(target=dump_netstat_thread, args=(netstat_fp, ))
     th.daemon = True
@@ -121,4 +127,4 @@ def dump_channel_user_ids(fp):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])

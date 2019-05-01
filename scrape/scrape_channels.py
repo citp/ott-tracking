@@ -431,6 +431,23 @@ def stop_screenshot():
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
             os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
 
+NETSTAT_PROCESS = None
+def start_netstat(data_dir):
+    if scrape_config.PLAT == "AMAZON":
+        global NETSTAT_PROCESS
+        cmd = join(scrape_config.PLATFORM_DIR, 'scripts') + '/dump_netstat.sh'
+        log('Starting netstat process with %s  %s' % (cmd, data_dir))
+        NETSTAT_PROCESS = subprocess.Popen([cmd, data_dir], shell=True, preexec_fn=os.setsid)
+
+def stop_netstat():
+    if scrape_config.PLAT == "AMAZON":
+        global NETSTAT_PROCESS
+        if NETSTAT_PROCESS is not None:
+            log('Terminating netstat process with PID %s ' % str(NETSTAT_PROCESS))
+            os.killpg(os.getpgid(NETSTAT_PROCESS.pid), signal.SIGTERM)
+        sleep(1)
+        subprocess.call('pkill -2 -f dump_netstat.sh', shell=True, stderr=open(os.devnull, 'wb'))
+
 
 def setup_channel(channel_id, date_prefix):
     log('Setting up channel %s' % str(channel_id))
@@ -693,6 +710,7 @@ def flushall_iptables():
 if __name__ == '__main__':
     start_screenshot()
     flushall_iptables()
+    start_netstat(scrape_config.DATA_DIR)
     if len(sys.argv) > 1:
         if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
@@ -705,6 +723,7 @@ if __name__ == '__main__':
         main()
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
+    stop_netstat()
     stop_screenshot()
     sys.exit(1)
 
