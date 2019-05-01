@@ -22,8 +22,14 @@ from os.path import join
 def main(save_path):
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    netstat_fp = open(join(save_path, 'netstat_%s.txt' % date_prefix), 'w')
-    dumpsys_fp = open(join(save_path, 'dumpsys_%s.txt' % date_prefix), 'w')
+    netstat_file_path = join(save_path, 'netstat_%s.txt' % date_prefix)
+    print("Writing netstat to %s" % netstat_file_path)
+
+    dumpsys_file_path = join(save_path, 'dumpsys_%s.txt' % date_prefix)
+    print("Writing dumpsys to %s" % dumpsys_file_path)
+
+    netstat_fp = open(netstat_file_path, 'w')
+    dumpsys_fp = open(dumpsys_file_path, 'w')
 
     th = threading.Thread(target=dump_netstat_thread, args=(netstat_fp, ))
     th.daemon = True
@@ -62,7 +68,7 @@ def dump_netstat(fp):
     # Queries netstat
     cmd = 'adb shell netstat -peanutW'
     pobj = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
-    netstat_output = pobj.communicate()[0]
+    netstat_output = pobj.communicate()[0].decode("utf-8")
     ts = time.time()
 
     # Write to file
@@ -94,7 +100,7 @@ def dump_channel_user_ids(fp):
     # Parse adb output
     cmd = 'adb shell dumpsys package | grep -B 1 userId'
     pobj = sp.Popen(cmd, shell=True, stdout=sp.PIPE)
-    result = pobj.communicate()[0]
+    result = pobj.communicate()[0].decode("utf-8")
     ts = time.time()
 
     for line in result.split('\n'):
@@ -128,3 +134,4 @@ def dump_channel_user_ids(fp):
 
 if __name__ == '__main__':
     main(sys.argv[1])
+
