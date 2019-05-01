@@ -387,12 +387,12 @@ def get_ip_domain_mapping_from_dns_df(dns_df):
     ip_2_domains = defaultdict(dict)
     local_qrys = set()
     for idx, row in dns_df.iterrows():
-        domain = row["dns.qry.name"]
+        domain = row["dns_qry_name"]
         if domain.endswith("in-addr.arpa"):
             local_qrys.add(domain)
             continue
         channel_id = row["channel_id"]
-        dns_answers = row["dns.a"]
+        dns_answers = row["dns_a"]
         try:
             ips = dns_answers.split(",")
         except Exception:
@@ -414,6 +414,7 @@ def load_dns_data_from_pcap_csvs(crawl_data_dir):
         channel_id = basename(dns_csv).split("-")[0]
         tmp_df['channel_id'] = channel_id
         dns_df = dns_df.append(tmp_df)
+    replace_in_column_names(dns_df, ".", "_")
     return dns_df, get_ip_domain_mapping_from_dns_df(dns_df)
 
 
