@@ -66,10 +66,10 @@ def dump_netstat(fp):
     ts = time.time()
 
     # Write to file
-    print >>fp, json.dumps({
+    print(json.dumps({
         'ts': ts,
         'netstat_output': netstat_output
-    })
+    }), file=fp)
 
 
 def dump_channel_user_ids_thread(fp):
@@ -119,10 +119,10 @@ def dump_channel_user_ids(fp):
             user_id = None
 
     # Write to file
-    print >>fp, json.dumps({
+    print(json.dumps({
         'ts': ts,
         'package_dict': package_dict
-    })
+    }), file=fp)
     fp.flush()
 
 
