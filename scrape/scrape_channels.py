@@ -437,7 +437,7 @@ def start_netstat(data_dir):
         global NETSTAT_PROCESS
         cmd = join(scrape_config.PLATFORM_DIR, 'scripts') + '/dump_netstat.sh'
         log('Starting netstat process with %s  %s' % (cmd, data_dir))
-        NETSTAT_PROCESS = subprocess.Popen([cmd, data_dir], shell=True, preexec_fn=os.setsid)
+        NETSTAT_PROCESS = subprocess.Popen(cmd + " " + data_dir, shell=True, preexec_fn=os.setsid)
 
 def stop_netstat():
     if scrape_config.PLAT == "AMAZON":
