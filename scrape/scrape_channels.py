@@ -189,11 +189,11 @@ def main(channel_list=None):
 
         next_channels = []
 
-        if scrape_config.PLAT == "ROKU":
+        if isinstance(channels, dict):
             for channel_l in channels.values():
                 if channel_l:
                     next_channels.append(channel_l.pop(0))
-        elif scrape_config.PLAT == "AMAZON":
+        elif isinstance(channels, list):
             for channel in channels:
                 next_channels.append(channel)
                 channels.remove(channel)
@@ -570,6 +570,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
         try:
             if scrape_config.REC_AUD:
                 recorder.start_recording(scrape_config.SCRAPE_TO, surfer.channel_id)
+
             if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
                 launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
             else:
@@ -642,7 +643,7 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
         surfer.write_timestamps()
-        #dump_as_json(timestamps, join(scrape_config.DATA_DIR, scrape_config.LOG_PREFIX,
+        #dump_as_json(timestampsn(scrape_config.DATA_DIR, scrape_config.LOG_PREFIX,
         #                              "%s_timestamps.json" % channel_id))
     except TimeoutError:
         log('Timeout for crawl expired in collect_data!')
@@ -679,7 +680,7 @@ def automatic_scrape(channel_id, date_prefix):
                         channel_state = CrawlState.TERMINATED
     except TimeoutError:
         log('Timeout for crawl expired! Ending scrape for channel %s' % channel_id)
-    except Exception:
+    except:
         log('Error!')
         traceback.print_exc()
     return channel_state
@@ -706,3 +707,4 @@ if __name__ == '__main__':
     # executed with Popen! They remain running!
     stop_screenshot()
     sys.exit(1)
+

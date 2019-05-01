@@ -25,7 +25,7 @@ else:
     SMART_CRAWLS_CNT = 1
 
 TV_IP_ADDR = os.environ['TV_IP_ADDR']
-SLEEP_TIMER = 20
+SLEEP_TIMER = 5 
 FWD_SLEEP_TO = 3 # Used in Smart Crawl to stop Fast Forwarding after few seconds
 DATA_DIR = os.path.abspath(os.getenv("DATA_DIR"))
 PLAT = os.getenv("PLATFORM")

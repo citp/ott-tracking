@@ -84,7 +84,7 @@ class ChannelSurfer(object):
     def go_home(self):
 
         time.sleep(2)
-        for i in range(3):
+        for i in range(2):
             self.rrc.press_key('Home')
         time.sleep(2)
 
@@ -325,7 +325,7 @@ class ChannelSurfer(object):
             self.tcpdump_proc.kill()
         else:
             self.log("Successfully terminated tcpdump")
-        time.sleep(5)
+        time.sleep(2)
         subprocess.call('pkill -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
         # time.sleep(5)
         subprocess.call('pkill -9 -f tcpdump', shell=True, stderr=open(os.devnull, 'wb'))
