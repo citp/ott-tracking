@@ -12,9 +12,15 @@ if [ ! -d "$DATA_DIR" ] || [ ! -d "$OUT_DIR" ] ; then
   exit 1
 fi
 
+
 PCAP_DIR="$1/pcaps"
 KEY_DIR="$1/keys"
+IMG_DIR="$1/screenshots"
 LOG_DIR="$1/logs"
+
+
+# Run OCR detection
+python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 4
 
 #TV_IP_ADDR=`grep "TV_IP_ADDR" $LOG_DIR/*.log | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
 TV_IP_ADDR=`grep "TV_IP_ADDR" $DATA_DIR/crawl_info-*.txt | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
