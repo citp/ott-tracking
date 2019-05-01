@@ -234,15 +234,16 @@ class OCRManager(object):
             self.q.put(channel)
         self.q.join()  
 
+    def processDirectory(self, result):
+        directoryFiles = os.listdir(self.screenshotDirectory)
+        channelList = []
+        for file in directoryFiles:
+            if channelList.count(file.split('-')[0]) == 0:
+                channelList.append(file.split('-')[0])
+        self.processChannels(channelList, result)
 
 if __name__ == '__main__':
     channelList = ['12', '8679']
     OCRResult = {}
     OCR = OCRManager("service_key.json", "screenshots/", 4)
-    OCR.processChannels(channelList, OCRResult)
-    print(OCRResult['12'])
-    print()
-    print()
-    print()
-
-    print(OCRResult['8679'])
+    OCR.processDirectory(OCRResult)
