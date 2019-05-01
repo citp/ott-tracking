@@ -25,7 +25,7 @@ def main():
         print 'Enter the IP address of the Fire Stick in the argument.'
         return
 
-    rc = AmazonRemoteControl(fire_stick_ip)
+    # rc = AmazonRemoteControl(fire_stick_ip)
 
     subprocess.call(['mkdir', '-p', 'apk_cache'])
 
@@ -39,12 +39,12 @@ def main():
             apk_path, apk_id = line.split('=')
             base_apk_dict[apk_id] = apk_path
 
-    # Remove any channels not in base
-    cur_apk_dict = rc.get_installed_channels(check_all_channels=True)
-    for apk_id in cur_apk_dict:
-        if apk_id not in base_apk_dict:
-            print 'Uninstalling', apk_id
-            rc.uninstall_channel(apk_id)
+    # # Remove any channels not in base
+    # cur_apk_dict = rc.get_installed_channels(check_all_channels=True)
+    # for apk_id in cur_apk_dict:
+    #     if apk_id not in base_apk_dict:
+    #         print 'Uninstalling', apk_id
+    #         rc.uninstall_channel(apk_id)
 
     print 'Waiting for diffs.'
 
