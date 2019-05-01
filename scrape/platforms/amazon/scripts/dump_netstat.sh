@@ -68,7 +68,7 @@ def dump_netstat(fp):
     # Queries netstat
     cmd = 'adb shell netstat -peanutW'
     pobj = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
-    netstat_output = pobj.communicate()[0].decode("utf-8")
+    netstat_output = pobj.communicate()[0].decode("utf-8").splitlines()
     ts = time.time()
 
     # Write to file
@@ -134,4 +134,5 @@ def dump_channel_user_ids(fp):
 
 if __name__ == '__main__':
     main(sys.argv[1])
+
 
