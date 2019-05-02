@@ -10,10 +10,8 @@ def process_wave_files(wave_dir):
     for wave_path in glob(wave_dir + "/audio/*.wav"):
         wave_name = basename(wave_path)
         # print("Will process", wave_path)
-        if "-" in wave_name:
-            wave_name = wave_name.split("-")[0]
-        _ch_name = wave_name.rsplit(".", 1)[0]
-
+        _ch_name = wave_name.rsplit("-", 1)[0]
+        # print(_ch_name, wave_path)
         results[_ch_name] = audio_recorder.audio_played_second(wave_path, 5)
 
     for _ch_name in sorted(results.keys()):
