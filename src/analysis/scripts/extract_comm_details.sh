@@ -19,6 +19,10 @@ IMG_DIR="$1/screenshots"
 LOG_DIR="$1/logs"
 
 
+# Create video from the screenshots
+./make_video.sh $DATA_DIR
+exit 0
+
 # Run OCR detection
 python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
 
