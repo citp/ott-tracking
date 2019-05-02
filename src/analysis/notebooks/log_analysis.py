@@ -16,6 +16,7 @@ from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
 from collections import defaultdict
+from nb_utils import read_channel_details_df
 
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
@@ -415,6 +416,7 @@ def load_dns_data_from_pcap_csvs(crawl_data_dir):
         tmp_df['channel_id'] = channel_id
         dns_df = dns_df.append(tmp_df)
     replace_in_column_names(dns_df, ".", "_")
+    dns_df.rename(columns={'frame_time_epoch': 'time'}, inplace=True)
     return dns_df, get_ip_domain_mapping_from_dns_df(dns_df)
 
 
@@ -455,11 +457,13 @@ def add_hostname_col_by_dns(df, ip_2_domains, ip_col_name):
 
 # Load all (All HTTP data)
 def get_http1_df(crawl_data_dir):
-    post_process_dir = join(crawl_data_dir, 'post-process')
     requests = []
     responses = []
     multiple_msg_cnt = 0
+    post_process_dir = join(crawl_data_dir, 'post-process')
     dns_df, ip_2_domains = load_dns_data_from_pcap_csvs(crawl_data_dir)
+    channel_df = read_channel_details_df()
+    # print("Num. of channel details", len(channel_df))
     tv_ip = get_tv_ip_addr(crawl_data_dir)
 
     for json_path in glob(join(post_process_dir, "*http.json")):
@@ -495,17 +499,24 @@ def get_http1_df(crawl_data_dir):
 
     replace_in_column_names(req_df, "http_", "")
     replace_in_column_names(resp_df, "http_", "")
+    replace_in_column_names(resp_df, "response_", "")
 
     req_df["http2"] = False
     resp_df["http2"] = False
 
+    req_df["http2_type"] = ""
+
     add_hostname_col_by_dns(req_df, ip_2_domains, "ip_dst")
     add_hostname_col_by_dns(resp_df, ip_2_domains, "ip_src")
+    add_channel_details(req_df, channel_df)
+    add_channel_details(resp_df, channel_df)
 
     req_df.rename(columns={'file_data': 'post_data',
                            'request_full_uri': 'url',
-                           'request_method': 'method'}, inplace=True)
-    resp_df.rename(columns={'file_data': 'response_body'}, inplace=True)
+                           'request_method': 'method',
+                            'frame_time_epoch': 'time'}, inplace=True)
+    resp_df.rename(columns={'file_data': 'body',
+                            'frame_time_epoch': 'time'}, inplace=True)
 
     # raw data sent as POST or TCP payload is extracted as "data" column
     # in tshark.
@@ -530,16 +541,16 @@ def get_http1_df(crawl_data_dir):
 
     req_df = replace_nan(req_df)
     resp_df = replace_nan(resp_df)
-
     req_df["url"] = req_df.apply(
         lambda x: x['url'] if x['url'] else x['request_uri'], axis=1)
-
-    assert not len(req_df[(req_df.url == "") &
-                          (req_df.request_uri != "")])
-    return (req_df.drop(["eth_src", "request_uri", "data"], axis=1),
-            resp_df.drop(["eth_src",], axis=1),
+    return (req_df.drop(["eth_src", "request_uri", "data", "ip_src", "tcp_srcport"], axis=1),
+            resp_df.drop(["eth_src", "ip_dst", "tcp_dstport"], axis=1),
             dns_df)
 
+def add_channel_details(df, channel_df):
+    df['channel_name'] = df['channel_id'].map(lambda x: channel_df.loc[x]['channel_name'])
+    df['rank'] = df['channel_id'].map(lambda x: channel_df.loc[x]['rank'])
+    df['category'] = df['channel_id'].map(lambda x: channel_df.loc[x]['category'])
 
 def get_http_df(crawl_data_dir):
     print("Will load HTTP dataframe for", crawl_data_dir)
@@ -565,6 +576,8 @@ def get_http2_df(crawl_data_dir):
     post_process_dir = join(crawl_data_dir, 'post-process')
     tv_ip = get_tv_ip_addr(crawl_data_dir)
     dns_df, ip_2_domains = load_dns_data_from_pcap_csvs(crawl_data_dir)
+    channel_df = read_channel_details_df()
+    # print("Num. of channel details", len(channel_df))
 
     for json_path in glob(join(post_process_dir, "*http2.json")):
         # print(json_path)
@@ -582,7 +595,7 @@ def get_http2_df(crawl_data_dir):
                 if field == "http2_data_data":
                     # print(tcp_payload['_source']['layers'])
                     if tcp_payload['_source']['layers']["ip.dst"] == tv_ip:
-                        # skip response body
+                        # skip response bodies
                         continue
                     if isinstance(value, list):
                         value = ":".join(value)
@@ -630,7 +643,7 @@ def get_http2_df(crawl_data_dir):
             else:  # request
                 # payload["host"] = headers["authority"]
                 payload["user_agent"] = headers["http.useragent"]
-                payload["request_full_uri"] = "%s://%s%s" % (
+                payload["url"] = "%s://%s%s" % (
                     headers["scheme"], headers["authority"], headers["path"])
                 payload["method"] = headers["method"]
                 payload["cookie"] = headers.get("cookie", "")
@@ -643,18 +656,24 @@ def get_http2_df(crawl_data_dir):
 
     add_hostname_col_by_dns(req_df, ip_2_domains, "ip_dst")
     add_hostname_col_by_dns(resp_df, ip_2_domains, "ip_src")
+    add_channel_details(req_df, channel_df)
+    add_channel_details(resp_df, channel_df)
 
     req_df["http2"] = True
     resp_df["http2"] = True
 
-    req_df.rename(columns={'http2_data_data': 'post_data'}, inplace=True)
-    resp_df.rename(columns={'http2_data_data': 'response_body'}, inplace=True)
+    req_df.rename(columns={'http2_data_data': 'post_data',
+                           'frame_time_epoch': 'time'}, inplace=True)
+    resp_df.rename(columns={'http2_data_data': 'response_body',
+                            'frame_time_epoch': 'time'}, inplace=True)
 
     replace_in_column_names(req_df, "http_", "")
     replace_in_column_names(resp_df, "http_", "")
+    replace_in_column_names(req_df, "request_", "")
+    replace_in_column_names(resp_df, "response_", "")
 
-    HTTP2_REQ_DROP = ["http2_header_name", "http2_header_value", "eth_src"]
-    HTTP2_RESP_DROP = ["http2_header_name", "http2_header_value", "eth_src"]
+    HTTP2_REQ_DROP = ["http2_header_name", "http2_header_value", "eth_src", "ip_src", "tcp_srcport"]
+    HTTP2_RESP_DROP = ["http2_header_name", "http2_header_value", "eth_src", "ip_dst", "tcp_dstport"]
     print("Decode errors", decode_errors)
     print("channels", channels)
     return (req_df.drop(HTTP2_REQ_DROP, axis=1).replace(np.nan, '', regex=True),
