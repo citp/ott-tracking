@@ -20,7 +20,7 @@ LOG_DIR="$1/logs"
 
 
 # Run OCR detection
-python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 4
+python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
 
 #TV_IP_ADDR=`grep "TV_IP_ADDR" $LOG_DIR/*.log | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
 TV_IP_ADDR=`grep "TV_IP_ADDR" $DATA_DIR/crawl_info-*.txt | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
