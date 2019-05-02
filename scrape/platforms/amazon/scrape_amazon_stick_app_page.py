@@ -48,9 +48,12 @@ def main():
 
     for (cat, curl_cmd) in CURL_CMDS:
 
-        counter = 10
+        counter = 70
+        page_id = 0
 
-        for page_id in range(1, 2):
+        while counter > 0:
+
+            page_id += 1
 
             print 'Scraping', cat, 'page', page_id
 
