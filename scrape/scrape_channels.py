@@ -142,19 +142,23 @@ def rsync(date_prefix):
 
 def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
     # Write logs
-    if output_file_desc is not None:
-        log('Writing logs for channel ', channel_id)
-        copy_log_file(channel_id, output_file_desc, False)
-
-    if scrape_config.RSYNC_EN:
-        rsync()
+    try:
         if output_file_desc is not None:
-            copy_log_file(channel_id, output_file_desc, True)
+            log('Writing logs for channel ', channel_id)
+            copy_log_file(channel_id, output_file_desc, False)
 
-    # Write result to file
-    log('Writing result of crawl to ', channel_res_file)
-    with open(channel_res_file, "w") as tfile:
-        print(str(scrape_success), file=tfile)
+        if scrape_config.RSYNC_EN:
+            rsync()
+            if output_file_desc is not None:
+                copy_log_file(channel_id, output_file_desc, True)
+
+        # Write result to file
+        log('Writing result of crawl to ', channel_res_file)
+        with open(channel_res_file, "w") as tfile:
+            print(str(scrape_success), file=tfile)
+    except:
+        log('Error copying logs and writing result for channel % ', channel_id)
+        log(traceback.format_exc())
 
 
 def main(channel_list=None):
