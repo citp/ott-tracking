@@ -215,7 +215,6 @@ def main(channel_list=None):
             if channel['id'] in scraped_channel_ids:
                 log('Skipping', channel['id'])
                 continue
-            channel_state = CrawlState.STARTING
 
             channel_res_file  = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                      str(channel['id'])) + ".txt"
@@ -223,34 +222,36 @@ def main(channel_list=None):
                 log('Skipping', channel['id'], ' due to:', channel_res_file)
                 continue
 
-            log('Scraping', channel['_category'], '-', channel['id'])
+            pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix)
 
-            #if channel['id'] not in repeat:
-            #    continue
-            try:
-                scrape_success = False
-                if scrape_config.THREADED_SCRAPE:
-                    que = queue.Queue()
-                    t = PropagatingThread(target=lambda q, arg1, arg2: q.put(automatic_scrape(arg1, arg2)),
-                                         args=(que, channel['id'], date_prefix,))
+@timeout(scrape_config.SCRAPE_TO)
+def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
+    log('Scraping', channel['_category'], '-', channel['id'])
+    channel_state = CrawlState.STARTING
+    try:
+        scrape_success = False
+        if scrape_config.THREADED_SCRAPE:
+            que = queue.Queue()
+            t = PropagatingThread(target=lambda q, arg1, arg2: q.put(automatic_scrape(arg1, arg2)),
+                                  args=(que, channel['id'], date_prefix,))
 
-                    t.start()
-                    t.join(timeout=scrape_config.SCRAPE_TO)
-                    channel_state = que.get()
-                else:
-                    channel_state = automatic_scrape(channel['id'], date_prefix)
-                log("Crawl result: " + str(channel_state))
-                if channel_state == channel_state.TERMINATED:
-                    scrape_success = True
-                if scrape_success:
-                    log('Scraping of channel %s successful!' % str(channel['id']))
-                else:
-                    log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
-            except Exception as e:
-                log('Crawl crashed for channel:', str(channel['id']))
-                log(traceback.format_exc())
-            finally:
-                write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
+            t.start()
+            t.join(timeout=scrape_config.SCRAPE_TO)
+            channel_state = que.get()
+        else:
+            channel_state = automatic_scrape(channel['id'], date_prefix)
+        log("Crawl result: " + str(channel_state))
+        if channel_state == channel_state.TERMINATED:
+            scrape_success = True
+        if scrape_success:
+            log('Scraping of channel %s successful!' % str(channel['id']))
+        else:
+            log('Error!! Scraping of channel %s unsuccessful!!!' % str(channel['id']))
+    except Exception as e:
+        log('Crawl crashed for channel:', str(channel['id']))
+        log(traceback.format_exc())
+    finally:
+        write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
 
 def log(*args):
 
@@ -430,6 +431,23 @@ def stop_screenshot():
         if SCREENSHOT_PROCESS is not None:
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
             os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
+
+NETSTAT_PROCESS = None
+def start_netstat(data_dir):
+    if scrape_config.PLAT == "AMAZON":
+        global NETSTAT_PROCESS
+        cmd = join(scrape_config.PLATFORM_DIR, 'scripts') + '/dump_netstat.sh'
+        log('Starting netstat process with %s  %s' % (cmd, data_dir))
+        NETSTAT_PROCESS = subprocess.Popen(cmd + " " + data_dir, shell=True, preexec_fn=os.setsid)
+
+def stop_netstat():
+    if scrape_config.PLAT == "AMAZON":
+        global NETSTAT_PROCESS
+        if NETSTAT_PROCESS is not None:
+            log('Terminating netstat process with PID %s ' % str(NETSTAT_PROCESS))
+            os.killpg(os.getpgid(NETSTAT_PROCESS.pid), signal.SIGTERM)
+        sleep(1)
+        subprocess.call('pkill -2 -f dump_netstat.sh', shell=True, stderr=open(os.devnull, 'wb'))
 
 
 def setup_channel(channel_id, date_prefix):
@@ -654,7 +672,6 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
         traceback.print_exc()
     return err_occurred
 
-@timeout(scrape_config.SCRAPE_TO)
 def automatic_scrape(channel_id, date_prefix):
     try:
         channel_state = CrawlState.PREINSTALL
@@ -693,6 +710,7 @@ def flushall_iptables():
 if __name__ == '__main__':
     start_screenshot()
     flushall_iptables()
+    start_netstat(scrape_config.DATA_DIR)
     if len(sys.argv) > 1:
         if isfile(os.path.abspath(sys.argv[1])):
             main(sys.argv[1])
@@ -705,6 +723,7 @@ if __name__ == '__main__':
         main()
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
+    stop_netstat()
     stop_screenshot()
     sys.exit(1)
 

@@ -7,6 +7,7 @@ import imutils
 import copy
 import cv2
 import threading
+import json
 from queue import Queue
 from google_auth_oauthlib import flow
 from google.cloud import vision
@@ -100,18 +101,19 @@ class OCRHelper(object):
         response = self.cloudVisionClient.text_detection(image=image)
         texts = response.text_annotations
 
-        self.screenshot["textBody"] = texts[0].description
-        for vertex in texts[0].bounding_poly.vertices:
-            self.screenshot["textBodyBoundsX"].append(int(vertex.x))
-            self.screenshot["textBodyBoundsY"].append(int(vertex.y))
+        if len(texts) > 0:
+            self.screenshot["textBody"] = texts[0].description
+            for vertex in texts[0].bounding_poly.vertices:
+                self.screenshot["textBodyBoundsX"].append(int(vertex.x))
+                self.screenshot["textBodyBoundsY"].append(int(vertex.y))
 
-        for text in texts[1:]:
-            self.screenshot["words"].append(str(text.description))
-            self.screenshot["wordBoundsX"][text.description] = []
-            self.screenshot["wordBoundsY"][text.description] = []
-            for vertex in text.bounding_poly.vertices:
-                self.screenshot["wordBoundsX"][text.description].append(int(vertex.x))
-                self.screenshot["wordBoundsY"][text.description].append(int(vertex.y))
+            for text in texts[1:]:
+                self.screenshot["words"].append(str(text.description))
+                self.screenshot["wordBoundsX"][text.description] = []
+                self.screenshot["wordBoundsY"][text.description] = []
+                for vertex in text.bounding_poly.vertices:
+                    self.screenshot["wordBoundsX"][text.description].append(int(vertex.x))
+                    self.screenshot["wordBoundsY"][text.description].append(int(vertex.y))
 
 
     def processImage(self, screenshotDirectory, previousScreenshotName, currentScreenshotName):
@@ -185,8 +187,12 @@ class OCRHelper(object):
             self.customPrinterDict(item, 1)
             print("\n")
 
+    def writeJson(self, outputDirectory, channelName):
+        outputFile = outputDirectory + '/' + channelName + '.json'
+        with open(outputFile, 'w') as outFile:  
+            json.dump(self.screenshotList, outFile)
 
-    def processChannel(self, screenshotDirectory, channelName):
+    def processChannel(self, screenshotDirectory, outputDirectory, channelName):
         directoryFiles = os.listdir(screenshotDirectory)
         channelList = []
         for file in directoryFiles:
@@ -202,12 +208,26 @@ class OCRHelper(object):
                 self.screenshot["timestamp"] = currentScreenshot.split('-', 1)[-1].split('.')[0]
                 self.processImage(screenshotDirectory, previousScreenshot, currentScreenshot)    
                 self.screenshotList.append(copy.deepcopy(self.screenshot))
+                self.screenshot =  {    'timestamp' : "",
+                        'customLabels' : [],
+                        'labels' : [],
+                        'labelScores': {},
+                        'textBody' : "",
+                        'textBodyBoundsX' : [],
+                        'textBodyBoundsY' : [],
+                        'words' : [],
+                        'wordBoundsX' : {},
+                        'wordBoundsY' : {},
+                        'SSIM' : ""}
+        self.writeJson(outputDirectory, channelName)
+        self.printChannel()
         return self.screenshotList
 
 class OCRManager(object):
-    def __init__(self, keyFile, screenshotDirectory, threadCount):
+    def __init__(self, keyFile, screenshotDirectory, outputDirectory, threadCount):
         self.keyFile = keyFile
         self.screenshotDirectory = screenshotDirectory
+        self.outputDirectory = outputDirectory
         self.threadCount = threadCount
 
         self.q = Queue()
@@ -219,7 +239,7 @@ class OCRManager(object):
             channelName = self.q.get()
 
             OCRWorker = OCRHelper(self.keyFile)
-            self.result[channelName] = OCRWorker.processChannel(self.screenshotDirectory, channelName)
+            self.result[channelName] = OCRWorker.processChannel(self.screenshotDirectory, self.outputDirectory, channelName)
 
             self.q.task_done()
 
@@ -234,15 +254,32 @@ class OCRManager(object):
             self.q.put(channel)
         self.q.join()  
 
+    def processDirectory(self, result):
+        directoryFiles = os.listdir(self.screenshotDirectory)
+        channelList = []
+        for file in directoryFiles:
+            if channelList.count(file.split('-')[0]) == 0:
+                channelList.append(file.split('-')[0])
+        self.processChannels(channelList, result)
 
 if __name__ == '__main__':
-    channelList = ['12', '8679']
-    OCRResult = {}
-    OCR = OCRManager("service_key.json", "screenshots/", 4)
-    OCR.processChannels(channelList, OCRResult)
-    print(OCRResult['12'])
-    print()
-    print()
-    print()
+    CLOUD_VISION_API_KEY = "service_key.json"
 
-    print(OCRResult['8679'])
+    parser = argparse.ArgumentParser(
+        description="Gets the text in all the image files in the given"
+        " directory using the Google Cloud Vision API")
+    parser.add_argument('image_dir', help='Folder containing the images')
+    parser.add_argument(
+        'output_dir',
+        help='Name of the output folder where the results will be dumped')
+    parser.add_argument('threads', help='Number of threads to use')
+
+    args = parser.parse_args()
+
+    img_dir = args.image_dir
+    threads = int(args.threads)
+    output_dir = args.output_dir   
+    
+    OCRResult = {}
+    OCR = OCRManager(CLOUD_VISION_API_KEY, img_dir, output_dir, threads)
+    OCR.processDirectory(OCRResult)

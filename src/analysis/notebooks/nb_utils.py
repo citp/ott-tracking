@@ -1,8 +1,16 @@
 import json
-import urllib2
+try:
+    from urllib2 import urlopen
+except ImportError:
+    from urllib.request import urlopen
+
 import pandas as pd
 import ipaddress
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
 from tld import get_fld
 from glob import glob
 from os.path import join, sep
@@ -47,13 +55,63 @@ def read_pcap_fields_from_csvs(csv_dir, suffix=".csv"):
         for pcap_fields in read_extracted_fields(csv_path):
             yield [channel_id, start_ts] + pcap_fields
 
-# Download and parse Roku channel json - From Danny's notebook
 
+# Download and parse Roku channel json - From Danny's notebook
 CHANNEL_DATA_URL = 'https://iot-inspector.princeton.edu/pcaps/roku-channel-surfer/channel-list.txt'
+
 
 def download_roku_channel_details(channel_data_url=CHANNEL_DATA_URL):
     channel_df = []
-    for channel in urllib2.urlopen(CHANNEL_DATA_URL).read().split('\n'):
+    for channel in urlopen(CHANNEL_DATA_URL).read().split('\n'):
         if channel:
             channel_df.append(json.loads(channel))
     return pd.DataFrame(channel_df).set_index('id').sort_values("rankByWatched")
+
+
+def read_channel_details_df():
+    channel_df = []
+    ROKU_CATEGORY_DIR = "../../../scrape/platforms/roku/channel_lists/categories/"
+    for category_txt in glob(join(ROKU_CATEGORY_DIR, "*.txt")):
+        for channel_json_str in open(category_txt):
+            channel_df.append(json.loads(channel_json_str))
+    ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
+    for channel_json_str in open(ROKU_KIDS_AND_TV_CHANNELS):
+        channel_df.append(json.loads(channel_json_str))
+    roku_df = pd.DataFrame(channel_df)
+    roku_df.rename(columns={'id': 'channel_id',
+                            'rankByWatched': 'rank',
+                            '_category': 'category',
+                            'name': 'channel_name'}, inplace=True)
+    roku_df['channel_id'] = roku_df['channel_id'].astype(str)
+
+    roku_df = roku_df.drop_duplicates('channel_id').set_index('channel_id').sort_values(["category", "rank"])
+    # print(roku_df.columns)
+    roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
+    roku_df['platform'] = 'roku'
+    AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
+    AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
+    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/100-channel_name.csv"
+    amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV)
+    amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV))
+    tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
+    # print(amazon_df.columns)
+    # print(tmp_df.columns)
+    amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1))
+    # print(amazon_df.columns)
+    amazon_df.rename(columns={'amazon_ranking': 'rank',
+                              'amazon_category': 'category',
+                              'apk_id': 'channel_id',
+                              'product_name': 'channel_name'}, inplace=True)
+    amazon_df['channel_id'] = amazon_df['channel_id'].astype(str)
+    # print(amazon_df.columns)
+    amazon_df = amazon_df.drop_duplicates('channel_id').set_index('channel_id').sort_values(["category", "rank"])
+    amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
+                    'overlap_token_count', 'developer_name'], inplace=True, axis=1)
+    amazon_df['platform'] = 'amazon'
+    # print(amazon_df.columns)
+    return roku_df.append(amazon_df)
+
+
+if __name__ == '__main__':
+    df = read_channel_details_df()
+    print(len(df))
