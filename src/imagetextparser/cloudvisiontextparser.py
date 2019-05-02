@@ -188,7 +188,7 @@ class OCRHelper(object):
             print("\n")
 
     def writeJson(self, outputDirectory, channelName):
-        outputFile = outputDirectory + '/' + channelName + '.ocr.json'
+        outputFile = outputDirectory + '/' + channelName + '.json'
         with open(outputFile, 'w') as outFile:  
             json.dump(self.screenshotList, outFile)
 
@@ -208,7 +208,19 @@ class OCRHelper(object):
                 self.screenshot["timestamp"] = currentScreenshot.split('-', 1)[-1].split('.')[0]
                 self.processImage(screenshotDirectory, previousScreenshot, currentScreenshot)    
                 self.screenshotList.append(copy.deepcopy(self.screenshot))
+                self.screenshot =  {    'timestamp' : "",
+                        'customLabels' : [],
+                        'labels' : [],
+                        'labelScores': {},
+                        'textBody' : "",
+                        'textBodyBoundsX' : [],
+                        'textBodyBoundsY' : [],
+                        'words' : [],
+                        'wordBoundsX' : {},
+                        'wordBoundsY' : {},
+                        'SSIM' : ""}
         self.writeJson(outputDirectory, channelName)
+        self.printChannel()
         return self.screenshotList
 
 class OCRManager(object):
@@ -250,11 +262,8 @@ class OCRManager(object):
                 channelList.append(file.split('-')[0])
         self.processChannels(channelList, result)
 
-
 if __name__ == '__main__':
     CLOUD_VISION_API_KEY = "service_key.json"
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    api_key_path = os.path.join(script_dir, CLOUD_VISION_API_KEY)
 
     parser = argparse.ArgumentParser(
         description="Gets the text in all the image files in the given"
@@ -272,5 +281,5 @@ if __name__ == '__main__':
     output_dir = args.output_dir   
     
     OCRResult = {}
-    OCR = OCRManager(api_key_path, img_dir, output_dir, threads)
+    OCR = OCRManager(CLOUD_VISION_API_KEY, img_dir, output_dir, threads)
     OCR.processDirectory(OCRResult)
