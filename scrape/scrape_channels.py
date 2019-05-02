@@ -459,6 +459,7 @@ def setup_channel(channel_id, date_prefix):
 
         surfer = ChannelSurfer(scrape_config.PLAT,
                                scrape_config.TV_IP_ADDR,
+                               scrape_config.TV_SERIAL_NO,
                                channel_id, str(scrape_config.DATA_DIR),
                                str(scrape_config.LOG_PREFIX),
                                str(scrape_config.PCAP_PREFIX), date_prefix,

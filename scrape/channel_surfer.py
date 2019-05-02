@@ -44,15 +44,15 @@ class SurferAborted(Exception):
 
 class ChannelSurfer(object):
 
-    def __init__(self, platform, tv_ip, channel_id, data_dir, log_prefix ,pcap_prefix,
-                 date_prefix, screenshot_folder):
+    def __init__(self, platform, tv_ip, tv_serial_no, channel_id, data_dir,
+                 log_prefix ,pcap_prefix, date_prefix, screenshot_folder):
 
         self.pcap_filename = None
         self.platform = platform
         if self.platform == "ROKU":
             self.rrc = RokuRemoteControl(tv_ip)
         elif self.platform == "AMAZON":
-            self.rrc = AmazonRemoteControl(tv_ip)
+            self.rrc = AmazonRemoteControl(tv_ip, tv_serial_no)
         self.tv_ip = tv_ip
         self.channel_id = str(channel_id)
         self.data_dir = data_dir + "/"

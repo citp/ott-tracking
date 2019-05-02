@@ -28,6 +28,7 @@ SLEEP_TIMER = 5
 FWD_SLEEP_TO = 3 # Used in Smart Crawl to stop Fast Forwarding after few seconds
 DATA_DIR = os.path.abspath(os.getenv("DATA_DIR"))
 PLAT = os.getenv("PLATFORM")
+TV_SERIAL_NO = os.getenv("TV_SERIAL_NO")
 PLATFORM_DIR = os.path.abspath(os.getenv("PLATFORM_DIR"))
 PCAP_PREFIX = "pcaps/"
 DUMP_PREFIX = "mitmdumps/"
