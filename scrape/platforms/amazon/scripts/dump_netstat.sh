@@ -65,8 +65,18 @@ def dump_netstat(fp):
     where 'netstat_output' is simply the result of adb shell netstat -peanutW
 
     """
-    # Queries netstat
-    cmd = 'adb shell netstat -peanutW'
+    # netstat on some Fire TVs does not display process/user IDs
+    # We install netstat3 on Fire TVs we want to test:
+    #####################################
+    # netstat3 Installation instructions:
+    #####################################
+    # Download netstat3 binary from: https://github.com/LipiLee/netstat/raw/master/netstat3
+    # chmod +x netstat3
+    # adb push netstat3 /data/local/tmp
+    # Test: adb shell /data/local/tmp/netstat3
+
+    # Run netstat3
+    cmd = 'adb shell /data/local/tmp/netstat3'
     pobj = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
     netstat_output = pobj.communicate()[0].decode("utf-8").splitlines()
     ts = time.time()
