@@ -228,8 +228,10 @@ def main(channel_list=None):
                 continue
 
             pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix)
-    email_msg = "Crawl %s-%s finished." % (scrape_config.PLAT, date_prefix)
-    send_alert_email(email_msg)
+
+    if scrape_config.SEND_EMAIL_AFTER_CRAWL:
+        email_msg = "Crawl %s-%s finished." % (scrape_config.PLAT, date_prefix)
+        send_alert_email(email_msg)
 
 @timeout(scrape_config.SCRAPE_TO)
 def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
