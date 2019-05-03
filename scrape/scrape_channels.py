@@ -223,15 +223,20 @@ def main(channel_list=None):
 
             channel_res_file  = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                      str(channel['id'])) + ".txt"
-            if os.path.isfile(channel_res_file) :
+            if os.path.isfile(channel_res_file):
                 log('Skipping', channel['id'], ' due to:', channel_res_file)
                 continue
 
             pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix)
 
     if scrape_config.SEND_EMAIL_AFTER_CRAWL:
-        email_msg = "Crawl %s-%s finished." % (scrape_config.PLAT, date_prefix)
+        email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
+        if scrape_config.MOVE_TO_NFS:
+            email_msg += "Crawl results will be moved to NFS."
+            subprocess.call('tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
+                            shell=True)
         send_alert_email(email_msg)
+
 
 @timeout(scrape_config.SCRAPE_TO)
 def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
