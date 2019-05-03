@@ -278,21 +278,21 @@ def configure(updated):
         ssl_strip_en = bool(ctx.options.ssl_strip)
         tls_intercept_en = bool(ctx.options.tls_intercept)
 
-        base_filename = '{}-{}'.format(
-            channel_id,
-            int(time.time())
-        )
+        #base_filename = '{}-{}'.format(
+        #    channel_id,
+        #    int(time.time())
+        #)
 
         strip_log_dir = os.path.join(str(data_dir), "mitmlog/")
         if not os.path.isdir(strip_log_dir):
             mitmproxy.ctx.log("Error!!! Strip folder %s not found!" % strip_log_dir)
         else:
-            strip_log_file = os.path.join(strip_log_dir, (str(base_filename) + '.strip'))
+            strip_log_file = os.path.join(strip_log_dir, (str(channel_id) + '.strip'))
 
-        mitmableFileName = os.path.join(str(data_dir), "mitmlog/") + str(base_filename) + '.mitmable'
+        mitmableFileName = os.path.join(str(data_dir), "mitmlog/") + str(channel_id) + '.mitmable'
         unMitmableFileNameIn = join(UNMITMABLE_HOST_DIR, str(channel_id) + '.unmitmable')
         unMitmableFileNameOut = os.path.join(str(data_dir), "mitmlog/") + str(channel_id) + '.unmitmable'
-        # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(base_filename) + '.unmitmable'
+        # unMitmableFileName = str(data_dir) + "/mitmlog/" + str(channel_id) + '.unmitmable'
         tls_strategy = ConservativeStrategy(unMitmableFileNameIn)
 
         mitmproxy.ctx.log('Successfully loaded smart tls script!')
