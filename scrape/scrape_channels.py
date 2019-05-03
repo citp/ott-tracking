@@ -25,6 +25,7 @@ import scrape_config
 import glob
 import signal
 
+from smtplib import SMTP
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 from dns_sniffer import dns_sniffer_call
@@ -227,6 +228,8 @@ def main(channel_list=None):
                 continue
 
             pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix)
+    email_msg = "Crawl %s-%s finished." % (scrape_config.PLAT, date_prefix)
+    send_alert_email(email_msg)
 
 @timeout(scrape_config.SCRAPE_TO)
 def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
@@ -711,6 +714,22 @@ def automatic_scrape(channel_id, date_prefix):
 def flushall_iptables():
     log("Flushing all iptables")
     subprocess.call('./scripts/iptables_flush_all.sh', shell=True)
+
+
+def send_alert_email(msg):
+    fromaddr = 'abbbbbba23@gmail.com'
+    toaddrs = ['hoomanm@princeton.edu', 'gunes@princeton.edu', 'yuxingh@cs.princeton.edu']
+    msg = 'Subject: %s\n\n%s' % ("[Crawl finished]", msg)
+    # Credentials (if needed)
+    username = 'abbbbbba23@gmail.com'
+    password = 'Abbbbbba1'  # TODO change it
+
+    # The actual mail send
+    server = SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(username, password)
+    server.sendmail(fromaddr, toaddrs, msg)
+    server.quit()
 
 if __name__ == '__main__':
     start_screenshot()
