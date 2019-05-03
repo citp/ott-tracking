@@ -23,7 +23,7 @@ LOG_DIR="$1/logs"
 ./make_video.sh $DATA_DIR
 
 # Run audio playback detection
-python3 ../../../scrape/detect_audio.py $DATA_DIR
+python3 ../../../scrape/detect_audio.py $DATA_DIR --dump
 
 # Run OCR detection
 python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8

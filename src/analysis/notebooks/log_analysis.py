@@ -16,7 +16,7 @@ from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
 from collections import defaultdict
-from nb_utils import read_channel_details_df
+from nb_utils import read_channel_details_df, get_crawl_data_path
 
 
 #PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
@@ -683,3 +683,16 @@ def get_http2_df(crawl_data_dir):
     return (req_df.drop(HTTP2_REQ_DROP, axis=1).replace(np.nan, '', regex=True),
             resp_df.drop(HTTP2_RESP_DROP, axis=1).replace(np.nan, '', regex=True),
             dns_df)
+
+
+def get_playback_detection_results(crawl_name):
+    playback_detected = dict()
+    craw_dir = get_crawl_data_path(crawl_name)
+    for log_file in glob(join(craw_dir, "logs", "*.log")):
+        channel_id = basename(log_file).rsplit("-", 1)[0]
+        for l in open(log_file):
+            if "SMART_CRAWLER: Playback detected on channel" in l:
+                time_str = l.split('[')[1].split(']')[0]
+                timestamp = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+                playback_detected[channel_id] = timestamp
+    return playback_detected
