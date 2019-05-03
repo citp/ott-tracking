@@ -1,0 +1,87 @@
+amazon_ranking,apk_name,apk_id,amazon_category,product_id,product_name,overlap_token_count,developer_name
+0,babyfirst,com.amazon.rialto.cordova.webapp.webapp1d25b9c24ace4d98ad1f43e65345db35,education,B06XT9592R,BabyFirst,1,BabyFirst
+2,ted,com.ted.android.tv,education,B00QJ8DQZ8,TED TV,1,TED Conferences
+3,lds general conference,com.amazon.rialto.cordova.webapp.webappca79b1bc532647ccb0d32c16bf4d72d2,education,B00ZQQT5QI,LDS General Conference,3,Spriton Systems LLC
+4,greatcourses,com.tgc.greatcoursesplus,education,B014RWTCDW,The Great Courses Plus,0,The Teaching Company
+5,the bible project,com.thebibleproject.firetv,education,B07BZLSG3V,The Bible Project,3,The Bible Project
+7,beginning sound vocabulary,air.com.dezol.beginningsound.vocabulary,education,B0141L3HA8,Beginning Sound Vocabulary,3,Dezol Inc.
+8,quizzer8,com.demicapps.quizzer8,education,B078B8Y4SM,Quizzer8: Countries of the World,1,demic apps LLC
+0,ifood tv,com.future.ifoodtvAndroidTV,food,B00IVDON8S,iFood.tv,2,Future Today Inc
+1,baking by ifood tv,com.future.Baking,food,B00NMD0WB4,Baking By iFood.tv,4,Future Today Inc
+2,simply vegetarian,com.recipe.ifoodtvvegetarian,food,B00G245JOA,Simply Vegetarian,2,Future Today Inc
+3,bon app tit,com.maz,food,B07NPVF949,Bon Appétit,3,Cond%C3%A9 Nast Entertainment
+5,the cooking channel,com.amazon.rialto.cordova.webapp.webapp5c618a8e571247ffae0ff106b3ad0a47,food,B00ZRXIV24,The Cooking Channel,3,Lightcast.com
+6,foodtube,com.wns.jo.foodtube,food,B01MQTG19V,Jamie Oliver&#39;s Food Tube,0,jamie oliver ltd
+7,mexican recipes by fawesome tv,com.recipe.ifoodtvmexican,food,B00G23Y68G,Mexican Food,1,Future Today Inc
+8,low carb 360,com.future.lowcarb360,food,B00YDANCSK,Low Carb 360,3,Future Today Inc
+9,bestcooks,com.future.BestCooks,food,B00GJKMV9I,BestCooks,1,Future Today Inc
+0,nba,com.nbadigital.jumbo,health,B00HX2CYJS,NBA for Fire TV,1,NBA Digital
+1,nfl,com.gotv.nflgamecenter.us.lite,health,B01LXOU5PM,NFL,1,NFL.com
+2,daily burn,com.dailyburn.challenge,health,B00HAPXDWK,Daily Burn - Streaming Workouts,2,DailyBurn
+3,beachbody,com.beachbody.bodfiretv,health,B07D56RNQJ,Beachbody On Demand,1,Beachbody%2C LLC
+4,relaxing records,com.relax.my.record,health,B01LEFGMAQ,Relaxing Records,2,Polypack-uk Ltd
+5,bib yoga,com.amazon.rialto.cordova.webapp.webapp8dce82b0aefe46e3ac67dc00fce12092,health,B01IP5CM48,Yoga with Body in Balance,1,Two Way Media
+6,gaia,com.gaia.firetv,health,B01N9SQC83,Gaia for Fire TV: Conscious Yoga  Meditation  and Spirituality,1,Gaia
+7,daily workouts free,com.tinymission.dailyworkoutsfree,health,B00AKOB7CG,Daily Workouts - Exercise Fitness Routine Trainer,2,Daily Workout Apps%2C LLC
+8,yoga intl,com.maz.home449,health,B076X47BLK,Yoga International,1,Yoga International
+9,fitfusion,tv.vhx.fitfusion,health,B071RPTRQY,FitFusion by Jillian Michaels for Fire Stick or Fire TV,1,FITFUSION
+0,nickjr,com.nick.android.nickjr.tv,kids,B074PDDXF2,Nick Jr. for Fire TV,0,Nickelodeon
+1,watch videos,org.pbskids.video,kids,B009P8EMCK,PBS KIDS Video,0,PBS KIDS
+2,iheartradio family,com.iheartradio.family.tv,kids,B07NSD2PHR,iHeartRadio Family TV,2,iHeartMedia
+3,kids preschool nursery rhymes,com.amazon.android.kidspreschoolnurseryrhymes,kids,B075XQ6D8M,Kids Preschool Nursery Rhymes,4,USP Studios Pvt. Ltd.
+4,chuchu tv nursery rhymes,com.amazon.rialto.cordova.webapp.webappddccc2245c524d95bdeb7088fa5d7a1f,kids,B015SJRCN0,ChuChu TV Nursery Rhymes,4,ChuChu TV Studios
+5,kids first,com.amazon.android.kidsfirst,kids,B06XJCC3T3,Kids First,2,Looke Digital Pvt. Ltd.
+6,popcornflix kids,net.screenmedia.popcornflix.kids.firetv,kids,B07D9TVGN3,Popcornflix Kids,2,Screen Media Ventures%2C L.L.C.
+7,pok mon tv,com.pokemontv,kids,B00J43WTR6,Pokémon TV,3,The Pok%C3%A9mon Company International
+8,ameba tv,com.amazon.rialto.cordova.webapp.webapp64b835f44e8749e9bb0d866de3845e05,kids,B01017QXUM,Ameba TV,2,AmebaTV
+9,pocoyo kids tv,com.pocoyotv.tablet.zinkia,kids,B00GCBB8CA,Pocoyo Kids TV,3,Zinkia Entertainment S.A.
+2,tv ncaa march madness live,com.ncaa.mmlive.app.tv,lifestyle,B06XFJQSYW,NCAA March Madness Live for FireTV,4,Turner Sports Interactive%2C Inc
+3,nhl,com.nhl.gc1112.free,lifestyle,B075QSZ6G2,NHL,1,BAMTECH Media
+5,tv mirror,de.twokit.screen.mirror,lifestyle,B07P9VB2KL,TV Mirror - Screen Mirroring,2,2kit consulting
+0,curiositystream,com.curiosity.curiositystream,medical,B017C70WHE,CuriosityStream - Watch Documentaries Online (TV),1,CuriosityStream
+1,how it works,com.deepsgamestudios.howstuffworks,medical,B01MDRWZCK,How It Works,3,Deeps Game Studio
+2,magellantv,com.magellan.tv,medical,B07NLBG2RR,MagellanTV Documentaries,1,XiveTV
+3,doctv,com.viewmedica.doctv,medical,B07J5VYF96,docTV,1,Swarm Interactive
+4,diabetic living by fawesome tv,com.future.diabeticliving,medical,B00OYULB6Y,Diabetic Living by Fawesome.tv,5,Future Today Inc
+5,kids for amazon tv,com.amazon.rialto.webapp.A78cff7cc8ea3bdc64133311a5b95c4db4aaa766c,medical,B07GNCCQGV,Kids for Amazon TV,4,coloringkids
+6,eyechart,vision.irisoft.eyechart,medical,B07G5N3YNK,EyeChart,1,Irisoft
+7,fcp,org.fcp.safecare,medical,B07BH8V9NL,First CARE Provider,0,First CARE Provider
+8,york cardiology,com.amazon.rialto.cordova.webapp.webappf2ef4524131e47619089c0caecf6f33c,medical,B07PM92XFR,York Cardiology,2,See Otter
+9,lobby videos,com.speareducation.lobby,medical,B07PDBF7YG,Spear Lobby Videos,2,Spear Education%2C LLC
+0,tubi tv,com.tubitv.ott,movies,B075NTHVJW,Tubi - Watch Free Movies &amp; TV Shows,2,Tubi%2C Inc
+1,hbo go,com.HBO,movies,B0089BPEZS,HBO GO,2,HBO
+2,hbo now,com.hbo.hbonow,movies,B00XZFCVK4,HBO NOW: Stream TV &amp; Movies,2,HBO Digital Services%2C Inc.
+3,cbs,com.cbs.ott,movies,B017250D16,CBS Full Episodes and Live TV,1,CBS Interactive
+4,nbc,com.onemainstream.nbcunivers.android,movies,B018IOV40E,NBC,1,NBCUniversal Media%2C LLC
+5,pluto tv,tv.pluto.android,movies,B00KDSGIPK,Pluto TV - It&#39;s Free TV,2,Pluto TV
+6,the cw,com.cw.tv.android,movies,B01LXZLEMN,The CW on Fire TV,2,The CW Network
+7,fox now,com.fox.now,movies,B00H4IS2HO,FOX NOW: Watch TV Live &amp; On Demand,2,FOX Broadcasting Company
+8,starz,com.starz.starzplay.firetv,movies,B00YHZVOCW,STARZ,1,Starz Entertainment%2C LLC
+9,amc,com.amctve.amcfiretv,movies,B072M565NX,AMC,1,AMC Networks
+0,fox news,com.amazon.rialto.cordova.webapp.webapp855cc15add08457a8a1fe62312eab585,news,B00V8X7XTO,Fox News,2,Fox News Channel
+1,cnn go,com.cnn.mobile.fire.tv,news,B076TCPKJT,CNNgo,0,CNN Interactive Group%2C Inc.
+2,cbs sports,com.handmark.sportcaster,news,B00EOUGFNS,CBS Sports Stream &amp; Watch Live,2,CBS Interactive
+3,newsy,com.newsy,news,B00QSNFNIW,Newsy - Fire TV,1,Media Convergence Group%2C Inc.
+4,nbc news,com.zumobi.msnbc,news,B0055DL1G4,NBC News,2,NBC News Digital LLC
+5,cnbc tv,com.nbcuni.cnbc.tve,news,B072373XYG,CNBC - Fire TV,2,NBCUniversal Media%2C LLC
+6,abc news,com.abc.abcnews.firetv,news,B07DD3Z1VV,ABC News,2,ABC News
+7,cbs news,com.cbsnews.ott,news,B01MDKA8EH,CBS News - Fire TV,2,CBS Interactive
+8,bbcnews,bbc.mobile.news.ww,news,B00PC6AJS0,BBC News for Fire TV,0,BBC Worldwide Limited
+9,one america news network,com.herringnetwork.oannhd,news,B00QSGLPXG,One America News Network,4,Herring Networks
+0,amazon shopping,com.amazon.shoptv.firetv.client,shopping,B07237Z2XK,Amazon Shopping for Fire TV,2,Amazon.com
+1,qvc,com.qvc.firetv,shopping,B07HKT5BRM,QVC®,1,QVC%2C Inc.
+2,hsn shop by remote,com.amazon.rialto.cordova.webapp.webapp568ef8a389f24598942a65270ec7c607,shopping,B01992HK9S,HSN Shop By Remote,4,HSN
+3,evine,com.amazon.rialto.cordova.webapp.webappb656e5788fd9475ea16e928d2c034d68,shopping,B01ITP255A,Evine,1,Evine
+4,byrdie,com.wns.byrdie,shopping,B01N8QKKI1,Byrdie Channel,1,CMG%2C Clique Media Group%2C Inc.
+5,jtv live,com.jtv.jwellery_tv,shopping,B078RNSXM3,JTV Live,2,Jewelry Television
+6,create craft,com.isd.createandcraft,shopping,B01N33ARCC,Create &amp; Craft,2,Ideal Shopping Direct Limited
+7,amazon handmade,com.amazon.rialto.webapp.A6ed4efc199bebae4da0e5ec21e689439c4744ab8,shopping,B07G7VWLT1,Amazon Handmade,2,Amazon.com
+8,shop lc,com.vgl.lc,shopping,B01N6KNG3S,SHOP LC,2,SHOPLC
+9,gem shopping,com.gemshopping.gemshoppingnetwork,shopping,B01GUEBBC0,Gem Shopping Network,2,Gem Shopping Network Inc.
+0,espn,com.espn.gtv,sports,B00E81O27Y,ESPN for Fire TV,1,ESPN Inc.
+2,mlb tv,com.bamnetworks.mobile.android.gameday.atbat,sports,B007FIJ9EI,MLB At Bat,1,MLB Advanced Media%2C L.P.
+3,fsgo,com.foxsports.videogo,sports,B00I5VT8KY,FOX Sports GO,0,FOX Sports Media Group
+6,nbc sports,com.nbcuni.com.nbcsports.liveextra.firetv,sports,B01923M8T6,NBC Sports,2,NBCUniversal Media%2C LLC
+7,fubotv,com.fubo.firetv.screen,sports,B019DCHDZK,fuboTV: Watch Live Sports &amp; TV,1,fuboTV
+8,ufc,com.neulion.firetv.ufc.android.amazon,sports,B0175YDUL4,UFC,1,Zuffa%2C LLC
+9,bike stunt,com.renderedideas.bikestunt1,sports,B07P11VD3M,Bike Stunt,2,Rendered Ideas
