@@ -420,11 +420,15 @@ def load_dns_data_from_pcap_csvs(crawl_data_dir):
     return dns_df, get_ip_domain_mapping_from_dns_df(dns_df)
 
 
-def get_tv_ip_addr(craw_dir):
+def get_crawl_parameter(craw_dir, param_name):
     for crawl_config in glob(join(craw_dir, "crawl_info-*")):
         for line in open(crawl_config):
-            if "TV_IP_ADDR" in line:
+            if param_name in line:
                 return line.rstrip().split("=")[-1]
+
+
+def get_tv_ip_addr(craw_dir):
+    return get_crawl_parameter(craw_dir, "TV_IP_ADDR")
 
 
 def replace_nan(df, replacement=""):
@@ -553,7 +557,7 @@ def add_channel_details(df, channel_df):
     df['category'] = df['channel_id'].map(lambda x: channel_df.loc[x]['category'])
 
 def get_http_df(crawl_data_dir):
-    print("Will load HTTP dataframe for", crawl_data_dir)
+    # print("Will load HTTP dataframe for", crawl_data_dir)
     h1_requests, h1_responses, dns = get_http1_df(crawl_data_dir)
     h2_requests, h2_responses, _ = get_http2_df(crawl_data_dir)
     requests = h1_requests.append(h2_requests, sort=False)
@@ -674,8 +678,8 @@ def get_http2_df(crawl_data_dir):
 
     HTTP2_REQ_DROP = ["http2_header_name", "http2_header_value", "eth_src", "ip_src", "tcp_srcport"]
     HTTP2_RESP_DROP = ["http2_header_name", "http2_header_value", "eth_src", "ip_dst", "tcp_dstport"]
-    print("Decode errors", decode_errors)
-    print("channels", channels)
+    # print("Decode errors", decode_errors)
+    # print("channels", channels)
     return (req_df.drop(HTTP2_REQ_DROP, axis=1).replace(np.nan, '', regex=True),
             resp_df.drop(HTTP2_RESP_DROP, axis=1).replace(np.nan, '', regex=True),
             dns_df)

@@ -13,12 +13,25 @@ except ImportError:
 
 from tld import get_fld
 from glob import glob
-from os.path import join, sep
+from os.path import join, sep, isdir
 
 
 TSHARK_FIELD_SEP = "|"
 ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
 
+CRAWL_ROOT_DIRS = [
+    '/mnt/iot-house/crawl-data/',
+    '/home/gacar/dev/smart-tv/data',
+     '/media/gacar/Data/iot-house/crawl-data/',
+    ]
+
+def get_crawl_data_path(crawl_name):
+    for crawl_root_dir in CRAWL_ROOT_DIRS:
+        crawl_dir_path = join(crawl_root_dir, crawl_name)
+        if isdir(crawl_dir_path):
+            return crawl_dir_path
+    else:
+        raise Exception("Cannot find the crawl data dir %s" % crawl_name)
 
 def get_ps1_or_ipaddress(url):
     try:
@@ -92,11 +105,11 @@ def read_channel_details_df():
     AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
     AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/100-channel_name.csv"
     amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV)
-    amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV))
+    amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV), sort=True)
     tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
     # print(amazon_df.columns)
     # print(tmp_df.columns)
-    amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1))
+    amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1), sort=True)
     # print(amazon_df.columns)
     amazon_df.rename(columns={'amazon_ranking': 'rank',
                               'amazon_category': 'category',
@@ -109,7 +122,7 @@ def read_channel_details_df():
                     'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'
     # print(amazon_df.columns)
-    return roku_df.append(amazon_df)
+    return roku_df.append(amazon_df, sort=True)
 
 
 if __name__ == '__main__':
