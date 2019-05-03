@@ -51,9 +51,12 @@ def main():
         counter = 70
         page_id = 0
 
+        cat_list = []
+
         while counter > 0:
 
             page_id += 1
+            page_list = []
 
             print 'Scraping', cat, 'page', page_id
 
@@ -66,10 +69,17 @@ def main():
                 match = ASIN_REGEX.search(line)
                 if match:
                     asin = match.group(1)
-                    if asin not in asin_list:
+                    asin = cat + ' ' + asin
+                    if asin not in cat_list:
                         if counter >= 1:
-                            asin_list.append(cat + ' ' + asin)
+                            cat_list.append(asin)
+                            page_list.append(asin)
                             counter -= 1
+
+            if not page_list:
+                break
+
+        asin_list += cat_list
 
     out_file = 'fire_stick_app_asins.txt'
     if LABEL:
