@@ -17,6 +17,9 @@ SEND_EMAIL_AFTER_CRAWL = False
 
 MITMPROXY_ENABLED = SSL_STRIP or TLS_INTERCEPT
 
+if not TLS_INTERCEPT:
+    MITM_STOP_NO_NEW_ENDPOINT = False
+
 if MITMABLE_DOMAINS_WARM_UP_CRAWL and MITMPROXY_ENABLED:
     LAUNCH_RETRY_CNT = 5  # detect and store unmitmable domains and IPs
     SMART_CRAWLS_CNT = 5  # run multiple smart crawls to discover the best number for the warmup
