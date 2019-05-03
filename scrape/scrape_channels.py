@@ -233,7 +233,7 @@ def main(channel_list=None):
         email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
         if scrape_config.MOVE_TO_NFS:
             email_msg += "Crawl results will be moved to NFS."
-            subprocess.call('tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
+            subprocess.call('./tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
                             shell=True)
         send_alert_email(email_msg)
 
