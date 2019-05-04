@@ -211,7 +211,10 @@ def main(channel_list=None):
             break
 
         cntr = 0
+        failure_count = 0
         for channel in next_channels:
+            if failure_count == 5:
+                reboot_device = True
 
             if cntr == scrape_config.CUTOFF_TRESHOLD:
                 break
@@ -221,13 +224,17 @@ def main(channel_list=None):
                 log('Skipping', channel['id'])
                 continue
 
-            channel_res_file  = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
+            channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                      str(channel['id'])) + ".txt"
             if os.path.isfile(channel_res_file):
                 log('Skipping', channel['id'], ' due to:', channel_res_file)
                 continue
 
-            pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix)
+            scrape_success = pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, reboot_device)
+            if scrape_success:
+                failure_count = 0
+            else:
+                failure_count += 1
 
     if scrape_config.SEND_EMAIL_AFTER_CRAWL:
         email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
@@ -239,21 +246,21 @@ def main(channel_list=None):
 
 
 @timeout(scrape_config.SCRAPE_TO)
-def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
+def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, reboot_device):
     log('Scraping', channel['_category'], '-', channel['id'])
     channel_state = CrawlState.STARTING
     try:
         scrape_success = False
         if scrape_config.THREADED_SCRAPE:
             que = queue.Queue()
-            t = PropagatingThread(target=lambda q, arg1, arg2: q.put(automatic_scrape(arg1, arg2)),
-                                  args=(que, channel['id'], date_prefix,))
+            t = PropagatingThread(target=lambda q, arg1, arg2, arg3: q.put(automatic_scrape(arg1, arg2, arg3)),
+                                  args=(que, channel['id'], date_prefix, reboot_device, ))
 
             t.start()
             t.join(timeout=scrape_config.SCRAPE_TO)
             channel_state = que.get()
         else:
-            channel_state = automatic_scrape(channel['id'], date_prefix)
+            channel_state = automatic_scrape(channel['id'], date_prefix, reboot_device)
         log("Crawl result: " + str(channel_state))
         if channel_state == channel_state.TERMINATED:
             scrape_success = True
@@ -266,6 +273,7 @@ def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix):
         log(traceback.format_exc())
     finally:
         write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
+    return scrape_success
 
 def log(*args):
 
@@ -464,7 +472,7 @@ def stop_netstat():
         subprocess.call('pkill -2 -f dump_netstat.sh', shell=True, stderr=open(os.devnull, 'wb'))
 
 
-def setup_channel(channel_id, date_prefix):
+def setup_channel(channel_id, date_prefix, reboot_device=False):
     log('Setting up channel %s' % str(channel_id))
     err_occurred = False
     try:
@@ -478,6 +486,8 @@ def setup_channel(channel_id, date_prefix):
                                str(scrape_config.LOG_PREFIX),
                                str(scrape_config.PCAP_PREFIX), date_prefix,
                                str(scrape_config.SCREENSHOT_PREFIX))
+        if reboot_device:
+            surfer.reboot_device()
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
                                     str(scrape_config.DUMP_PREFIX), global_keylog_file,
@@ -687,10 +697,13 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
         traceback.print_exc()
     return err_occurred
 
-def automatic_scrape(channel_id, date_prefix):
+def automatic_scrape(channel_id, date_prefix, reboot_device):
     try:
         channel_state = CrawlState.PREINSTALL
-        ret = setup_channel(channel_id, date_prefix)
+        if reboot_device:
+            ret = setup_channel(channel_id, date_prefix, reboot_device)
+        else:
+            ret = setup_channel(channel_id, date_prefix)
         err_occurred = ret[0]
         if not err_occurred:
             surfer = ret[1]

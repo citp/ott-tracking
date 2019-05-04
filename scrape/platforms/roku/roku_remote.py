@@ -117,5 +117,8 @@ class RokuRemoteControl():
             #    app.get("version"), app.text
         return app_id
 
+    def reboot(self):
+        pass
+
     def terminate(self):
         pass

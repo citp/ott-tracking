@@ -185,6 +185,9 @@ class ChannelSurfer(object):
         self.log('Pressing %s' % key)
         self.rrc.press_key(key)
 
+    def reboot_device(self):
+        self.rrc.reboot()
+
     def capture_packets(self, timestamp):
 
         self.kill_all_tcpdump()
