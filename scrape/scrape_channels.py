@@ -237,6 +237,7 @@ def main(channel_list=None):
                 failure_count += 1
 
     if scrape_config.SEND_EMAIL_AFTER_CRAWL:
+        log('Sending notification email.')
         email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
         if scrape_config.MOVE_TO_NFS:
             email_msg += "Crawl results will be moved to NFS."
@@ -748,6 +749,7 @@ def send_alert_email(msg):
     server = SMTP('smtp.gmail.com:587')
     server.starttls()
     server.login(username, password)
+    log('Sending notification email to ' + str(toaddrs))
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
