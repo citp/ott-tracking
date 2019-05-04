@@ -3,6 +3,7 @@
 import io
 import os
 import argparse
+import re
 import imutils
 import copy
 import cv2
@@ -15,6 +16,7 @@ from google.cloud.vision import types
 from skimage.measure import compare_ssim
 from itertools import tee, islice, chain
 from itertools import zip_longest as izip
+import pytesseract
 
 
 class OCRHelper(object):
@@ -125,7 +127,21 @@ class OCRHelper(object):
             self.imageDiff(previousScreenshot, currentScreenshot, currentScreenshotName)
         else:
             self.screenshot["SSIM"] = None
-        self.cloudVision(currentScreenshot, currentScreenshotName)
+            
+        tesseractOutput = pytesseract.image_to_string(currentScreenshot)
+        unicodeStrippedTesseractOutput = re.sub(r'[^\x00-\x7f]',r'', tesseractOutput)
+        filteredTesseractOutput = re.sub('[^A-Za-z0-9]+', '', unicodeStrippedTesseractOutput)
+
+        if self.screenshot["SSIM"] == None:
+            self.cloudVision(currentScreenshot, currentScreenshotName)
+        else:
+            if self.screenshot["SSIM"] <= self.DUPLICATE and len(filteredTesseractOutput) > 5:
+                self.cloudVision(currentScreenshot, currentScreenshotName)
+            else:
+                self.screenshot["textBody"] = unicodeStrippedTesseractOutput
+                if "TESSERACT" not in self.screenshot["customLabels"]:
+                    self.screenshot["customLabels"].append("TESSERACT")
+                self.screenshot["customLabels"]
         self.applyCustomLabels()
 
 
@@ -220,7 +236,7 @@ class OCRHelper(object):
                         'wordBoundsY' : {},
                         'SSIM' : ""}
         self.writeJson(outputDirectory, channelName)
-        self.printChannel()
+        #self.printChannel()
         return self.screenshotList
 
 class OCRManager(object):
