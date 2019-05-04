@@ -212,6 +212,7 @@ def main(channel_list=None):
 
         cntr = 0
         failure_count = 0
+        reboot_device = False
         for channel in next_channels:
             if failure_count == 5:
                 reboot_device = True
