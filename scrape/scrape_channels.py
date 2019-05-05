@@ -214,7 +214,7 @@ def main(channel_list=None):
         failure_count = 0
         reboot_device = False
         for channel in next_channels:
-            if failure_count % 5 == 0:
+            if failure_count > 0 and failure_count % 5 == 0:
                 reboot_device = True
                 if scrape_config.SEND_EMAIL_AFTER_CRAWL:
                     log('Sending notification email for failures.')
