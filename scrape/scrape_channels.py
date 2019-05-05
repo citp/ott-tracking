@@ -477,6 +477,7 @@ def stop_netstat():
 def setup_channel(channel_id, date_prefix, reboot_device=False):
     log('Setting up channel %s' % str(channel_id))
     err_occurred = False
+    surfer = None
     try:
         cleanup_data_folder(scrape_config.DATA_DIR, channel_id)
         check_folders()
@@ -658,7 +659,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
         return err_occurred
 
 def cleanup_data_folder(data_dir, channel_id):
-    for filename in glob.iglob(data_dir + '/**/' + str(channel_id) + '*', recursive=True):
+    for filename in glob.iglob(data_dir + '/**/' + str(channel_id) + '-*', recursive=True):
         log('Removing existing file %s for channel %s.' % (filename, channel_id))
         os.remove(filename)
 
@@ -730,6 +731,8 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
     except:
         log('Error!')
         traceback.print_exc()
+    if err_occurred:
+        log('Error occured during scraping channel %s' % channel_id)
     return channel_state
 
 
