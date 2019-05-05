@@ -214,8 +214,13 @@ def main(channel_list=None):
         failure_count = 0
         reboot_device = False
         for channel in next_channels:
-            if failure_count == 5:
+            if failure_count % 5 == 0:
                 reboot_device = True
+                if scrape_config.SEND_EMAIL_AFTER_CRAWL:
+                    log('Sending notification email for failures.')
+                    email_msg = "Crawl %s had %s failures in a row. Rebooting the device if possible.\r\n" %\
+                                (scrape_config.DATA_DIR, str(failure_count))
+                    send_alert_email("[Crawl Failure]", email_msg)
 
             if cntr == scrape_config.CUTOFF_TRESHOLD:
                 break
@@ -237,14 +242,15 @@ def main(channel_list=None):
             else:
                 failure_count += 1
 
+    if scrape_config.MOVE_TO_NFS:
+        subprocess.call('./tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
+                        shell=True)
     if scrape_config.SEND_EMAIL_AFTER_CRAWL:
         log('Sending notification email.')
         email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
         if scrape_config.MOVE_TO_NFS:
             email_msg += "Crawl results will be moved to NFS."
-            subprocess.call('./tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
-                            shell=True)
-        send_alert_email(email_msg)
+        send_alert_email("[Crawl Finished]", email_msg)
 
 
 @timeout(scrape_config.SCRAPE_TO)
@@ -741,10 +747,10 @@ def flushall_iptables():
     subprocess.call('./scripts/iptables_flush_all.sh', shell=True)
 
 
-def send_alert_email(msg):
+def send_alert_email(subject, msg):
     fromaddr = 'abbbbbba23@gmail.com'
     toaddrs = ['hoomanm@princeton.edu', 'gunes@princeton.edu', 'yuxingh@cs.princeton.edu']
-    msg = 'Subject: %s\n\n%s' % ("[Crawl finished]", msg)
+    msg = 'Subject: %s\n\n%s' % (subject, msg)
     # Credentials (if needed)
     username = 'abbbbbba23@gmail.com'
     password = 'Abbbbbba1'  # TODO change it
