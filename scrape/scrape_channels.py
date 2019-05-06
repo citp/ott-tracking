@@ -532,7 +532,8 @@ def install_channel(surfer):
         log('Channel not installed! Aborting scarping of channel')
         if scrape_config.REC_AUD:
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+            recorder.dump(join(scrape_config.DATA_DIR,
+                                         str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -685,7 +686,8 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
 
         if scrape_config.REC_AUD:
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+            err_occurred = recorder.dump(join(scrape_config.DATA_DIR,
+                                              str(scrape_config.AUDIO_PREFIX), audio_file_addr))
 
         surfer.kill_all_tcpdump()
         time.sleep(3)
