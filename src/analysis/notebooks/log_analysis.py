@@ -17,9 +17,10 @@ from glob import glob
 from os.path import join, sep, isfile, basename
 from collections import defaultdict
 from nb_utils import read_channel_details_df, get_crawl_data_path
+from tld import get_fld
+from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
+DISCONNECT_BLOCKLIST = get_disconnect_blocked_hosts()  # load Disconnect's blacklist
 
-
-#PUBLIC_SUFFIX_LIST_URL = https://publicsuffix.org/list/public_suffix_list.dat
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
 channel_list = '../../scrape/platforms/roku/channel_lists/all_channel_list.txt'
 
@@ -30,202 +31,6 @@ def load_roku_channel_details():
             record = json.loads(line)
             channels.append(record)
     return channels
-
-
-
-
-def read_dns_db():
-    return
-
-class PcapFileReader(object):
-
-    def __init__(self, pcap_file):
-        return
-
-class LogFileReader(object):
-
-    def __init__(self, log_file, channels):
-        self.log_file_fullpath = os.path.abspath(log_file)
-        self.log_file_name = ntpath.basename(log_file)
-        self.get_channel_id()
-        self.get_start_ts()
-        self.init_unknown_fields()
-        self.channel_info(channels)
-        self.tls_hs_list = set()
-        self.tls_pass_thru_list = set()
-        return
-
-    def init_unknown_fields(self):
-        self.command = "\"\""
-        self.select_idx = "\"\""
-        self.eth_src = "\"\""
-    def get_channel_id(self):
-        self.channel_id = self.log_file_name.split('-')[0]
-
-    def get_start_ts(self):
-        self.start_ts = self.log_file_name.split('-')[1].split('.')[0]
-
-    def channel_info(self, channels):
-        for channel_list_item in channels:
-            if str(channel_list_item['id']) == self.channel_id:
-                #print(channel_list_item)
-                self.category = channel_list_item['_category']
-                self.scrape_ts  = channel_list_item['_scrape_ts']
-                self.accessCode = channel_list_item['accessCode']
-                self.desc = channel_list_item['desc']
-                self.id = channel_list_item['id']
-                self.channel_name = channel_list_item['name']
-                self.payment = channel_list_item['payment']
-                self.price = channel_list_item['price']
-                self.rankByWatched = channel_list_item['rankByWatched']
-                self.rating = channel_list_item['rating']
-                self.thumbnail = channel_list_item['thumbnail']
-                break
-
-    def get_method(self, req_line):
-        if 'GET' in req_line:
-            return 'GET'
-        if 'POST' in req_line:
-            return 'POST'
-
-    def get_proto(self, req_line):
-        regexHTTPS = re.compile('(GET|POST) https\:*')
-        regexHTTP = re.compile('(GET|POST) http\:*')
-        if regexHTTPS.search(req_line):
-            return 'https'
-        if regexHTTP.search(req_line):
-            return 'http'
-
-    def get_url(self, req_line):
-        # return re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', req_line)[0]
-        return req_line.split()[2]
-
-    def get_host(self, url):
-        return urlparse(url).netloc
-
-    def get_tld(self, url):
-        hostname = self.get_host(url)
-        try:
-            ipaddress.ip_address(hostname)
-            return hostname
-        except (ValueError, TypeError):
-            tokens = hostname.split('.')[::-1]
-            res = tokens[0]
-            if len(tokens) > 1:
-                res = tokens[1] + '.' + res
-            return res
-
-    def get_dst_ip(self, url):
-        return "\"\""
-
-    def format_http_csv(self, request_line):
-        #print(request_line)
-        req_url = self.get_url(request_line)
-        res = ''
-        res += str(self.channel_id) + '\t'
-        res += str(self.start_ts) + '\t'
-        res += str(self.command) + '\t'
-        res += str(self.select_idx) + '\t'
-        res += str(self.eth_src) + '\t'
-        res += str(self.get_dst_ip(request_line)) + '\t'
-        res += str(self.get_method(request_line)) + '\t'
-        res += str(self.get_proto(request_line)) + '\t'
-        res += str('"' + req_url + '"') + '\t'
-        res += str(self.channel_name) + '\t'
-        res += str(self.get_tld(req_url)) + '\t'
-        res += str(self.get_host(req_url)) + '\t'
-        res += str(self.rankByWatched) + '\t'
-        res += str(self.category)
-        print(res)
-        return res
-
-    def tls_handshake_fail_hdl(self, request_line):
-        #Assuming this format:
-        #[2019-03-12 15:23:47.387505] 10.42.0.119:48764: Client Handshake failed. \
-        #The client may not trust the proxy's certificate for api.sr.roku.com.
-        self.tls_hs_list.add(request_line.split()[-1])
-
-    def tls_pass_thru_hdl(self, request_line):
-        global rIP2NameDB
-        # Assuming this format:
-        #[2019-03-12 15:23:52.560586] TLS passthrough for ('52.204.87.181', 443)
-        # [mapped to scribe.logs.roku.com.].
-        tmp = request_line.split()[3]
-        srv_addr = re.sub('\(|\,|\'', '', tmp)
-
-        if "mapped to" in request_line:
-            domain = request_line.split()[-1]
-        elif srv_addr in rIP2NameDB:
-            domain = rIP2NameDB[srv_addr][0]
-        else:
-            print("Server doesn't have a domain name! Couldn't find the server name in the "
-                  "DNS database either! Skipping!")
-            print(request_line)
-            return
-        self.tls_pass_thru_list.add(domain)
-
-    def find_regex(self, regex, format_func):
-        result_list = []
-        with open(self.log_file_fullpath) as f:
-            for line in f:
-                # print(line)
-                result = regex.search(line)
-                if result is not None:
-                    #res = str(self.channel_id) + '\t' + str(self.start_ts) + '\t' + line.split()[2]
-                    res = format_func(line)
-                    result_list.append(res)
-        return result_list
-
-    def https_urls(self):
-        regex = re.compile('(GET|POST) https\:*')
-        self.find_regex(regex, self.format_http_csv)
-
-    def http_urls(self):
-        regex = re.compile('(GET|POST) http\:*')
-        self.find_regex(regex, self.format_http_csv)
-
-    def tls_handshake_fail(self):
-        regex = re.compile('Client Handshake failed. The client may not trust the proxy\'s certificate for*')
-        self.find_regex(regex, self.tls_handshake_fail_hdl)
-
-    def tls_pass_thru(self):
-        regex = re.compile('TLS passthrough for*')
-        self.find_regex(regex, self.tls_pass_thru_hdl)
-
-    def pass_through(self):
-        return
-
-BANNER="channel_id	start_ts	command	select_idx	eth_src	ip_dst	req_method	protocol	url	channel_name	domain	host	rank	category"
-def http_s_log_to_csv(root_dir):
-    print(BANNER)
-    channels = load_roku_channel_details()
-    log_folder_name = os.path.join(root_dir, "logs")
-    for root, dirs, files in os.walk(log_folder_name):
-        for file in files:
-            if file.endswith(".log"):
-                log_reader = LogFileReader(os.path.join(root, file), channels)
-                #print('---HTTPS---')
-                log_reader.https_urls()
-                #print('---HTTP---')
-                log_reader.http_urls()
-
-def tls_pass_thru_list(root_dir):
-    channels = load_roku_channel_details()
-    log_folder_name = os.path.join(root_dir, "logs")
-    for root, dirs, files in os.walk(log_folder_name):
-        for file in files:
-            if file.endswith(".log"):
-                log_reader = LogFileReader(os.path.join(root, file), channels)
-                log_reader.tls_handshake_fail()
-                log_reader.tls_pass_thru()
-                if bool(log_reader.tls_hs_list) and bool(log_reader.tls_pass_thru_list):
-                    # print("TLS Handshake Failure Domains: " + str(log_reader.tls_hs_list))
-                    #print("TLS Pass Through Domains: " + str(log_reader.tls_pass_thru_list))
-                    delta = log_reader.tls_hs_list.difference(log_reader.tls_pass_thru_list)
-                    if delta:
-                        print("Info for Channel: " + log_reader.channel_name + " - " + log_reader.channel_id)
-                        print("Delta: " + str(delta))
-                        print('-----------------')
 
 
 def load_dns_data(root_dir):
@@ -270,29 +75,10 @@ def load_timestamps_from_crawl_data(root_dir):
     return timestamps
 
 
-'''Older version
-def load_timestamp_json(root_dir):
-    channel_timstamps = {}
-    log_folder_name = os.path.join(root_dir, "logs")
-    for root, dirs, files in os.walk(log_folder_name):
-        for file in files:
-            if file.endswith("-timestamps.json"):
-                channel_name = file.replace('-timestamps.json','')
-                file_name = os.path.join(root, file)
-                try:
-                    with open(file_name) as f:
-                        data = json.load(f)
-                        channel_timstamps[channel_name] = data
-                except Exception:
-                    print("Couldn't open %s" % file_name)
-                    traceback.print_exc()
-    return channel_timstamps
-'''
-
-
 # Create global_df, containing all SSL/TCP streams SYN packets
-def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
+def get_distinct_tcp_conns(crawl_name, name_resolution=True):
     df = pd.DataFrame([])
+    crawl_data_dir = get_crawl_data_path(crawl_name)
     post_process_dir = join(crawl_data_dir, 'post-process')
     print("Loading distinct TCP connections from %s " % post_process_dir)
     if name_resolution:
@@ -317,9 +103,16 @@ def get_distinct_tcp_conns(crawl_data_dir, name_resolution=True):
 
     if name_resolution and ip_2_domains_by_channel is not None:
         add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
+        df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: is_blocked_by_disconnect("http://" + x, DISCONNECT_BLOCKLIST))
     # add human readable timestamps
     df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
             int(x)).strftime('%Y-%m-%d %H:%M:%S'))
+    channel_df = read_channel_details_df()
+    add_channel_details(df, channel_df)
+    playback_detected = get_playback_detection_results(crawl_name)
+    
+    
+    df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
     return df
 
 
@@ -457,7 +250,7 @@ def add_hostname_col_by_dns(df, ip_2_domains, ip_col_name):
     assert ip_col_name in ["ip_dst", "ip_src"]
     df["host_by_dns"] = df.apply(
         lambda x: ip_2_domains[x["channel_id"]].get(x[ip_col_name], ''), axis=1)
-
+    df['domain_by_dns'] = df.host_by_dns.map(lambda x: get_fld("http://" + x, fail_silently=True))
 
 # Load all (All HTTP data)
 def get_http1_df(crawl_data_dir):
@@ -518,7 +311,7 @@ def get_http1_df(crawl_data_dir):
     req_df.rename(columns={'file_data': 'post_data',
                            'request_full_uri': 'url',
                            'request_method': 'method',
-                            'frame_time_epoch': 'time'}, inplace=True)
+                           'frame_time_epoch': 'time'}, inplace=True)
     resp_df.rename(columns={'file_data': 'body',
                             'frame_time_epoch': 'time'}, inplace=True)
 
@@ -547,9 +340,16 @@ def get_http1_df(crawl_data_dir):
     resp_df = replace_nan(resp_df)
     req_df["url"] = req_df.apply(
         lambda x: x['url'] if x['url'] else x['request_uri'], axis=1)
+    add_domain_column(req_df, "url", "req_domain")
     return (req_df.drop(["eth_src", "request_uri", "data", "ip_src", "tcp_srcport"], axis=1),
             resp_df.drop(["eth_src", "ip_dst", "tcp_dstport"], axis=1),
             dns_df)
+
+
+def add_domain_column(df, src_col_name="url", dst_col_name="req_domain"):
+    df[dst_col_name] = df[src_col_name].map(
+        lambda x: get_fld(x, fail_silently=True))
+
 
 def add_channel_details(df, channel_df):
     df['channel_name'] = df['channel_id'].map(lambda x: channel_df.loc[x]['channel_name'])

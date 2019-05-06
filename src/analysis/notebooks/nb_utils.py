@@ -87,9 +87,13 @@ def read_channel_details_df():
     for category_txt in glob(join(ROKU_CATEGORY_DIR, "*.txt")):
         for channel_json_str in open(category_txt):
             channel_df.append(json.loads(channel_json_str))
+    
+    ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
     ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
-    for channel_json_str in open(ROKU_KIDS_AND_TV_CHANNELS):
-        channel_df.append(json.loads(channel_json_str))
+    for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
+        for channel_json_str in open(channel_list_file):
+            channel_df.append(json.loads(channel_json_str))
+        
     roku_df = pd.DataFrame(channel_df)
     roku_df.rename(columns={'id': 'channel_id',
                             'rankByWatched': 'rank',
