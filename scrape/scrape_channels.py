@@ -688,6 +688,8 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
             err_occurred = recorder.dump(join(scrape_config.DATA_DIR,
                                               str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+            if err_occurred:
+                log('Audio returned error!')
 
         surfer.kill_all_tcpdump()
         time.sleep(3)
