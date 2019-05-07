@@ -23,7 +23,7 @@ The result is printed on `stdout`. Each line of the result is a JSON object in t
  * `remote_ip` and `remote_port`: IP and port of the remote endpoint
  * `weak_ciphers`: A space-sparated list of weak ciphers being proposed by the client.
  * `client_version`: Max TLS version supported by client.
- * `sni`: SNI, if used.
+ * `sni`: SNI, if used; otherwise, empty string.
 
 or...
 
@@ -35,3 +35,20 @@ Note:
 
  * Must use Python 2.
  * If there are multiple pcap files, wrap `get_fingerprint.py` in a loop, e.g., `ls *.pcap | xargs -I XX python2 get_fingerprint.py XX`.
+
+## Example
+
+Analyze the `sample.pcap` file in this directory.
+
+```
+$ $ python get_fingerprint.py sample.pcap 2>/dev/null | head
+{"fingerprint": "991305d10f.SCTVFNA", "device_port": 36394, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "23.22.241.63"}
+{"remote_port": 443, "device_ip": "10.42.0.119", "device_port": 36394, "cipher_suite": "", "version": 771, "type": "server_hello", "remote_ip": "23.22.241.63"}
+{"fingerprint": "991305d10f.SCTVFNA", "device_port": 45743, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "52.45.134.131"}
+{"remote_port": 443, "device_ip": "10.42.0.119", "device_port": 45743, "cipher_suite": "", "version": 771, "type": "server_hello", "remote_ip": "52.45.134.131"}
+{"fingerprint": "991305d10f.SCTVFNA", "device_port": 36398, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "23.22.241.63"}
+{"fingerprint": "991305d10f.SCTVFNA", "device_port": 44674, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "34.193.43.251"}
+{"remote_port": 443, "device_ip": "10.42.0.119", "device_port": 36398, "cipher_suite": "", "version": 771, "type": "server_hello", "remote_ip": "23.22.241.63"}
+{"remote_port": 443, "device_ip": "10.42.0.119", "device_port": 44674, "cipher_suite": "", "version": 771, "type": "server_hello", "remote_ip": "34.193.43.251"}
+{"fingerprint": "991305d10f.SCTVFNA", "device_port": 56177, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "54.173.104.173"}
+````
