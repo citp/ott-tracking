@@ -56,6 +56,7 @@ RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/
 
 
 CUTOFF_TRESHOLD=100000
+FAILURE_CUTOFF = 20
 
 if MITMABLE_DOMAINS_WARM_UP_CRAWL:
     SCRAPE_TO = 1800  # timeout

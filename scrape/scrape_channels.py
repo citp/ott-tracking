@@ -214,6 +214,15 @@ def main(channel_list=None):
         failure_count = 0
         reboot_device = False
         for channel in next_channels:
+            if failure_count > scrape_config.FAILURE_CUTOFF:
+                if scrape_config.SEND_EMAIL_AFTER_CRAWL:
+                    log('Sending notification email for failures.')
+                    email_msg = "Crawl %s had %s failures in a row. " \
+                                "Stopping the crawl!!\r\n" %\
+                                (scrape_config.DATA_DIR, str(failure_count))
+                    send_alert_email("[Crawl Failure - Stopping!!]", email_msg)
+                channels = []
+                break
             if failure_count > 0 and failure_count % 5 == 0:
                 reboot_device = True
                 if scrape_config.SEND_EMAIL_AFTER_CRAWL:
