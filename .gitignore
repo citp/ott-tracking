@@ -112,5 +112,5 @@ roku/output.txt
 
 
 scrape/logs/*
-scrape/apk_cache/*
+scrape/platforms/amazon/apk_cache/*.apk
 /data/
