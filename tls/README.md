@@ -41,7 +41,7 @@ Note:
 Analyze the `sample.pcap` file in this directory.
 
 ```
-$ $ python get_fingerprint.py sample.pcap 2>/dev/null | head
+$ python get_fingerprint.py sample.pcap 2>/dev/null | head
 {"fingerprint": "991305d10f.SCTVFNA", "device_port": 36394, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "23.22.241.63"}
 {"remote_port": 443, "device_ip": "10.42.0.119", "device_port": 36394, "cipher_suite": "", "version": 771, "type": "server_hello", "remote_ip": "23.22.241.63"}
 {"fingerprint": "991305d10f.SCTVFNA", "device_port": 45743, "weak_ciphers": "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", "sni": "api.roku.com", "remote_port": 443, "client_version": "0x303", "device_ip": "10.42.0.119", "type": "client_hello", "remote_ip": "52.45.134.131"}
