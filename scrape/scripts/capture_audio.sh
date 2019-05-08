@@ -40,6 +40,6 @@ do
 done
 
 sox $(ls ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav) ${CH_AUDIO_DIR}/${CHANNEL_ID}_combined.wav
-rm ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav
+# rm ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav
 echo "Continuous audio capturing stopped."
 exit 0

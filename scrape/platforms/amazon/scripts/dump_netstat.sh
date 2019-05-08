@@ -43,7 +43,7 @@ def dump_netstat_thread(fp):
 
     while True:
         dump_netstat(fp)
-        time.sleep(0.5)
+        time.sleep(0.2)
 
 
 def dump_netstat(fp):
