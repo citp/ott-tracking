@@ -123,7 +123,7 @@ class ChannelSurfer(object):
             if self.channel_is_installed():
                 break
             self.go_home()
-            self.rrc.install_channel(self.channel_id)
+            self.rrc.install_channel()
 
             for _ in range(12):
                 time.sleep(5)
@@ -150,7 +150,7 @@ class ChannelSurfer(object):
 
         self.go_home()
 
-        self.rrc.uninstall_channel(self.channel_id)
+        self.rrc.uninstall_channel()
 
         for _ in range(60):
             time.sleep(1)
@@ -173,7 +173,7 @@ class ChannelSurfer(object):
 
         self.log('Launching channel. Attempt %s' % self.launch_iter)
         self.go_home()
-        self.rrc.launch_channel(self.channel_id)
+        self.rrc.launch_channel()
         self.launch_iter += 1
         time.sleep(1)
 
