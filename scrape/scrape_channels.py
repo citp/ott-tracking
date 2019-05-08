@@ -35,10 +35,11 @@ from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 from timeout import timeout
 from time import sleep
-if scrape_config.REC_AUD:
+if scrape_config.REC_AUD_BY_PYAUDIO:
     from audio_recorder import AudioRecorder
 
-from audio_recorder import audio_played_second
+if scrape_config.REC_AUD_BY_ARECORD:
+    from audio_recorder import audio_played_second
 
 MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
 OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
@@ -207,7 +208,7 @@ def main(channel_list=None):
                 channels.remove(channel)
 
         if not next_channels:
-            if scrape_config.REC_AUD:
+            if scrape_config.REC_AUD_BY_PYAUDIO:
                 recorder.complete_audio_recording()
             dns_sniffer_stop()
             log("Scrapping finished. Terminating the crawl")
@@ -304,7 +305,7 @@ def log(*args):
     with open(os.path.join(scrape_config.LOCAL_LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
-if scrape_config.REC_AUD:
+if scrape_config.REC_AUD_BY_PYAUDIO:
     # Create recorder object
     try:
         recorder = AudioRecorder(log)
@@ -312,7 +313,7 @@ if scrape_config.REC_AUD:
     except Exception as e:
         log(e)
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
-        scrape_config.REC_AUD = False
+        scrape_config.REC_AUD_BY_PYAUDIO = False
 
 
 def check_folders():
@@ -367,9 +368,9 @@ def detect_playback_using_screenshots(surfer):
 
 
 def detect_playback_using_audio(seconds, surfer):
-    if scrape_config.REC_AUD:
+    if scrape_config.REC_AUD_BY_PYAUDIO:
         return recorder.is_audio_playing(seconds)
-    else:
+    elif scrape_config.REC_AUD_BY_ARECORD:
         # surfer.channel_id
         recent_audio_filename = "%s_most_recent.wav" % surfer.channel_id
         recent_audio_path = join(
@@ -550,11 +551,11 @@ def install_channel(surfer):
     except SurferAborted as e:
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
-        if scrape_config.REC_AUD:
+        if scrape_config.REC_AUD_BY_PYAUDIO:
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
             recorder.dump(join(scrape_config.DATA_DIR,
                                          str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-        else:
+        elif scrape_config.REC_AUD_BY_ARECORD:
             remove_file(OTT_CURRENT_CHANNEL_FILE)
 
         surfer.uninstall_channel()
@@ -643,7 +644,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     else:
         err_occurred = False
         try:
-            if scrape_config.REC_AUD:
+            if scrape_config.REC_AUD_BY_PYAUDIO:
                 recorder.start_recording(scrape_config.SCRAPE_TO, surfer.channel_id)
 
             if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
@@ -671,10 +672,10 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
                     log('Error killing MTIM!')
                     traceback.print_exc()
 
-            if scrape_config.REC_AUD:
+            if scrape_config.REC_AUD_BY_PYAUDIO:
                 audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
                 recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-            else:
+            elif scrape_config.REC_AUD_BY_ARECORD:
                 remove_file(OTT_CURRENT_CHANNEL_FILE)
 
             surfer.uninstall_channel()
@@ -707,13 +708,13 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
                 log('Error killing MTIM!')
                 traceback.print_exc()
 
-        if scrape_config.REC_AUD:
+        if scrape_config.REC_AUD_BY_PYAUDIO:
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
             err_occurred = recorder.dump(join(scrape_config.DATA_DIR,
                                               str(scrape_config.AUDIO_PREFIX), audio_file_addr))
             if err_occurred:
                 log('Audio returned error!')
-        else:
+        elif scrape_config.REC_AUD_BY_ARECORD:
             remove_file(OTT_CURRENT_CHANNEL_FILE)
 
         surfer.kill_all_tcpdump()
