@@ -7,9 +7,11 @@ def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
 
     with open(channel_csv) as fp:
         for (line_index, line) in enumerate(fp):
-            if line_index <= 1 :
+            if line.startswith("#"):
                 continue
             channel_values = line.strip().split(',')
+            if 'amazon_ranking' in channel_values:
+                continue
             if len(channel_values) == 3:
                 ranking, channel_name, apk_id = channel_values
                 record = {
