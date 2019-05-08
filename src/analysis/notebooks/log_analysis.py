@@ -15,7 +15,7 @@ import traceback
 from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
-from collections import defaultdict
+from collections import defaultdict, Counter
 from nb_utils import read_channel_details_df, get_crawl_data_path
 from tld import get_fld
 from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
@@ -496,3 +496,17 @@ def get_playback_detection_results(crawl_name):
                 timestamp = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f').timestamp()
                 playback_detected[channel_id] = timestamp
     return playback_detected
+
+
+def print_crawl_summary(crawl_name):
+    detected = get_playback_detection_results(crawl_name)
+    crawl_dir = get_crawl_data_path(crawl_name)
+    crawl_statuses = get_crawl_status(crawl_dir)
+    n_success = sum(1 for status in crawl_statuses.values() if status == "TERMINATED")
+    print("Crawl summary:", crawl_name, crawl_dir)
+    print("---------------------")
+    print ("Total channels", len(crawl_statuses))
+    print ("Successful crawls", n_success)
+    print("Results", Counter(crawl_statuses.values()))
+    print ("Playback detected in", len(detected))
+    return detected, crawl_statuses

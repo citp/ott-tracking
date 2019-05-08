@@ -375,7 +375,7 @@ def detect_playback_using_audio(seconds, surfer):
         recent_audio_path = join(
             scrape_config.DATA_DIR, scrape_config.AUDIO_PREFIX,
             str(surfer.channel_id), recent_audio_filename)
-        return audio_played_second(recent_audio_path, 5)
+        return -1 != audio_played_second(recent_audio_path, 5)
 
 
 def is_video_playing(surfer, seconds=5):
