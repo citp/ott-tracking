@@ -8,6 +8,8 @@ echo "HOSTNAME".$HOSTNAME
 # http://www.voxforge.org/home/docs/faq/faq/linux-how-to-determine-your-audio-cards-or-usb-mics-maximum-sampling-rate
 if [ "$HOSTNAME" = "miyav" ]; then
   AUDIO_HW="hw:0,0"
+elif [ "$HOSTNAME" = "asgard" ]; then
+  AUDIO_HW="hw:0,0"
 elif [ "$HOSTNAME" = "torro" ]; then
   AUDIO_HW="hw:2,0"
 else
