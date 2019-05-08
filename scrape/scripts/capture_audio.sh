@@ -21,7 +21,7 @@ fi
 while true
 do
     if [ ! -f ${CURRENT_CHANNEL} ]; then
-      echo "Cannot find ${CURRENT_CHANNEL}. Will quit."
+      # echo "Cannot find ${CURRENT_CHANNEL}. Will quit."
       break
     fi
 
