@@ -49,12 +49,12 @@ class ChannelSurfer(object):
 
         self.pcap_filename = None
         self.platform = platform
-        if self.platform == "ROKU":
-            self.rrc = RokuRemoteControl(tv_ip)
-        elif self.platform == "AMAZON":
-            self.rrc = AmazonRemoteControl(tv_ip, tv_serial_no)
-        self.tv_ip = tv_ip
         self.channel_id = str(channel_id)
+        if self.platform == "ROKU":
+            self.rrc = RokuRemoteControl(tv_ip, self.channel_id)
+        elif self.platform == "AMAZON":
+            self.rrc = AmazonRemoteControl(tv_ip, tv_serial_no, self.channel_id)
+        self.tv_ip = tv_ip
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)
         self.log_dir = join(self.data_dir  + str(log_prefix))
