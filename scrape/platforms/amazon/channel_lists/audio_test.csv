@@ -1,0 +1,4 @@
+# Random sample of channels using command `shuf -n 100`
+amazon_ranking,channel_name,apk_id
+662,Good Parent,com.gtv.goodparent
+387,LA STV Channel,com.amazon.rialto.cordova.webapp.webappc26b1d7af6384338abb44be81eb06e56
