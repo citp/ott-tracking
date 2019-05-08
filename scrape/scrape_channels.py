@@ -367,7 +367,6 @@ def detect_playback_using_screenshots(surfer):
 
 
 def detect_playback_using_audio(seconds, surfer):
-    return audio_played_second()
     if scrape_config.REC_AUD:
         return recorder.is_audio_playing(seconds)
     else:
