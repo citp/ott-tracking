@@ -7,8 +7,8 @@ function cleanup(){
   echo "Will run cleanup"
   pkill -f capture_screenshot
   pkill -2 -f dump_netstat.sh
-  ./scripts/kill_ffmpeg.sh
   ./scripts/iptables_flush_all.sh
+  ./scripts/kill_ffmpeg.sh
 }
 
 
