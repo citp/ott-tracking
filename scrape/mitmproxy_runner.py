@@ -45,7 +45,7 @@ ADDN_DIR = './scripts/mitmproxy/smart-strip.py'
 MITM_CONST_ARGS = [
     '--showhost', '--mode', 'transparent', '-p', MITMPROXY_PORT_NO,
     '-s', ADDN_DIR, '--ssl-insecure'
-    , '--flow-detail', '2'
+    , '--flow-detail', '1'
     ]
 
 

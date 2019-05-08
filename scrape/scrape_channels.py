@@ -25,6 +25,8 @@ import scrape_config
 import glob
 import signal
 
+from platforms.roku.get_all_channels import get_channel_list as get_roku_channel_list
+from platforms.amazon.get_all_channels import get_channel_list as get_amazon_channel_list
 
 from smtplib import SMTP
 from channel_surfer import ChannelSurfer ,SurferAborted
@@ -47,7 +49,6 @@ OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
 #repeat = {}
 # To get this list use this command:
 # ls -larSt /mnt/iot-house/keys |  awk '{print $9}' | tr '\n' ','
-channels_done = {}
 
 #This is a global env that needs to be set in bash
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
@@ -165,7 +166,7 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
         log(traceback.format_exc())
 
 
-def main(channel_list=None):
+def start_crawl(channel_list_file):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     remove_file(OTT_CURRENT_CHANNEL_FILE)
@@ -174,30 +175,23 @@ def main(channel_list=None):
 
     if scrape_config.PLAT == "ROKU":
         log("Importing Roku channels")
-        from platforms.roku.get_all_channels import get_channel_list
+        channels = get_roku_channel_list(channel_list_file)
     elif scrape_config.PLAT == "AMAZON":
         log("Importing Amazon channels")
-        from platforms.amazon.get_all_channels import get_channel_list
+        channels = get_amazon_channel_list(channel_list_file)
 
-    if channel_list is not None:
-        channels = get_channel_list(channel_list)
-    else:
-        channels = get_channel_list()
-
-
-
+    if not channels:
+        log("No channels to crawl! Terminating the crawl")
+        return False
     # Check what channels we have already scraped
     scraped_channel_ids = set()
-    scraped_channel_ids.update(channels_done)
 
     log('Skipping channels:', scraped_channel_ids)
 
     # Scrape from the top channels of each category
 
     while True:
-
         next_channels = []
-
         if isinstance(channels, dict):
             for channel_l in channels.values():
                 if channel_l:
@@ -295,6 +289,7 @@ def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, re
     finally:
         write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
     return scrape_success
+
 
 def log(*args):
 
@@ -784,23 +779,34 @@ def send_alert_email(subject, msg):
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
-if __name__ == '__main__':
-    start_screenshot()
+def kill_zombie_processes():
+    """Kill processed started by the crawl."""
+    # stop_netstat()
+    stop_screenshot()
+    subprocess.run(['pkill', '-2', '-f', 'dump_netstat.sh'])
+    subprocess.run(['scripts/kill_ffmpeg.sh'])
     flushall_iptables()
-    start_netstat(scrape_config.DATA_DIR)
-    if len(sys.argv) > 1:
-        if isfile(os.path.abspath(sys.argv[1])):
-            main(sys.argv[1])
-        else:
-            channel_id = int(sys.argv[1])
-            date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
-            automatic_scrape(channel_id, date_prefix)
-    else:
 
-        main()
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("You must pass the channel list CSV")
+        sys.exit(1)
+
+    channel_list_file = sys.argv[1]
+    if not isfile(os.path.abspath(channel_list_file)):  # channel list csv file
+        print("Cannot read the file %s" % channel_list_file)
+        sys.exit(1)
+
+    try:
+        kill_zombie_processes()
+        start_screenshot()
+        start_netstat(scrape_config.DATA_DIR)
+        start_crawl(channel_list_file)
+    except Exception as e:
+        print("Error while crawling the channel: %s" % e)
+    finally:
+        kill_zombie_processes()
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
-    stop_netstat()
-    stop_screenshot()
-    sys.exit(1)
 
