@@ -25,6 +25,7 @@ import scrape_config
 import glob
 import signal
 
+
 from smtplib import SMTP
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
@@ -37,8 +38,10 @@ from time import sleep
 if scrape_config.REC_AUD:
     from audio_recorder import AudioRecorder
 
-MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+from audio_recorder import audio_played_second
 
+MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
 
 #repeat = {}
 # To get this list use this command:
@@ -87,7 +90,6 @@ class PropagatingThread(threading.Thread):
             return None
 
 
-
 def dns_sniffer_run():
     #time.sleep(2)
     #p = subprocess.Popen(
@@ -100,13 +102,13 @@ def dns_sniffer_run():
     dns_sniff_process = Process(target=dns_sniffer_call, args=(wlan_if_name, scrape_config.TV_IP_ADDR,))
     dns_sniff_process.start()
 
+
 def dns_sniffer_stop():
     global dns_sniff_process
     if dns_sniff_process is not None:
         dns_sniff_process.terminate()
     else:
         log("Error stopping DNS sniffer! Process not found")
-
 
 
 def dump_redis(PREFIX, date_prefix):
@@ -165,6 +167,7 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
 def main(channel_list=None):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
+    remove_file(OTT_CURRENT_CHANNEL_FILE)
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
 
@@ -305,14 +308,12 @@ if scrape_config.REC_AUD:
     # Create recorder object
     try:
         recorder = AudioRecorder(log)
+        recorder.start()  # Starting audio thread
     except Exception as e:
         log(e)
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
         scrape_config.REC_AUD = False
 
-if scrape_config.REC_AUD:
-    # Starting audio thread
-    recorder.start()
 
 def check_folders():
     for f in scrape_config.folders:
@@ -365,11 +366,17 @@ def detect_playback_using_screenshots(surfer):
     return False
 
 
-def detect_playback_using_audio(seconds):
+def detect_playback_using_audio(seconds, surfer):
+    return audio_played_second()
     if scrape_config.REC_AUD:
         return recorder.is_audio_playing(seconds)
     else:
-        return False
+        # surfer.channel_id
+        recent_audio_filename = "%s_most_recent.wav" % surfer.channel_id
+        recent_audio_path = join(
+            scrape_config.DATA_DIR, scrape_config.AUDIO_PREFIX,
+            str(surfer.channel_id), recent_audio_filename)
+        return audio_played_second(recent_audio_path, 5)
 
 
 def is_video_playing(surfer, seconds=5):
@@ -513,6 +520,11 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
 
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
+        with open(OTT_CURRENT_CHANNEL_FILE) as f:
+            f.write("%s" % channel_id)
+
+        subprocess.call('./scripts/capture_audio.sh', shell=True)
+
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
@@ -543,6 +555,8 @@ def install_channel(surfer):
             audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
             recorder.dump(join(scrape_config.DATA_DIR,
                                          str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+        else:
+            remove_file(OTT_CURRENT_CHANNEL_FILE)
 
         surfer.uninstall_channel()
         surfer.kill_all_tcpdump()
@@ -661,7 +675,8 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
             if scrape_config.REC_AUD:
                 audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
                 recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-
+            else:
+                remove_file(OTT_CURRENT_CHANNEL_FILE)
 
             surfer.uninstall_channel()
             surfer.kill_all_tcpdump()
@@ -699,6 +714,8 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
                                               str(scrape_config.AUDIO_PREFIX), audio_file_addr))
             if err_occurred:
                 log('Audio returned error!')
+        else:
+            remove_file(OTT_CURRENT_CHANNEL_FILE)
 
         surfer.kill_all_tcpdump()
         time.sleep(3)
