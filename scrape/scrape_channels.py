@@ -779,14 +779,6 @@ def send_alert_email(subject, msg):
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
-def kill_zombie_processes():
-    """Kill processed started by the crawl."""
-    # stop_netstat()
-    stop_screenshot()
-    subprocess.run(['pkill', '-2', '-f', 'dump_netstat.sh'])
-    subprocess.run(['scripts/kill_ffmpeg.sh'])
-    flushall_iptables()
-
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -799,14 +791,13 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        kill_zombie_processes()
         start_screenshot()
         start_netstat(scrape_config.DATA_DIR)
         start_crawl(channel_list_file)
     except Exception as e:
         print("Error while crawling the channel: %s" % e)
     finally:
-        kill_zombie_processes()
+        print("Finished crawling")
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
 

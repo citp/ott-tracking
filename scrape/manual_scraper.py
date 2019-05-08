@@ -172,10 +172,9 @@ def read_channels_for_user(username):
 
 def main_loop(username):
     start_screenshot()
-    flushall_iptables()
     scrape_channel(username)
     dns_sniffer_stop()
-    stop_screenshot()
+
 
 if __name__ == '__main__':
     username = sys.argv[1]
