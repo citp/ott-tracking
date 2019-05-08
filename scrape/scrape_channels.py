@@ -314,6 +314,8 @@ if scrape_config.REC_AUD_BY_PYAUDIO:
         log(e)
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
         scrape_config.REC_AUD_BY_PYAUDIO = False
+else:
+    recorder = None
 
 
 def check_folders():
@@ -408,6 +410,12 @@ def play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx):
     for idx, key in enumerate(key_sequence, 1):
         surfer.timestamp_event("smartlaunch-%02d-key-seq-%02d-key-%02d" % (launch_idx, key_seq_idx, idx))
         log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
+        if not surfer.channel_is_active():
+            log("SMART_CRAWLER: Channel is not active. Skipping to next key seq"
+                ". Launch: %s channel %s"
+                % (launch_idx, surfer.channel_id))
+            return False
+
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
             surfer.capture_screenshots(10)
@@ -541,6 +549,25 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
     return ret
 
 
+def clean_up_channel(surfer, recorder=None, mitmrunner=None):
+    if scrape_config.REC_AUD_BY_PYAUDIO:
+        audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id,
+                                                    int(time.time()))
+        recorder.dump(join(scrape_config.DATA_DIR,
+                           str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+    elif scrape_config.REC_AUD_BY_ARECORD:
+        remove_file(OTT_CURRENT_CHANNEL_FILE)
+
+    surfer.kill_all_tcpdump()
+    if mitmrunner is not None and scrape_config.MITMPROXY_ENABLED:
+        try:
+            mitmrunner.kill_mitmproxy()
+        except Exception as e:
+            log('Error killing MITM!')
+            traceback.print_exc()
+    surfer.uninstall_channel()
+
+
 def install_channel(surfer):
     log('Installing channel %s' % str(surfer.channel_id))
     err_occurred = False
@@ -551,15 +578,7 @@ def install_channel(surfer):
     except SurferAborted as e:
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
-        if scrape_config.REC_AUD_BY_PYAUDIO:
-            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            recorder.dump(join(scrape_config.DATA_DIR,
-                                         str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-        elif scrape_config.REC_AUD_BY_ARECORD:
-            remove_file(OTT_CURRENT_CHANNEL_FILE)
-
-        surfer.uninstall_channel()
-        surfer.kill_all_tcpdump()
+        clean_up_channel(surfer, recorder)
     except TimeoutError:
         log('Timeout for crawl expired in install_channel!')
         raise
@@ -629,6 +648,7 @@ def smart_crawl(surfer):
             log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
                 surfer.channel_id)
 
+
 def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
     if manual_crawl:
@@ -665,21 +685,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
         except SurferAborted as e:
             err_occurred = True
             log('Channel failed during launch! Aborting scarping of channel')
-            if scrape_config.MITMPROXY_ENABLED:
-                try:
-                    mitmrunner.kill_mitmproxy()
-                except Exception as e:
-                    log('Error killing MTIM!')
-                    traceback.print_exc()
-
-            if scrape_config.REC_AUD_BY_PYAUDIO:
-                audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-                recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-            elif scrape_config.REC_AUD_BY_ARECORD:
-                remove_file(OTT_CURRENT_CHANNEL_FILE)
-
-            surfer.uninstall_channel()
-            surfer.kill_all_tcpdump()
+            clean_up_channel(surfer, recorder, mitmrunner)
         except TimeoutError:
             log('Timeout for crawl expired in launch_channel!')
             raise
@@ -701,26 +707,7 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
 
     err_occurred = False
     try:
-        if scrape_config.MITMPROXY_ENABLED:
-            try:
-                mitmrunner.kill_mitmproxy()
-            except Exception as e:
-                log('Error killing MTIM!')
-                traceback.print_exc()
-
-        if scrape_config.REC_AUD_BY_PYAUDIO:
-            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            err_occurred = recorder.dump(join(scrape_config.DATA_DIR,
-                                              str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-            if err_occurred:
-                log('Audio returned error!')
-        elif scrape_config.REC_AUD_BY_ARECORD:
-            remove_file(OTT_CURRENT_CHANNEL_FILE)
-
-        surfer.kill_all_tcpdump()
-        time.sleep(3)
-        surfer.go_home()
-        surfer.uninstall_channel()
+        clean_up_channel(surfer, recorder, mitmrunner)
         surfer.deduplicate_screenshots()
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
@@ -762,6 +749,10 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
                     err_occurred = terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                     if not err_occurred:
                         channel_state = CrawlState.TERMINATED
+                    if not surfer.ever_active:
+                        channel_state = CrawlState.LAUNCHING
+                        log('Critical error: Channel was never active')
+
     except TimeoutError:
         log('Timeout for crawl expired! Ending scrape for channel %s' % channel_id)
     except:

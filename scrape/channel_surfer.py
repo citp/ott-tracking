@@ -66,6 +66,7 @@ class ChannelSurfer(object):
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
         self.event_timestamps = []
+        self.ever_active = False
 
 
     def log(self, *args):
@@ -102,7 +103,11 @@ class ChannelSurfer(object):
             print("Active channel did not return!")
             return False
         print("Active Channel is " + str(active_channel))
-        return self.channel_id == str(active_channel)
+        if self.channel_id == str(active_channel):
+            self.ever_active = True
+            return True
+        else:
+            return False
 
     def install_channel(self):
 
@@ -137,7 +142,7 @@ class ChannelSurfer(object):
     def uninstall_channel(self):
 
         self.log('Uninstalling channel.')
-
+        time.sleep(3)
         if not self.channel_is_installed():
             self.log('Uninstalling a non-existent channel. Aborted.')
             return
@@ -167,18 +172,13 @@ class ChannelSurfer(object):
             raise SurferAborted
 
         self.log('Launching channel. Attempt %s' % self.launch_iter)
-
         self.go_home()
-
         self.rrc.launch_channel(self.channel_id)
-
         self.launch_iter += 1
         time.sleep(1)
 
     def press_select(self):
-
         self.log('Pressing the Select button.')
-
         self.rrc.press_key('Select')
 
     def press_key(self, key):
@@ -189,11 +189,8 @@ class ChannelSurfer(object):
         self.rrc.reboot()
 
     def capture_packets(self, timestamp):
-
         self.kill_all_tcpdump()
-
         time.sleep(3)
-
         self.pcap_filename = '{}-{}.pcap'.format(
             self.channel_id,
             int(timestamp)
@@ -236,8 +233,8 @@ class ChannelSurfer(object):
         #subprocess.Popen(
         #    './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
         #    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
         self.log('Capturing packets:', self.pcap_filename)
+
 
     def timestamp_event(self, event_name):
         self.event_timestamps.append((event_name, time.time()))
