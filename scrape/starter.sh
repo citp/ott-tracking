@@ -17,6 +17,6 @@ source global.conf |& tee $LOG_OUT_FILE
 
 ##CRAWL COMMANDS!
 # Automatic crawler
-#stdbuf -oL -eL python3 -u ./scrape_channels.py $1 |& tee -a $LOG_OUT_FILE
+stdbuf -oL -eL python3 -u ./scrape_channels.py $1 |& tee -a $LOG_OUT_FILE
 # Manual crawler
-stdbuf -oL -eL python3 -u ./manual_scraper.py $@ |& tee $LOG_OUT_FILE
+#stdbuf -oL -eL python3 -u ./manual_scraper.py $@ |& tee $LOG_OUT_FILE
