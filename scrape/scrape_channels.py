@@ -385,7 +385,7 @@ def is_video_playing(surfer, seconds=5):
     `seconds` must be an odd integer, since the audio detection use
     majority voting.
     """
-    return detect_playback_using_audio(seconds) or \
+    return detect_playback_using_audio(seconds, surfer) or \
         detect_playback_using_screenshots(surfer)
 
 
