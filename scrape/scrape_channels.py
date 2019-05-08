@@ -523,7 +523,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
         with open(OTT_CURRENT_CHANNEL_FILE, 'w') as f:
             f.write("%s" % channel_id)
 
-        subprocess.call('./scripts/capture_audio.sh', shell=True)
+        subprocess.call('nohup  ./scripts/capture_audio.sh', shell=True)
 
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
