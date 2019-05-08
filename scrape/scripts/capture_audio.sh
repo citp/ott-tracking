@@ -26,6 +26,7 @@ do
     if ! pgrep  "starter.sh" > /dev/null
     then
         echo "Crawl finished. Will stop capturing audio."
+        exit 0
     fi
     CHANNEL_ID=$(<${CURRENT_CHANNEL})
     CH_AUDIO_DIR=${AUDIO_ROOT_DIR}/${CHANNEL_ID}
