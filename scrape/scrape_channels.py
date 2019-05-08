@@ -520,7 +520,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
 
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
-        with open(OTT_CURRENT_CHANNEL_FILE) as f:
+        with open(OTT_CURRENT_CHANNEL_FILE, 'w') as f:
             f.write("%s" % channel_id)
 
         subprocess.call('./scripts/capture_audio.sh', shell=True)
