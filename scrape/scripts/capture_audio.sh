@@ -3,7 +3,7 @@ AUDIO_ROOT_DIR=${DATA_DIR}/audio
 DETECTION_WINDOW=5
 CURRENT_CHANNEL=/tmp/OTT_CURRENT_CHANNEL
 
-echo "HOSTNAME".$HOSTNAME
+# echo "HOSTNAME".$HOSTNAME
 # set the audio HW name for arecord
 # http://www.voxforge.org/home/docs/faq/faq/linux-how-to-determine-your-audio-cards-or-usb-mics-maximum-sampling-rate
 if [ "$HOSTNAME" = "miyav" ]; then
