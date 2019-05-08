@@ -30,6 +30,7 @@ do
     fi
     CHANNEL_ID=$(<${CURRENT_CHANNEL})
     CH_AUDIO_DIR=${AUDIO_ROOT_DIR}/${CHANNEL_ID}
+    mkdir -p ${CH_AUDIO_DIR}
     # echo "Continuous audio capturing to ${CH_AUDIO_DIR}"
 
     arecord -q -t wav -c 2 -f S16_LE -r44100 -d 1 -D $AUDIO_HW --use-strftime ${CH_AUDIO_DIR}/${CHANNEL_ID}_"%Y%m%d-%H%M%S.wav"  >> ${CH_AUDIO_DIR}/${CHANNEL_ID}_arecord.out 2>&1
