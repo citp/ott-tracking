@@ -796,8 +796,10 @@ if __name__ == '__main__':
         start_crawl(channel_list_file)
     except Exception as e:
         print("Error while crawling the channel: %s" % e)
+        sys.exit(1)
     finally:
         print("Finished crawling")
+        sys.exit(0)
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
 
