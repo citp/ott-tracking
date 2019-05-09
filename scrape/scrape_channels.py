@@ -45,6 +45,7 @@ if scrape_config.REC_AUD_BY_ARECORD:
 
 MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
 OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
+CRAWL_FINISHED_FILE = "/tmp/CRAWL_FINISHED.txt"
 
 #repeat = {}
 # To get this list use this command:
@@ -473,6 +474,7 @@ def start_screenshot():
             cmd = join('./scripts') + '/capture_screenshot.sh'
             log('Starting screenshot process with %s ' % cmd)
             SCREENSHOT_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+    time.sleep(2)
 
 def stop_screenshot():
     if scrape_config.PLAT == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
@@ -480,6 +482,7 @@ def stop_screenshot():
         if SCREENSHOT_PROCESS is not None:
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
             os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
+        subprocess.call('./scripts/kill_ffmpeg.sh', shell=True)
 
 NETSTAT_PROCESS = None
 def start_netstat(data_dir):
@@ -736,11 +739,15 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
             err_occurred = install_channel(surfer)
             if not err_occurred:
                 channel_state = CrawlState.LAUNCHING
+                #We only need screenshots for launching channel
+                start_screenshot()
                 if scrape_config.MITMPROXY_ENABLED:
                     launch_mitm(mitmrunner)
                 err_occurred = crawl_channel(surfer, mitmrunner)
                 if not err_occurred:
                     channel_state = CrawlState.TERMINATING
+                    # Terminate screenshots immediately
+                    stop_screenshot()
                     err_occurred = terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                     if not err_occurred:
                         channel_state = CrawlState.TERMINATED
@@ -780,6 +787,24 @@ def send_alert_email(subject, msg):
     server.quit()
 
 
+def remove_crawl_finished_file():
+    try:
+        print("Removing %s file to start a new crawl." % CRAWL_FINISHED_FILE)
+        os.remove(CRAWL_FINISHED_FILE)
+    except Exception:
+        print("Cannot remove the CRAWL_FINISHED_FILE file at %s " % CRAWL_FINISHED_FILE)
+
+
+def finish_and_cleanup_crawl():
+    try:
+        print("Touching %s file to indicate crawl is done" % CRAWL_FINISHED_FILE)
+        open(CRAWL_FINISHED_FILE, 'a').close()
+    except Exception:
+        print("Cannot create the CRAWL_FINISHED_FILE file at %s " % CRAWL_FINISHED_FILE)
+    flushall_iptables()
+    subprocess.call('./scripts/kill_ffmpeg.sh', shell=True)
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print("You must pass the channel list CSV")
@@ -791,7 +816,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        start_screenshot()
+        remove_crawl_finished_file()
         start_netstat(scrape_config.DATA_DIR)
         start_crawl(channel_list_file)
     except Exception as e:
@@ -800,6 +825,7 @@ if __name__ == '__main__':
         sys.exit(1)
     finally:
         print("Finished crawling")
+        finish_and_cleanup_crawl()
         sys.exit(0)
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!

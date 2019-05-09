@@ -14,7 +14,9 @@ import json
 import threading
 import sys
 from datetime import datetime
-from os.path import join
+from os.path import join, isfile
+
+CRAWL_FINISHED_FILE = "/tmp/CRAWL_FINISHED.txt"
 
 
 def main(save_path):
@@ -28,23 +30,18 @@ def main(save_path):
     th = threading.Thread(target=dump_netstat_thread, args=(netstat_fp, ))
     th.daemon = True
     th.start()
-
-    # Block forever until being killed
-    try:
-        while True:
-            time.sleep(100)
-    except KeyboardInterrupt:
-        pass
-
-    netstat_fp.close()
+    th.join()
 
 
 def dump_netstat_thread(fp):
 
     while True:
+        if isfile(CRAWL_FINISHED_FILE):
+            print("Crawl is finished, terminating netstat collection.")
+            break
         dump_netstat(fp)
         time.sleep(0.2)
-
+    fp.close()
 
 def dump_netstat(fp):
     """
