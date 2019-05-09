@@ -107,7 +107,7 @@ def read_channel_details_df():
     roku_df['platform'] = 'roku'
     AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
     AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
-    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/100-channel_name.csv"
+    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
     amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV)
     amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV), sort=True)
     tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
