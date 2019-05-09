@@ -22,9 +22,6 @@ LOG_DIR="$1/logs"
 # Create video from the screenshots
 ./make_video.sh $DATA_DIR
 
-# Run audio playback detection
-python3 ../../../scrape/detect_audio.py $DATA_DIR --dump
-
 # Run OCR detection
 cd ../../imagetextparser/
 python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
