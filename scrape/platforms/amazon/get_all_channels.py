@@ -3,7 +3,6 @@ ALL_CHANNELS_TXT = 'platforms/amazon/channel_lists/channel_names.csv'  # file th
 
 def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
     """Returns a dictionary of all available channels for install."""
-
     channel_list = []
 
     with open(channel_csv) as fp:
@@ -34,6 +33,7 @@ def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
                     'developer_name': developer_name,
                     'name': product_name,
                     'amazon_ranking': int(amazon_category_ranking),
+                    '_category': "None",
                     'overlap_token_count': overlap_token_count,
                 }
 
@@ -53,6 +53,7 @@ def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
             channel_list.append(record)
 
     return channel_list
+
 
 
 if __name__ == '__main__':

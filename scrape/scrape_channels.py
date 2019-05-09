@@ -796,6 +796,7 @@ if __name__ == '__main__':
         start_crawl(channel_list_file)
     except Exception as e:
         print("Error while crawling the channel: %s" % e)
+        print(traceback.format_exc())
         sys.exit(1)
     finally:
         print("Finished crawling")
