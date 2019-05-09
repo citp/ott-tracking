@@ -26,7 +26,9 @@ LOG_DIR="$1/logs"
 python3 ../../../scrape/detect_audio.py $DATA_DIR --dump
 
 # Run OCR detection
-python3 ../../imagetextparser/cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
+cd ../../imagetextparser/
+python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
+cd -
 
 #TV_IP_ADDR=`grep "TV_IP_ADDR" $LOG_DIR/*.log | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
 TV_IP_ADDR=`grep "TV_IP_ADDR" $DATA_DIR/crawl_info-*.txt | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
@@ -60,7 +62,7 @@ FIELDS="-e tcp.stream -e frame.time_epoch -e eth.src -e ip.dst -e tcp.dstport -e
 # List all TCP streams with SYN packets
 FORMAT="fields"
 FILTER="tcp.flags.syn==1 and tcp.flags.ack==0 and not ((ip.src == $TV_IP_ADDR && tcp.srcport == $TV_TCP_PORT) || (ip.dst == $TV_IP_ADDR && tcp.dstport == $TV_TCP_PORT))"
-FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e ip.dst -e tcp.dstport"
+FIELDS="-e tcp.stream -e frame.time_epoch -e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport"
 SUFFIX="tcp_streams"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT $FIELDS
 
