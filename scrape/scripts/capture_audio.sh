@@ -36,7 +36,13 @@ do
     # echo "Continuous audio capturing to ${CH_AUDIO_DIR}"
 
     arecord -q -t wav -c 2 -f S16_LE -r44100 -d 1 -D $AUDIO_HW --use-strftime ${CH_AUDIO_DIR}/${CHANNEL_ID}_"%Y%m%d-%H%M%S.wav"  >> ${CH_AUDIO_DIR}/${CHANNEL_ID}_arecord.out 2>&1
-    sox $(ls ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav | sort -n | tail -n ${DETECTION_WINDOW}) ${CH_AUDIO_DIR}/${CHANNEL_ID}_most_recent.wav   >> ${CH_AUDIO_DIR}/${CHANNEL_ID}_sox.out 2>&1
+    if [ $? -eq 0 ]; then
+      sox $(ls ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav | sort -n | tail -n ${DETECTION_WINDOW}) ${CH_AUDIO_DIR}/${CHANNEL_ID}_most_recent.wav   >> ${CH_AUDIO_DIR}/${CHANNEL_ID}_sox.out 2>&1
+    else
+      echo `date +"%Y-%m-%d %H:%M:%S"`" arecord error. Will sleep for a sec"
+      sleep 1
+    fi
+
 done
 
 sox $(ls ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav) ${CH_AUDIO_DIR}/${CHANNEL_ID}_combined.wav
