@@ -107,7 +107,9 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True, drop_from_unfinishe
 
     if name_resolution and ip_2_domains_by_channel is not None:
         add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
-        df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: disconnect.should_block(x))
+        #df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: disconnect.should_block(x) if x else False)
+        df['disconnect_blocked'] = df['host_by_dns'].map(
+            lambda x: disconnect.should_block("http://" + x) if len(x) else False)
     # add human readable timestamps
     df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
             int(x)).strftime('%Y-%m-%d %H:%M:%S'))

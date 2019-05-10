@@ -129,6 +129,31 @@ def read_channel_details_df():
     return roku_df.append(amazon_df, sort=True)
 
 
+def get_popular_domains(df, _group_by=["domain_by_dns"],
+                        subset=["channel_id", "domain_by_dns"], head=10):
+    return df.drop_duplicates(subset=subset).\
+        groupby(_group_by).size().reset_index(name="Num. of channels").\
+        sort_values(by=['Num. of channels'], ascending=False).head(head)
+
+pre = r"""
+\begin{table}[H]
+%\centering
+\resizebox{\columnwidth}{!}{%
+"""
+
+post = r"""
+}
+\caption{CAPTION}
+\label{tab:LABEL}
+\end{table}"""
+
+
+def make_latex_table(df, label="LABEL", caption="caption",
+    tablefmt="latex_booktabs", headers="keys", showindex=False):
+    tabu = tabulate(df, tablefmt="latex_booktabs", headers="keys", showindex=False)
+    return pre + tabu + post.replace("LABEL", label).replace("CAPTION", caption)
+
+
 if __name__ == '__main__':
     df = read_channel_details_df()
     print(len(df))
