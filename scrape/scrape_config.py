@@ -6,7 +6,8 @@ Crawl settings
 ENABLE_SMART_CRAWLER = True  # remove after testing
 MITMABLE_DOMAINS_WARM_UP_CRAWL = True
 RSYNC_EN = False
-REC_AUD = True
+REC_AUD_BY_PYAUDIO = False
+REC_AUD_BY_ARECORD = True
 TLS_INTERCEPT = True
 SSL_STRIP = False
 THREADED_SCRAPE = False

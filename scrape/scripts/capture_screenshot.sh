@@ -21,6 +21,11 @@ do
     then
       exit 0
     fi
+    if ! pgrep  "starter.sh" > /dev/null
+    then
+        echo "Crawl finished. Will stop capturing screenshots."
+        exit 0
+    fi
     echo "Screenshot script stopped!"
     echo "Retrying in 2 seconds"
     sleep 2s

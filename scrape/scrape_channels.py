@@ -25,6 +25,9 @@ import scrape_config
 import glob
 import signal
 
+from platforms.roku.get_all_channels import get_channel_list as get_roku_channel_list
+from platforms.amazon.get_all_channels import get_channel_list as get_amazon_channel_list
+
 from smtplib import SMTP
 from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
@@ -34,16 +37,19 @@ from shutil import copyfile, copyfileobj
 from os.path import join, isfile
 from timeout import timeout
 from time import sleep
-if scrape_config.REC_AUD:
+if scrape_config.REC_AUD_BY_PYAUDIO:
     from audio_recorder import AudioRecorder
 
-MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+if scrape_config.REC_AUD_BY_ARECORD:
+    from audio_recorder import audio_played_second
 
+MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
+CRAWL_FINISHED_FILE = "/tmp/CRAWL_FINISHED.txt"
 
 #repeat = {}
 # To get this list use this command:
 # ls -larSt /mnt/iot-house/keys |  awk '{print $9}' | tr '\n' ','
-channels_done = {}
 
 #This is a global env that needs to be set in bash
 global_keylog_file = os.getenv("MITMPROXY_SSLKEYLOGFILE") or os.getenv("SSLKEYLOGFILE")
@@ -87,7 +93,6 @@ class PropagatingThread(threading.Thread):
             return None
 
 
-
 def dns_sniffer_run():
     #time.sleep(2)
     #p = subprocess.Popen(
@@ -100,13 +105,13 @@ def dns_sniffer_run():
     dns_sniff_process = Process(target=dns_sniffer_call, args=(wlan_if_name, scrape_config.TV_IP_ADDR,))
     dns_sniff_process.start()
 
+
 def dns_sniffer_stop():
     global dns_sniff_process
     if dns_sniff_process is not None:
         dns_sniff_process.terminate()
     else:
         log("Error stopping DNS sniffer! Process not found")
-
 
 
 def dump_redis(PREFIX, date_prefix):
@@ -162,38 +167,32 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
         log(traceback.format_exc())
 
 
-def main(channel_list=None):
+def start_crawl(channel_list_file):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
+    remove_file(OTT_CURRENT_CHANNEL_FILE)
     date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
     # Maps category to a list of channels
 
     if scrape_config.PLAT == "ROKU":
         log("Importing Roku channels")
-        from platforms.roku.get_all_channels import get_channel_list
+        channels = get_roku_channel_list(channel_list_file)
     elif scrape_config.PLAT == "AMAZON":
         log("Importing Amazon channels")
-        from platforms.amazon.get_all_channels import get_channel_list
+        channels = get_amazon_channel_list(channel_list_file)
 
-    if channel_list is not None:
-        channels = get_channel_list(channel_list)
-    else:
-        channels = get_channel_list()
-
-
-
+    if not channels:
+        log("No channels to crawl! Terminating the crawl")
+        return False
     # Check what channels we have already scraped
     scraped_channel_ids = set()
-    scraped_channel_ids.update(channels_done)
 
     log('Skipping channels:', scraped_channel_ids)
 
     # Scrape from the top channels of each category
 
     while True:
-
         next_channels = []
-
         if isinstance(channels, dict):
             for channel_l in channels.values():
                 if channel_l:
@@ -204,7 +203,7 @@ def main(channel_list=None):
                 channels.remove(channel)
 
         if not next_channels:
-            if scrape_config.REC_AUD:
+            if scrape_config.REC_AUD_BY_PYAUDIO:
                 recorder.complete_audio_recording()
             dns_sniffer_stop()
             log("Scrapping finished. Terminating the crawl")
@@ -292,6 +291,7 @@ def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, re
         write_log_files(output_file_desc, str(channel['id']), channel_res_file, channel_state)
     return scrape_success
 
+
 def log(*args):
 
     s = '[{}] '.format(datetime.today())
@@ -301,18 +301,18 @@ def log(*args):
     with open(os.path.join(scrape_config.LOCAL_LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
-if scrape_config.REC_AUD:
+if scrape_config.REC_AUD_BY_PYAUDIO:
     # Create recorder object
     try:
         recorder = AudioRecorder(log)
+        recorder.start()  # Starting audio thread
     except Exception as e:
         log(e)
         log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
-        scrape_config.REC_AUD = False
+        scrape_config.REC_AUD_BY_PYAUDIO = False
+else:
+    recorder = None
 
-if scrape_config.REC_AUD:
-    # Starting audio thread
-    recorder.start()
 
 def check_folders():
     for f in scrape_config.folders:
@@ -365,11 +365,16 @@ def detect_playback_using_screenshots(surfer):
     return False
 
 
-def detect_playback_using_audio(seconds):
-    if scrape_config.REC_AUD:
+def detect_playback_using_audio(seconds, surfer):
+    if scrape_config.REC_AUD_BY_PYAUDIO:
         return recorder.is_audio_playing(seconds)
-    else:
-        return False
+    elif scrape_config.REC_AUD_BY_ARECORD:
+        # surfer.channel_id
+        recent_audio_filename = "%s_most_recent.wav" % surfer.channel_id
+        recent_audio_path = join(
+            scrape_config.DATA_DIR, scrape_config.AUDIO_PREFIX,
+            str(surfer.channel_id), recent_audio_filename)
+        return -1 != audio_played_second(recent_audio_path, 5)
 
 
 def is_video_playing(surfer, seconds=5):
@@ -378,7 +383,7 @@ def is_video_playing(surfer, seconds=5):
     `seconds` must be an odd integer, since the audio detection use
     majority voting.
     """
-    return detect_playback_using_audio(seconds) or \
+    return detect_playback_using_audio(seconds, surfer) or \
         detect_playback_using_screenshots(surfer)
 
 
@@ -401,6 +406,12 @@ def play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx):
     for idx, key in enumerate(key_sequence, 1):
         surfer.timestamp_event("smartlaunch-%02d-key-seq-%02d-key-%02d" % (launch_idx, key_seq_idx, idx))
         log("SMART_CRAWLER: will press %s (%d of %d)" % (key, idx, n_keys))
+        if not surfer.channel_is_active():
+            log("SMART_CRAWLER: Channel is not active. Skipping to next key seq"
+                ". Launch: %s channel %s"
+                % (launch_idx, surfer.channel_id))
+            return False
+
         surfer.press_key(key)
         if key == "Select":  # check for playback only after Select
             surfer.capture_screenshots(10)
@@ -463,6 +474,7 @@ def start_screenshot():
             cmd = join('./scripts') + '/capture_screenshot.sh'
             log('Starting screenshot process with %s ' % cmd)
             SCREENSHOT_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+    time.sleep(2)
 
 def stop_screenshot():
     if scrape_config.PLAT == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
@@ -470,6 +482,7 @@ def stop_screenshot():
         if SCREENSHOT_PROCESS is not None:
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
             os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
+        subprocess.call('./scripts/kill_ffmpeg.sh', shell=True)
 
 NETSTAT_PROCESS = None
 def start_netstat(data_dir):
@@ -513,6 +526,11 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
 
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
+        with open(OTT_CURRENT_CHANNEL_FILE, 'w') as f:
+            f.write("%s" % channel_id)
+
+        subprocess.call('./scripts/capture_audio.sh&', shell=True)
+
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner.clean_iptables()
             mitmrunner.kill_existing_mitmproxy()
@@ -529,6 +547,25 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
     return ret
 
 
+def clean_up_channel(surfer, recorder=None, mitmrunner=None):
+    if scrape_config.REC_AUD_BY_PYAUDIO:
+        audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id,
+                                                    int(time.time()))
+        recorder.dump(join(scrape_config.DATA_DIR,
+                           str(scrape_config.AUDIO_PREFIX), audio_file_addr))
+    elif scrape_config.REC_AUD_BY_ARECORD:
+        remove_file(OTT_CURRENT_CHANNEL_FILE)
+
+    surfer.kill_all_tcpdump()
+    if mitmrunner is not None and scrape_config.MITMPROXY_ENABLED:
+        try:
+            mitmrunner.kill_mitmproxy()
+        except Exception as e:
+            log('Error killing MITM!')
+            traceback.print_exc()
+    surfer.uninstall_channel()
+
+
 def install_channel(surfer):
     log('Installing channel %s' % str(surfer.channel_id))
     err_occurred = False
@@ -539,13 +576,7 @@ def install_channel(surfer):
     except SurferAborted as e:
         err_occurred = True
         log('Channel not installed! Aborting scarping of channel')
-        if scrape_config.REC_AUD:
-            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            recorder.dump(join(scrape_config.DATA_DIR,
-                                         str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-
-        surfer.uninstall_channel()
-        surfer.kill_all_tcpdump()
+        clean_up_channel(surfer, recorder)
     except TimeoutError:
         log('Timeout for crawl expired in install_channel!')
         raise
@@ -615,6 +646,7 @@ def smart_crawl(surfer):
             log('SMART_CRAWLER: Cannot detect playback on channel: %s' %
                 surfer.channel_id)
 
+
 def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     log('Launching channel %s' % surfer.channel_id)
     if manual_crawl:
@@ -630,7 +662,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     else:
         err_occurred = False
         try:
-            if scrape_config.REC_AUD:
+            if scrape_config.REC_AUD_BY_PYAUDIO:
                 recorder.start_recording(scrape_config.SCRAPE_TO, surfer.channel_id)
 
             if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
@@ -651,20 +683,7 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
         except SurferAborted as e:
             err_occurred = True
             log('Channel failed during launch! Aborting scarping of channel')
-            if scrape_config.MITMPROXY_ENABLED:
-                try:
-                    mitmrunner.kill_mitmproxy()
-                except Exception as e:
-                    log('Error killing MTIM!')
-                    traceback.print_exc()
-
-            if scrape_config.REC_AUD:
-                audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-                recorder.dump(join(scrape_config.DATA_DIR, str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-
-
-            surfer.uninstall_channel()
-            surfer.kill_all_tcpdump()
+            clean_up_channel(surfer, recorder, mitmrunner)
         except TimeoutError:
             log('Timeout for crawl expired in launch_channel!')
             raise
@@ -686,24 +705,7 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
 
     err_occurred = False
     try:
-        if scrape_config.MITMPROXY_ENABLED:
-            try:
-                mitmrunner.kill_mitmproxy()
-            except Exception as e:
-                log('Error killing MTIM!')
-                traceback.print_exc()
-
-        if scrape_config.REC_AUD:
-            audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id, int(time.time()))
-            err_occurred = recorder.dump(join(scrape_config.DATA_DIR,
-                                              str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-            if err_occurred:
-                log('Audio returned error!')
-
-        surfer.kill_all_tcpdump()
-        time.sleep(3)
-        surfer.go_home()
-        surfer.uninstall_channel()
+        clean_up_channel(surfer, recorder, mitmrunner)
         surfer.deduplicate_screenshots()
         surfer.terminate_rrc()
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
@@ -737,14 +739,22 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
             err_occurred = install_channel(surfer)
             if not err_occurred:
                 channel_state = CrawlState.LAUNCHING
+                #We only need screenshots for launching channel
+                start_screenshot()
                 if scrape_config.MITMPROXY_ENABLED:
                     launch_mitm(mitmrunner)
                 err_occurred = crawl_channel(surfer, mitmrunner)
                 if not err_occurred:
                     channel_state = CrawlState.TERMINATING
+                    # Terminate screenshots immediately
+                    stop_screenshot()
                     err_occurred = terminate_and_collect_data(surfer, mitmrunner, date_prefix)
                     if not err_occurred:
                         channel_state = CrawlState.TERMINATED
+                    if not surfer.ever_active:
+                        channel_state = CrawlState.LAUNCHING
+                        log('Critical error: Channel was never active')
+
     except TimeoutError:
         log('Timeout for crawl expired! Ending scrape for channel %s' % channel_id)
     except:
@@ -776,23 +786,47 @@ def send_alert_email(subject, msg):
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
 
-if __name__ == '__main__':
-    start_screenshot()
-    flushall_iptables()
-    start_netstat(scrape_config.DATA_DIR)
-    if len(sys.argv) > 1:
-        if isfile(os.path.abspath(sys.argv[1])):
-            main(sys.argv[1])
-        else:
-            channel_id = int(sys.argv[1])
-            date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
-            automatic_scrape(channel_id, date_prefix)
-    else:
 
-        main()
+def remove_crawl_finished_file():
+    try:
+        print("Removing %s file to start a new crawl." % CRAWL_FINISHED_FILE)
+        os.remove(CRAWL_FINISHED_FILE)
+    except Exception:
+        print("Cannot remove the CRAWL_FINISHED_FILE file at %s " % CRAWL_FINISHED_FILE)
+
+
+def finish_and_cleanup_crawl():
+    try:
+        print("Touching %s file to indicate crawl is done" % CRAWL_FINISHED_FILE)
+        open(CRAWL_FINISHED_FILE, 'a').close()
+    except Exception:
+        print("Cannot create the CRAWL_FINISHED_FILE file at %s " % CRAWL_FINISHED_FILE)
+    flushall_iptables()
+    subprocess.call('./scripts/kill_ffmpeg.sh', shell=True)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("You must pass the channel list CSV")
+        sys.exit(1)
+
+    channel_list_file = sys.argv[1]
+    if not isfile(os.path.abspath(channel_list_file)):  # channel list csv file
+        print("Cannot read the file %s" % channel_list_file)
+        sys.exit(1)
+
+    try:
+        remove_crawl_finished_file()
+        start_netstat(scrape_config.DATA_DIR)
+        start_crawl(channel_list_file)
+    except Exception as e:
+        print("Error while crawling the channel: %s" % e)
+        print(traceback.format_exc())
+        sys.exit(1)
+    finally:
+        print("Finished crawling")
+        finish_and_cleanup_crawl()
+        sys.exit(0)
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
-    stop_netstat()
-    stop_screenshot()
-    sys.exit(1)
 

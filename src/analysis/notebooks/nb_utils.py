@@ -90,6 +90,8 @@ def read_channel_details_df():
     
     ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
     ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
+    #ROKU_TOP_1K = "../../../scrape/platforms/roku/channel_lists/top1000_channel_list.txt"
+
     for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
         for channel_json_str in open(channel_list_file):
             channel_df.append(json.loads(channel_json_str))
@@ -107,7 +109,7 @@ def read_channel_details_df():
     roku_df['platform'] = 'roku'
     AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
     AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
-    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/100-channel_name.csv"
+    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
     amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV)
     amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV), sort=True)
     tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
@@ -127,6 +129,31 @@ def read_channel_details_df():
     amazon_df['platform'] = 'amazon'
     # print(amazon_df.columns)
     return roku_df.append(amazon_df, sort=True)
+
+
+def get_popular_domains(df, _group_by=["domain_by_dns"],
+                        subset=["channel_id", "domain_by_dns"], head=10):
+    return df.drop_duplicates(subset=subset).\
+        groupby(_group_by).size().reset_index(name="Num. of channels").\
+        sort_values(by=['Num. of channels'], ascending=False).head(head)
+
+pre = r"""
+\begin{table}[H]
+%\centering
+\resizebox{\columnwidth}{!}{%
+"""
+
+post = r"""
+}
+\caption{CAPTION}
+\label{tab:LABEL}
+\end{table}"""
+
+
+def make_latex_table(df, label="LABEL", caption="caption",
+    tablefmt="latex_booktabs", headers="keys", showindex=False):
+    tabu = tabulate(df, tablefmt="latex_booktabs", headers="keys", showindex=False)
+    return pre + tabu + post.replace("LABEL", label).replace("CAPTION", caption)
 
 
 if __name__ == '__main__':

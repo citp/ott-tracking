@@ -49,12 +49,12 @@ class ChannelSurfer(object):
 
         self.pcap_filename = None
         self.platform = platform
-        if self.platform == "ROKU":
-            self.rrc = RokuRemoteControl(tv_ip)
-        elif self.platform == "AMAZON":
-            self.rrc = AmazonRemoteControl(tv_ip, tv_serial_no)
-        self.tv_ip = tv_ip
         self.channel_id = str(channel_id)
+        if self.platform == "ROKU":
+            self.rrc = RokuRemoteControl(tv_ip, self.channel_id)
+        elif self.platform == "AMAZON":
+            self.rrc = AmazonRemoteControl(tv_ip, tv_serial_no, self.channel_id)
+        self.tv_ip = tv_ip
         self.data_dir = data_dir + "/"
         self.pcap_dir = self.data_dir  + str(pcap_prefix)
         self.log_dir = join(self.data_dir  + str(log_prefix))
@@ -66,6 +66,7 @@ class ChannelSurfer(object):
         self.last_screenshot_crc = 0
         self.tcpdump_proc = None
         self.event_timestamps = []
+        self.ever_active = False
 
 
     def log(self, *args):
@@ -102,7 +103,11 @@ class ChannelSurfer(object):
             print("Active channel did not return!")
             return False
         print("Active Channel is " + str(active_channel))
-        return self.channel_id == str(active_channel)
+        if self.channel_id == str(active_channel):
+            self.ever_active = True
+            return True
+        else:
+            return False
 
     def install_channel(self):
 
@@ -118,7 +123,7 @@ class ChannelSurfer(object):
             if self.channel_is_installed():
                 break
             self.go_home()
-            self.rrc.install_channel(self.channel_id)
+            self.rrc.install_channel()
 
             for _ in range(12):
                 time.sleep(5)
@@ -137,7 +142,7 @@ class ChannelSurfer(object):
     def uninstall_channel(self):
 
         self.log('Uninstalling channel.')
-
+        time.sleep(3)
         if not self.channel_is_installed():
             self.log('Uninstalling a non-existent channel. Aborted.')
             return
@@ -145,7 +150,7 @@ class ChannelSurfer(object):
 
         self.go_home()
 
-        self.rrc.uninstall_channel(self.channel_id)
+        self.rrc.uninstall_channel()
 
         for _ in range(60):
             time.sleep(1)
@@ -167,18 +172,13 @@ class ChannelSurfer(object):
             raise SurferAborted
 
         self.log('Launching channel. Attempt %s' % self.launch_iter)
-
         self.go_home()
-
-        self.rrc.launch_channel(self.channel_id)
-
+        self.rrc.launch_channel()
         self.launch_iter += 1
         time.sleep(1)
 
     def press_select(self):
-
         self.log('Pressing the Select button.')
-
         self.rrc.press_key('Select')
 
     def press_key(self, key):
@@ -189,11 +189,8 @@ class ChannelSurfer(object):
         self.rrc.reboot()
 
     def capture_packets(self, timestamp):
-
         self.kill_all_tcpdump()
-
         time.sleep(3)
-
         self.pcap_filename = '{}-{}.pcap'.format(
             self.channel_id,
             int(timestamp)
@@ -236,8 +233,8 @@ class ChannelSurfer(object):
         #subprocess.Popen(
         #    './start_pcap.sh ' + str(self.pcap_dir) + "/" + str(self.pcap_filename),
         #    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
         self.log('Capturing packets:', self.pcap_filename)
+
 
     def timestamp_event(self, event_name):
         self.event_timestamps.append((event_name, time.time()))

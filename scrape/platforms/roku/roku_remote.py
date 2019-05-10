@@ -16,9 +16,10 @@ DEBUG_HTTP = False
 
 class RokuRemoteControl():
 
-    def __init__(self, ip_address, port=8060):
+    def __init__(self, ip_address, channel_id, port=8060):
         self.api_url = "http://%s:%s" % (ip_address, port)
         self.installed_apps = {}
+        self.channel_id = channel_id
 
     def send_post_request(self, url):
         try:
@@ -50,14 +51,14 @@ class RokuRemoteControl():
         self.send_post_request("%s/keydown/%s" % (self.api_url, key))
         self.send_post_request("%s/keyup/%s" % (self.api_url, key))
 
-    def launch_channel(self, channel_id):
-        self.send_post_request("%s/launch/%s" % (self.api_url, channel_id))
+    def launch_channel(self):
+        self.send_post_request("%s/launch/%s" % (self.api_url, self.channel_id))
 
-    def install_channel(self, channel_id):
+    def install_channel(self):
         # the following launches the Channel Store details, but
         # but doesn't install the channel. We simulate a user key press
         # to install the channel
-        self.send_post_request("%s/install/%s" % (self.api_url, channel_id))
+        self.send_post_request("%s/install/%s" % (self.api_url, self.channel_id))
         sleep(2)
         self.press_key("Select")
         # TODO: this will leave the confirmation (channel added) dialog on
@@ -66,11 +67,11 @@ class RokuRemoteControl():
     def is_showing_home(self):
         return True
 
-    def uninstall_channel(self, channel_id):
+    def uninstall_channel(self):
         """Uninstall a given channel by simulating key presses."""
         # 11 is the Roku Channel Store app id
         # https://sdkdocs.roku.com/display/sdkdoc/External+Control+API#ExternalControlAPI-query/apps  # noqa
-        self.send_post_request("%s/launch/11?contentID=%s" % (self.api_url, channel_id))
+        self.send_post_request("%s/launch/11?contentID=%s" % (self.api_url, self.channel_id))
         sleep(2)
         self.press_key("Down")  # go to Remove channel
         sleep(0.5)
