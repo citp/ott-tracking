@@ -482,6 +482,7 @@ def stop_screenshot():
         if SCREENSHOT_PROCESS is not None:
             log('Terminating screenshot process with PID %s ' % str(SCREENSHOT_PROCESS))
             os.killpg(os.getpgid(SCREENSHOT_PROCESS.pid), signal.SIGTERM)
+            SCREENSHOT_PROCESS = None
         subprocess.call('./scripts/kill_ffmpeg.sh', shell=True)
 
 NETSTAT_PROCESS = None
@@ -498,6 +499,7 @@ def stop_netstat():
         if NETSTAT_PROCESS is not None:
             log('Terminating netstat process with PID %s ' % str(NETSTAT_PROCESS))
             os.killpg(os.getpgid(NETSTAT_PROCESS.pid), signal.SIGTERM)
+            NETSTAT_PROCESS = None
         sleep(1)
         subprocess.call('pkill -2 -f dump_netstat.sh', shell=True, stderr=open(os.devnull, 'wb'))
 
