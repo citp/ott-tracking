@@ -18,8 +18,13 @@ from os.path import join, sep, isfile, basename
 from collections import defaultdict, Counter
 from nb_utils import read_channel_details_df, get_crawl_data_path
 from tld import get_fld
-from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
-DISCONNECT_BLOCKLIST = get_disconnect_blocked_hosts()  # load Disconnect's blacklist
+# from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
+# DISCONNECT_BLOCKLIST = get_disconnect_blocked_hosts()  # load Disconnect's blacklist
+
+from trackingprotection_tools import DisconnectParser
+# https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json"
+disconnect = DisconnectParser(blocklist="disconnect/services.json")
+
 
 PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
 channel_list = '../../scrape/platforms/roku/channel_lists/all_channel_list.txt'
@@ -76,7 +81,7 @@ def load_timestamps_from_crawl_data(root_dir):
 
 
 # Create global_df, containing all SSL/TCP streams SYN packets
-def get_distinct_tcp_conns(crawl_name, name_resolution=True):
+def get_distinct_tcp_conns(crawl_name, name_resolution=True, drop_from_unfinished=True):
     df = pd.DataFrame([])
     crawl_data_dir = get_crawl_data_path(crawl_name)
     post_process_dir = join(crawl_data_dir, 'post-process')
@@ -95,7 +100,6 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True):
         # take distinct TCP connections
         df = df.append(tmp_df.drop_duplicates("tcp.stream"))
     assert len(df)
-
     # replace dots in column names with underscores
     # mapping = {old_col: old_col.replace(".", "_") for old_col in df.columns}
     # df.rename(columns=mapping, inplace=True)
@@ -103,16 +107,16 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True):
 
     if name_resolution and ip_2_domains_by_channel is not None:
         add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
-        df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: is_blocked_by_disconnect("http://" + x, DISCONNECT_BLOCKLIST))
+        df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: disconnect.should_block(x))
     # add human readable timestamps
     df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
             int(x)).strftime('%Y-%m-%d %H:%M:%S'))
     channel_df = read_channel_details_df()
     add_channel_details(df, channel_df)
     playback_detected = get_playback_detection_results(crawl_name)
-    
-    
     df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
+    crawl_statuses = get_crawl_status(crawl_data_dir)
+    add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished)
     return df
 
 
@@ -356,12 +360,22 @@ def add_channel_details(df, channel_df):
     df['rank'] = df['channel_id'].map(lambda x: channel_df.loc[x]['rank'])
     df['category'] = df['channel_id'].map(lambda x: channel_df.loc[x]['category'])
 
-def get_http_df(crawl_data_dir):
+
+def add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished=False):
+    df['status'] = df.channel_id.map(lambda x: crawl_statuses.get(x, "UNKNOWN"))
+    if drop_from_unfinished:
+        df = df[df.status == "TERMINATED"]
+
+
+def get_http_df(crawl_data_dir, drop_from_unfinished=True):
     # print("Will load HTTP dataframe for", crawl_data_dir)
     h1_requests, h1_responses, dns = get_http1_df(crawl_data_dir)
     h2_requests, h2_responses, _ = get_http2_df(crawl_data_dir)
     requests = h1_requests.append(h2_requests, sort=False)
     responses = h1_responses.append(h2_responses, sort=False)
+    crawl_statuses = get_crawl_status(crawl_data_dir)
+    add_channel_crawl_status(requests, crawl_statuses, drop_from_unfinished)
+    add_channel_crawl_status(responses, crawl_statuses, drop_from_unfinished)
     return replace_nan(requests), replace_nan(responses), dns
 
 
@@ -498,6 +512,13 @@ def get_playback_detection_results(crawl_name):
     return playback_detected
 
 
+def get_n_successful_channels(crawl_name):
+    """Return the number channels crawled without problem."""
+    crawl_dir = get_crawl_data_path(crawl_name)
+    crawl_statuses = get_crawl_status(crawl_dir)
+    return sum(1 for status in crawl_statuses.values() if status == "TERMINATED")
+
+
 def print_crawl_summary(crawl_name):
     detected = get_playback_detection_results(crawl_name)
     crawl_dir = get_crawl_data_path(crawl_name)
@@ -509,4 +530,4 @@ def print_crawl_summary(crawl_name):
     print ("Successful crawls", n_success)
     print("Results", Counter(crawl_statuses.values()))
     print ("Playback detected in", len(detected))
-    return detected, crawl_statuses
+    return n_success

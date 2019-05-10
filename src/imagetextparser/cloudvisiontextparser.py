@@ -204,7 +204,7 @@ class OCRHelper(object):
             print("\n")
 
     def writeJson(self, outputDirectory, channelName):
-        outputFile = outputDirectory + '/' + channelName + '.json'
+        outputFile = outputDirectory + '/' + channelName + '.ocr.json'
         with open(outputFile, 'w') as outFile:  
             json.dump(self.screenshotList, outFile)
 
@@ -279,7 +279,10 @@ class OCRManager(object):
         self.processChannels(channelList, result)
 
 if __name__ == '__main__':
+    # relative paths don't work if the script is called from a different path
     CLOUD_VISION_API_KEY = "service_key.json"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    api_key_path = os.path.join(script_dir, CLOUD_VISION_API_KEY)
 
     parser = argparse.ArgumentParser(
         description="Gets the text in all the image files in the given"
@@ -297,5 +300,5 @@ if __name__ == '__main__':
     output_dir = args.output_dir   
     
     OCRResult = {}
-    OCR = OCRManager(CLOUD_VISION_API_KEY, img_dir, output_dir, threads)
+    OCR = OCRManager(api_key_path, img_dir, output_dir, threads)
     OCR.processDirectory(OCRResult)

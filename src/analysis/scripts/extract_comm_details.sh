@@ -22,10 +22,6 @@ LOG_DIR="$1/logs"
 # Create video from the screenshots
 ./make_video.sh $DATA_DIR
 
-# Run OCR detection
-cd ../../imagetextparser/
-python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
-cd -
 
 #TV_IP_ADDR=`grep "TV_IP_ADDR" $LOG_DIR/*.log | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
 TV_IP_ADDR=`grep "TV_IP_ADDR" $DATA_DIR/crawl_info-*.txt | head -n1 | awk '{print $3}' |  awk -F'[=]' '{print $2}'`
@@ -96,3 +92,8 @@ FILTER="((dns.flags.response==1) && (ip.dst==$TV_IP_ADDR))"
 FIELDS="-e frame.time_epoch -e ip.src -e dns.qry.name -e dns.a -e dns.aaaa"
 SUFFIX="dns.csv"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
+
+# Run OCR detection
+cd ../../imagetextparser/
+python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
+cd -
