@@ -346,6 +346,7 @@ def get_http1_df(crawl_data_dir):
     resp_df = replace_nan(resp_df)
     req_df["url"] = req_df.apply(
         lambda x: x['url'] if x['url'] else x['request_uri'], axis=1)
+    req_df = req_df[req_df.url != ""]
     add_domain_column(req_df, "url", "req_domain")
     return (req_df.drop(["eth_src", "request_uri", "data", "ip_src", "tcp_srcport"], axis=1),
             resp_df.drop(["eth_src", "ip_dst", "tcp_dstport"], axis=1),
@@ -468,7 +469,8 @@ def get_http2_df(crawl_data_dir):
                 payload["method"] = headers["method"]
                 payload["cookie"] = headers.get("cookie", "")
                 payload["referer"] = headers.get("referer", "")
-                requests.append(payload)
+                if payload["url"]:
+                    requests.append(payload)
     if not len(requests):
         return pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
     req_df = pd.DataFrame(requests)
