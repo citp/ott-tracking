@@ -90,6 +90,8 @@ def read_channel_details_df():
     
     ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
     ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
+    #ROKU_TOP_1K = "../../../scrape/platforms/roku/channel_lists/top1000_channel_list.txt"
+
     for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
         for channel_json_str in open(channel_list_file):
             channel_df.append(json.loads(channel_json_str))

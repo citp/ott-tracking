@@ -114,7 +114,11 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True, drop_from_unfinishe
     df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
             int(x)).strftime('%Y-%m-%d %H:%M:%S'))
     channel_df = read_channel_details_df()
-    add_channel_details(df, channel_df)
+    try:
+        add_channel_details(df, channel_df)
+    except Exception as e:
+        # print(e)
+        pass
     playback_detected = get_playback_detection_results(crawl_name)
     df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
     crawl_statuses = get_crawl_status(crawl_data_dir)
@@ -188,6 +192,9 @@ def get_ip_domain_mapping_from_dns_df(dns_df):
     local_qrys = set()
     for idx, row in dns_df.iterrows():
         domain = row["dns_qry_name"]
+        if not isinstance(domain, str):
+            print("Not a string", domain)
+            continue
         if domain.endswith("in-addr.arpa"):
             local_qrys.add(domain)
             continue
