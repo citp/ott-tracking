@@ -22,7 +22,7 @@ ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
 CRAWL_ROOT_DIRS = [
     '/mnt/iot-house/crawl-data/',
     '/home/gacar/dev/smart-tv/data',
-     '/media/gacar/Data/iot-house/crawl-data/',
+    '/media/gacar/Data/iot-house/crawl-data/',
     ]
 
 def get_crawl_data_path(crawl_name):
@@ -81,31 +81,90 @@ def download_roku_channel_details(channel_data_url=CHANNEL_DATA_URL):
     return pd.DataFrame(channel_df).set_index('id').sort_values("rankByWatched")
 
 
-def read_channel_details_df():
-    channel_df = []
-    ROKU_CATEGORY_DIR = "../../../scrape/platforms/roku/channel_lists/categories/"
-    for category_txt in glob(join(ROKU_CATEGORY_DIR, "*.txt")):
-        for channel_json_str in open(category_txt):
-            channel_df.append(json.loads(channel_json_str))
-    
-    ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
-    ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
-    #ROKU_TOP_1K = "../../../scrape/platforms/roku/channel_lists/top1000_channel_list.txt"
+def get_cat(categories):
+    return categories[0]["name"]
 
-    for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
-        for channel_json_str in open(channel_list_file):
+def read_roku_channel_details_df():
+    channel_df = []
+    ROKU_CHANNEL_DETAILS = "../../../scrape/platforms/roku/channel_lists/channels_info/"
+    for ch_json in glob(join(ROKU_CHANNEL_DETAILS, "*.json")):
+        for channel_json_str in open(ch_json):
             channel_df.append(json.loads(channel_json_str))
-        
+
     roku_df = pd.DataFrame(channel_df)
-    roku_df.rename(columns={'id': 'channel_id',
+    roku_df['category'] = roku_df['categories'].map(lambda x: get_cat(x))
+    roku_df.rename(columns={'channelId': 'channel_id',
                             'rankByWatched': 'rank',
                             '_category': 'category',
                             'name': 'channel_name'}, inplace=True)
+    roku_df = roku_df[['channel_id', 'rank', 'category', 'channel_name']]
+    # print("roku_df.columns", roku_df.columns)
     roku_df['channel_id'] = roku_df['channel_id'].astype(str)
-
-    roku_df = roku_df.drop_duplicates('channel_id').set_index('channel_id').sort_values(["category", "rank"])
+    #roku_df = roku_df.drop_duplicates('channel_id').set_index('channel_id').sort_values(["category", "rank"])
     # print(roku_df.columns)
-    roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
+    # roku_df.drop(['accessCode', 'datePublished'], inplace=True, axis=1)
+    roku_df['platform'] = 'roku'
+    # print(roku_df.columns)
+    return roku_df
+
+
+def read_channel_details_df():
+    channel_df = []
+    ROKU_CHANNEL_DETAILS = "../../../scrape/platforms/roku/channel_lists/channels_info/"
+
+    for ch_json in glob(join(ROKU_CHANNEL_DETAILS, "*.json")):
+        for channel_json_str in open(ch_json):
+            d = dict()
+            obj = json.loads(channel_json_str)
+            # print(obj.keys())
+            d["category"] = obj['categories'][0]["name"]
+            d["rank"] = obj['rankByWatched']
+            d["ad_supported"] = obj['isAdSupported']
+            d["channel_id"] = obj['channelId']
+            d["channel_name"] = obj['name']
+            channel_df.append(d)
+
+    ROKU_CATEGORY_DIR = "../../../scrape/platforms/roku/channel_lists/categories/"
+    for category_txt in glob(join(ROKU_CATEGORY_DIR, "*.txt")):
+        for channel_json_str in open(category_txt):
+            d = dict()
+            # print(obj.keys())
+            obj = json.loads(channel_json_str)
+            d["category"] = obj['_category']
+            d["rank"] = obj['rankByWatched']
+            d["ad_supported"] = "Unknown"
+            d["channel_id"] = obj['id']
+            d["channel_name"] = obj['name']
+            channel_df.append(d)
+
+    ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
+    ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
+    # ROKU_TOP = "../../../scrape/platforms/roku/channel_lists/channels_info/all_channels.json"
+    #roku_channels_df = read_roku_channel_details_df()
+    # print(roku_channels_df.columns)
+    # for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
+    for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
+        for channel_json_str in open(channel_list_file):
+            d = dict()
+            obj = json.loads(channel_json_str)
+            # print(obj.keys())
+            d["category"] = obj['_category']
+            d["rank"] = obj['rankByWatched']
+            d["ad_supported"] = "Unknown"
+            d["channel_id"] = obj['id']
+            d["channel_name"] = obj['name']
+            channel_df.append(d)
+
+    roku_df = pd.DataFrame(channel_df)
+    #roku_df = roku_channels_df
+    # print(roku_df.columns)
+    roku_df['channel_id'] = roku_df['channel_id'].astype(str)
+    # roku_df = pd.concat([roku_df, roku_channels_df], axis=0, sort=True)
+    # print(roku_df.columns)
+    roku_df = roku_df.drop_duplicates('channel_id', keep='first').\
+        set_index('channel_id').sort_values(["category", "rank"])
+    # print(roku_df.columns)
+    #roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
     roku_df['platform'] = 'roku'
     AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
     AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
@@ -128,13 +187,29 @@ def read_channel_details_df():
                     'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'
     # print(amazon_df.columns)
-    return roku_df.append(amazon_df, sort=True)
+    df = roku_df.append(amazon_df, sort=True)
+    df = df.replace('kids-family', "Kids & Family").replace('movies-tvs', "Movies & TV").\
+            replace('Web-Video', "Web Video").replace('education', "Education").\
+            replace('food', "Food").replace('health', "Health").replace('kids', "Kids").\
+            replace('lifestyle', "Lifestyle").replace('medical', "Medical").replace('movies', "Movies").\
+            replace('news', "News").replace('shopping', "Shopping").replace('sports', "Sports")
+
+    return df
 
 
-def get_popular_domains(df, _group_by=["domain_by_dns"],
-                        subset=["channel_id", "domain_by_dns"], head=10):
+def get_popular_domains_from_reqs(df, head=10):
+    group_by=["req_domain"]
+    subset=["channel_id", "req_domain"]
     return df.drop_duplicates(subset=subset).\
-        groupby(_group_by).size().reset_index(name="Num. of channels").\
+        groupby(group_by).size().reset_index(name="Num. of channels").\
+        sort_values(by=['Num. of channels'], ascending=False).head(head)
+
+
+def get_popular_domains_from_tcp_conns(df, head=10):
+    group_by=["domain"]
+    subset=["channel_id", "domain"]
+    return df.drop_duplicates(subset=subset).\
+        groupby(group_by).size().reset_index(name="Num. of channels").\
         sort_values(by=['Num. of channels'], ascending=False).head(head)
 
 pre = r"""
@@ -158,4 +233,5 @@ def make_latex_table(df, label="LABEL", caption="caption",
 
 if __name__ == '__main__':
     df = read_channel_details_df()
+    #df = read_roku_channel_details_df()
     print(len(df))
