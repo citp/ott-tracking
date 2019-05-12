@@ -110,7 +110,8 @@ def read_roku_channel_details_df():
 
 def get_category(categories):
     """Remove metacategories if the channel has multiple ."""
-    META_CATEGORIES = ['New & Notable', '4K UHD Content Available', 'Most Watched', 'Top Paid', 'Top Free']
+    META_CATEGORIES = ['New & Notable', '4K UHD Content Available',
+                       'Most Watched', 'Top Paid', 'Top Free', 'Featured']
     if len(categories) == 1:
         return categories[0]["name"]
 
@@ -120,7 +121,9 @@ def get_category(categories):
         # print(cat["name"])
         return cat["name"]
     else:
-        categories[0]["name"]
+        # this means the channel has only meya-categories
+        print("Channel doesn't have a real category")
+        return categories[0]["name"]
 
 
 def read_channel_details_df():
