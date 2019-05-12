@@ -111,7 +111,8 @@ def read_roku_channel_details_df():
 def get_category(categories):
     """Remove metacategories if the channel has multiple ."""
     META_CATEGORIES = ['New & Notable', '4K UHD Content Available',
-                       'Most Watched', 'Top Paid', 'Top Free', 'Featured']
+                       'Most Watched', 'Top Paid', 'Top Free',
+                       'Featured', 'New']
     if len(categories) == 1:
         return categories[0]["name"]
 
