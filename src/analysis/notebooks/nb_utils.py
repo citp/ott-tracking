@@ -108,6 +108,21 @@ def read_roku_channel_details_df():
     return roku_df
 
 
+def get_category(categories):
+    """Remove metacategories if the channel has multiple ."""
+    META_CATEGORIES = ['New & Notable', '4K UHD Content Available', 'Most Watched', 'Top Paid', 'Top Free']
+    if len(categories) == 1:
+        return categories[0]["name"]
+
+    for cat in categories:
+        if cat["name"] in META_CATEGORIES:
+            continue
+        # print(cat["name"])
+        return cat["name"]
+    else:
+        categories[0]["name"]
+
+
 def read_channel_details_df():
     channel_df = []
     ROKU_CHANNEL_DETAILS = "../../../scrape/platforms/roku/channel_lists/channels_info/"
@@ -117,7 +132,9 @@ def read_channel_details_df():
             d = dict()
             obj = json.loads(channel_json_str)
             # print(obj.keys())
-            d["category"] = obj['categories'][0]["name"]
+            #d["category"] = obj['categories'][0]["name"]
+            d["category"] = get_category(obj['categories'])
+
             d["rank"] = obj['rankByWatched']
             d["ad_supported"] = obj['isAdSupported']
             d["channel_id"] = obj['channelId']
