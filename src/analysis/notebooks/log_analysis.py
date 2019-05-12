@@ -18,16 +18,36 @@ from os.path import join, sep, isfile, basename
 from collections import defaultdict, Counter
 from nb_utils import read_channel_details_df, get_crawl_data_path, replace_nan
 from tld import get_fld
-# from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
-# DISCONNECT_BLOCKLIST = get_disconnect_blocked_hosts()  # load Disconnect's blacklist
 
 from trackingprotection_tools import DisconnectParser
 # https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json"
-disconnect = DisconnectParser(blocklist="disconnect/services.json")
+# __builtins__.basestring = str
+
+def load_block_lists():
+    nb_dir = os.getcwd()
+    # switch to blocklist dir to be able to load the blocklists
+    os.chdir('../../../src/blocklistparser')
+    from BlockListParser import get_adblock_rules, get_disconnect_blocked_hosts, GhosteryListParser, is_blocked_by_disconnect
+    from PiHoleListParser import PiHoleListParser
+    easylist_rules, easyprivacy_rules = get_adblock_rules()
+    # disconnect_blocklist = get_disconnect_blocked_hosts()
+    ghostery_blocklist = GhosteryListParser("blocklists/ghostery.json")
+    pihole_parser = PiHoleListParser()
+    # switch back to notebook dir
+    os.chdir(nb_dir)
+    disconnect = DisconnectParser(blocklist="disconnect/services.json")
+    return ghostery_blocklist, easylist_rules, easyprivacy_rules, pihole_parser, disconnect
+
+import functools
+@functools.lru_cache(maxsize=100000)
+def easylist_rules_should_block(easylist_rules, x):
+    return easylist_rules.should_block("http://" + x, {'third-party': True})
+
+@functools.lru_cache(maxsize=100000)
+def easyprivacy_rules_should_block(easyprivacy_rules, x):
+    return easyprivacy_rules.should_block("http://" + x, {'third-party': True})
 
 
-PUBLIC_SUFFIX_LIST= 'public_suffix_list.dat'
-channel_list = '../../scrape/platforms/roku/channel_lists/all_channel_list.txt'
 
 def load_roku_channel_details():
     channels = []
@@ -157,7 +177,7 @@ def get_ip_domain_mapping_from_dns_df(dns_df):
     for idx, row in dns_df.iterrows():
         domain = row["dns_qry_name"]
         if not isinstance(domain, str):
-            # nan 
+            # nan
             # print("Not a string", domain)
             continue
         if domain.endswith("in-addr.arpa"):
@@ -246,7 +266,7 @@ def get_hostname_for_tcp_conn(row, http_domains, tls_snis, ip_2_domains_by_chann
         # print("Will return", host, row['tcp_stream'])
         return host
 
-
+DEBUG = False
 # Create global_df, containing all SSL/TCP streams SYN packets
 def get_distinct_tcp_conns(crawl_name, name_resolution=True,
                            drop_from_unfinished=True, http_requests=None):
@@ -259,8 +279,11 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
         # rIP2NameDB, _ = load_dns_data(crawl_data_dir)
         _, ip_2_domains_by_channel = load_dns_data_from_pcap_csvs(crawl_data_dir)
 
+    pattern = "*.tcp_streams"
+    if DEBUG:
+        pattern = "236390*.tcp_streams"
     #DEBUG com.amazon.rialto.cordova.webapp.webappb656e57
-    for txt_path in glob(join(post_process_dir, "*.tcp_streams")):
+    for txt_path in glob(join(post_process_dir, pattern)):
         filename = basename(txt_path)
         channel_id = filename.split("-")[0]
         tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8',
@@ -276,7 +299,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     # mapping = {old_col: old_col.replace(".", "_") for old_col in df.columns}
     # df.rename(columns=mapping, inplace=True)
     replace_in_column_names(df, ".", "_")
-    # only take outgoing TCP packets  
+    # only take outgoing TCP packets
     df = df[df.ip_src == tv_ip]
     if name_resolution and ip_2_domains_by_channel is not None:
         add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
@@ -289,8 +312,9 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
         add_channel_details(df, channel_df)
     except Exception as e:
         # missing channel metadata
-        # print(e)
+        print("ERR", e)
         pass
+
     playback_detected = get_playback_detection_results(crawl_name)
     df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
     crawl_statuses = get_crawl_status(crawl_data_dir)
@@ -302,8 +326,22 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     # 3- use DNS records if 1 and 2 fails
     df['host'] = df.apply(lambda x: get_hostname_for_tcp_conn(x, http_hostnames, tls_snis, ip_2_domains_by_channel), axis=1)
     df = replace_nan(df)
+
+    ghostery_blocklist, easylist_rules, easyprivacy_rules, \
+        pihole_parser, disconnect = load_block_lists()
     df['disconnect_blocked'] = df['host'].map(
             lambda x: disconnect.should_block("http://" + x) if len(x) else False)
+    df['ghostery_blocked'] = df.host.map(
+        lambda x: ghostery_blocklist.check_host_in_list("http://" + x))
+    df['easylist_blocked'] = df.host.map(
+        lambda x: easylist_rules_should_block(easylist_rules, x))
+    df['easypivacy_blocked'] = df.host.map(
+        lambda x: easyprivacy_rules_should_block(easyprivacy_rules, x))
+    df['pihole_blocked'] = df.host.map(
+        lambda x: pihole_parser.is_blocked_by_pihole(x))
+    df['adblocked'] = df.ghostery_blocked | df.easylist_blocked | \
+        df.easypivacy_blocked | df.pihole_blocked | df.disconnect_blocked
+
     df['domain'] = df.host.map(lambda x: get_fld("http://" + x, fail_silently=True))
     return df
 
@@ -319,7 +357,11 @@ def get_http1_df(crawl_data_dir):
     # print("Num. of channel details", len(channel_df))
     tv_ip = get_tv_ip_addr(crawl_data_dir)
 
-    for json_path in glob(join(post_process_dir, "*http.json")):
+    pattern = "*.http.json"
+    if DEBUG:
+        pattern = "236390*.http.json"
+
+    for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)
         channel_id = basename(json_path).split("-")[0]
         tcp_payloads = load_json_file(json_path)
@@ -458,7 +500,11 @@ def get_http2_df(crawl_data_dir):
     channel_df = read_channel_details_df()
     # print("Num. of channel details", len(channel_df))
 
-    for json_path in glob(join(post_process_dir, "*http2.json")):
+    pattern = "*.http2.json"
+    if DEBUG:
+        pattern = "236390*.http2.json"
+
+    for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)
         channel_id = basename(json_path).split("-")[0]
         tcp_payloads = load_json_file(json_path)

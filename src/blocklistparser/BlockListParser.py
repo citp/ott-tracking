@@ -49,7 +49,8 @@ def get_disconnect_blocked_hosts():
             for address in adresses:
                 address.pop("dnt", None)  # there's one such entry
                 # and it's not a domain/host
-                hosts_list = address.values()
+                # hosts_list = address.values()
+                hosts_list = list(address.values())
                 blocked_hosts.update(hosts_list[0])
 
     print (len(blocked_hosts), "blocked hosts")
