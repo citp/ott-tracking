@@ -3,8 +3,8 @@
 # The following are hosts in the hpHosts database with the ATS classification ONLY.
 # This file will NOT protect you against malicious domains
 #
-127.0.0.1 localhost #IPv4 localhost
-::1 localhost #IPv6 localhost
+#127.0.0.1 localhost #IPv4 localhost
+#::1 localhost #IPv6 localhost
 #
 # AD SERVERS START HERE
 #
