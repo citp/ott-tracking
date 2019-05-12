@@ -37,7 +37,7 @@ def get_disconnect_blocked_hosts():
         if category_name == "Content":
             # Content category is not used by default by Firefox's
             # tracking protection and Focus browsers
-            print "Will not block the hosts in Disconnect's Content category"
+            print ("Will not block the hosts in Disconnect's Content category")
             continue
         for entry in entries:
             adresses = entry.values()
@@ -47,7 +47,7 @@ def get_disconnect_blocked_hosts():
                 hosts_list = address.values()
                 blocked_hosts.update(hosts_list[0])
 
-    print len(blocked_hosts), "blocked hosts"
+    print (len(blocked_hosts), "blocked hosts")
     # note that disconnect keep a list of blocked hosts, not PS+1s
     assert "adwords.google.com" in blocked_hosts
     assert "facebook.com" in blocked_hosts

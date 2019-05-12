@@ -1,7 +1,7 @@
 try:
     from urlparse import urlparse
 except ImportError:
-    from urllib import parse
+    from urllib.parse import urlparse
 import ntpath
 import ujson
 import numpy as np
@@ -80,56 +80,20 @@ def load_timestamps_from_crawl_data(root_dir):
     return timestamps
 
 
-# Create global_df, containing all SSL/TCP streams SYN packets
-def get_distinct_tcp_conns(crawl_name, name_resolution=True, drop_from_unfinished=True):
-    df = pd.DataFrame([])
-    crawl_data_dir = get_crawl_data_path(crawl_name)
-    post_process_dir = join(crawl_data_dir, 'post-process')
-    print("Loading distinct TCP connections from %s " % post_process_dir)
-    if name_resolution:
-        # rIP2NameDB, _ = load_dns_data(crawl_data_dir)
-        _, ip_2_domains_by_channel = load_dns_data_from_pcap_csvs(crawl_data_dir)
-
-    for txt_path in glob(join(post_process_dir, "*.tcp_streams")):
-        filename = basename(txt_path)
-        channel_id = filename.split("-")[0]
-        tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8', index_col=None)
-        tmp_df['channel_id'] = channel_id
-        tmp_df['mitm_attempt'] = 0
-        # tmp_df['mitm_fail'] = 0
-        # take distinct TCP connections
-        df = df.append(tmp_df.drop_duplicates("tcp.stream"))
-    assert len(df)
-    # replace dots in column names with underscores
-    # mapping = {old_col: old_col.replace(".", "_") for old_col in df.columns}
-    # df.rename(columns=mapping, inplace=True)
-    replace_in_column_names(df, ".", "_")
-
-    if name_resolution and ip_2_domains_by_channel is not None:
-        add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
-        #df['disconnect_blocked'] = df['host_by_dns'].map(lambda x: disconnect.should_block(x) if x else False)
-        df['disconnect_blocked'] = df['host_by_dns'].map(
-            lambda x: disconnect.should_block("http://" + x) if len(x) else False)
-    # add human readable timestamps
-    df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
-            int(x)).strftime('%Y-%m-%d %H:%M:%S'))
-    channel_df = read_channel_details_df()
-    try:
-        add_channel_details(df, channel_df)
-    except Exception as e:
-        # print(e)
-        pass
-    playback_detected = get_playback_detection_results(crawl_name)
-    df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
-    crawl_statuses = get_crawl_status(crawl_data_dir)
-    add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished)
-    return df
+def get_http_hostnames(crawl_name, requests=None, value_type="host"):
+    http_hostnames = dict()
+    if requests is None:
+        requests, _, _ = get_http_df(crawl_name)
+    for _, row in requests.iterrows():
+        http_hostnames[(row['channel_id'], row["tcp_stream"], row["ip_dst"], row["tcp_dstport"])] = row[value_type]
+    return http_hostnames
 
 
 def replace_in_column_names(df, search, replace):
     mapping = {col_name: col_name.replace(search, replace)
                for col_name in df.columns}
     df.rename(columns=mapping, inplace=True)
+
 
 def get_unique_tcp_stream_ids(post_process_dir, suffix):
     unique_tcp_conn_ids = {}
@@ -193,7 +157,8 @@ def get_ip_domain_mapping_from_dns_df(dns_df):
     for idx, row in dns_df.iterrows():
         domain = row["dns_qry_name"]
         if not isinstance(domain, str):
-            print("Not a string", domain)
+            # nan 
+            # print("Not a string", domain)
             continue
         if domain.endswith("in-addr.arpa"):
             local_qrys.add(domain)
@@ -265,6 +230,88 @@ def add_hostname_col_by_dns(df, ip_2_domains, ip_col_name):
         lambda x: ip_2_domains[x["channel_id"]].get(x[ip_col_name], ''), axis=1)
     df['domain_by_dns'] = df.host_by_dns.map(lambda x: get_fld("http://" + x, fail_silently=True))
 
+
+def get_hostname_for_tcp_conn(row, http_domains, tls_snis, ip_2_domains_by_channel):
+    """Return host for a TCP connection using HTTP, TLS SNI and DNS, in this order."""
+    host = None
+    conn_tuple = (row['channel_id'], row["tcp_stream"], row["ip_dst"], row["tcp_dstport"])
+    host = http_domains.get(conn_tuple)
+    # print("host by dns", host, row['tcp_stream'])
+    if not host and row["tcp_dstport"] == 443:
+        conn_tuple = (row['channel_id'], row["tcp_stream"], row["ip_dst"])
+        host = tls_snis.get(conn_tuple)
+        # print("host by SNI", host, row['tcp_stream'])
+
+    if not host:
+        # return ip_2_domains_by_channel[row["channel_id"]].get(row["ip_dst"], '')
+        # print("Will return host by DNS", row['host_by_dns'], row['tcp_stream'])
+        return row['host_by_dns']
+    else:
+        # print("Will return", host, row['tcp_stream'])
+        return host
+
+
+# Create global_df, containing all SSL/TCP streams SYN packets
+def get_distinct_tcp_conns(crawl_name, name_resolution=True,
+                           drop_from_unfinished=True, http_requests=None):
+    df = pd.DataFrame([])
+    crawl_data_dir = get_crawl_data_path(crawl_name)
+    tv_ip = get_tv_ip_addr(crawl_data_dir)
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    print("Loading distinct TCP connections from %s " % post_process_dir)
+    if name_resolution:
+        # rIP2NameDB, _ = load_dns_data(crawl_data_dir)
+        _, ip_2_domains_by_channel = load_dns_data_from_pcap_csvs(crawl_data_dir)
+
+    #DEBUG com.amazon.rialto.cordova.webapp.webappb656e57
+    for txt_path in glob(join(post_process_dir, "*.tcp_streams")):
+        filename = basename(txt_path)
+        channel_id = filename.split("-")[0]
+        tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8',
+                             index_col=None,
+                             error_bad_lines=False)
+        tmp_df['channel_id'] = channel_id
+        tmp_df['mitm_attempt'] = 0
+        # tmp_df['mitm_fail'] = 0
+        # take distinct TCP connections
+        df = df.append(tmp_df.drop_duplicates("tcp.stream"))
+    assert len(df)
+    # replace dots in column names with underscores
+    # mapping = {old_col: old_col.replace(".", "_") for old_col in df.columns}
+    # df.rename(columns=mapping, inplace=True)
+    replace_in_column_names(df, ".", "_")
+    # only take outgoing TCP packets  
+    df = df[df.ip_src == tv_ip]
+    if name_resolution and ip_2_domains_by_channel is not None:
+        add_hostname_col_by_dns(df, ip_2_domains_by_channel, "ip_dst")
+
+    # add human readable timestamps
+    df['timestamp'] = df['frame_time_epoch'].map(lambda x: datetime.fromtimestamp(
+            int(x)).strftime('%Y-%m-%d %H:%M:%S'))
+    channel_df = read_channel_details_df()
+    try:
+        add_channel_details(df, channel_df)
+    except Exception as e:
+        # missing channel metadata
+        # print(e)
+        pass
+    playback_detected = get_playback_detection_results(crawl_name)
+    df['playback'] = df['channel_id'].map(lambda x: x in playback_detected)
+    crawl_statuses = get_crawl_status(crawl_data_dir)
+    add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished)
+    http_hostnames = get_http_hostnames(crawl_name, http_requests)
+    tls_snis = get_tls_snis(crawl_name)
+    # 1- use host header from the HTTP request if available
+    # 2- for connections to port 443: use SNI
+    # 3- use DNS records if 1 and 2 fails
+    df['host'] = df.apply(lambda x: get_hostname_for_tcp_conn(x, http_hostnames, tls_snis, ip_2_domains_by_channel), axis=1)
+    df = replace_nan(df)
+    df['disconnect_blocked'] = df['host'].map(
+            lambda x: disconnect.should_block("http://" + x) if len(x) else False)
+    df['domain'] = df.host.map(lambda x: get_fld("http://" + x, fail_silently=True))
+    return df
+
+
 # Load all (All HTTP data)
 def get_http1_df(crawl_data_dir):
     requests = []
@@ -289,7 +336,7 @@ def get_http1_df(crawl_data_dir):
             if any([len(x) > 1 for x in payload.values()]):
                 multiple_msg_cnt += 1
                 if "http.response.code" not in payload:
-                    print("Pipelined request", payload)
+                    print("Pipelined request")
                 # print ("Multiple payload", ("http.response.code" in payload))
             payload['channel_id'] = [channel_id]
 
@@ -318,8 +365,13 @@ def get_http1_df(crawl_data_dir):
 
     add_hostname_col_by_dns(req_df, ip_2_domains, "ip_dst")
     add_hostname_col_by_dns(resp_df, ip_2_domains, "ip_src")
-    add_channel_details(req_df, channel_df)
-    add_channel_details(resp_df, channel_df)
+    try:
+        add_channel_details(req_df, channel_df)
+        add_channel_details(resp_df, channel_df)
+    except Exception as e:
+        # missing channel metadata
+        # print(e)
+        pass
 
     req_df.rename(columns={'file_data': 'post_data',
                            'request_full_uri': 'url',
@@ -354,6 +406,7 @@ def get_http1_df(crawl_data_dir):
     req_df["url"] = req_df.apply(
         lambda x: x['url'] if x['url'] else x['request_uri'], axis=1)
     req_df = req_df[req_df.url != ""]
+    req_df['host'] = req_df.url.map(lambda x: urlparse(x).hostname)
     add_domain_column(req_df, "url", "req_domain")
     return (req_df.drop(["eth_src", "request_uri", "data", "ip_src", "tcp_srcport"], axis=1),
             resp_df.drop(["eth_src", "ip_dst", "tcp_dstport"], axis=1),
@@ -386,6 +439,8 @@ def get_http_df(crawl_data_dir, drop_from_unfinished=True):
     crawl_statuses = get_crawl_status(crawl_data_dir)
     add_channel_crawl_status(requests, crawl_statuses, drop_from_unfinished)
     add_channel_crawl_status(responses, crawl_statuses, drop_from_unfinished)
+    requests["tcp_stream"] = pd.to_numeric(requests["tcp_stream"])
+    requests["tcp_dstport"] = pd.to_numeric(requests["tcp_dstport"])
     return replace_nan(requests), replace_nan(responses), dns
 
 
@@ -463,14 +518,14 @@ def get_http2_df(crawl_data_dir):
 
             if "status" in headers:  # response
                 assert payload["ip_dst"] == tv_ip
-                payload["content_type"] = headers["content-type"]
+                payload["content_type"] = headers.get("content-type")
                 payload["response_code"] = headers["status"]
                 payload["set-cookie"] = headers.get("set-cookie", "")
                 payload["location"] = headers.get("location", "")
                 responses.append(payload)
             else:  # request
-                # payload["host"] = headers["authority"]
-                payload["user_agent"] = headers["http.useragent"]
+                payload["host"] = headers["authority"]
+                payload["user_agent"] = headers.get("http.useragent", "")
                 payload["url"] = "%s://%s%s" % (
                     headers["scheme"], headers["authority"], headers["path"])
                 payload["method"] = headers["method"]
@@ -542,3 +597,38 @@ def print_crawl_summary(crawl_name):
     print("Results", Counter(crawl_statuses.values()))
     print ("Playback detected in", len(detected))
     return n_success
+
+# Create df containing all SSL handshakes
+def get_distinct_ssl_conns(crawl_name, name_resolution=True):
+    df = pd.DataFrame([])
+    crawl_data_dir = get_crawl_data_path(crawl_name)
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    print("Loading distinct SSL connections from %s " % post_process_dir)
+
+    for txt_path in glob(join(post_process_dir, "*.ssl_connections")):
+        filename = basename(txt_path)
+        channel_id = filename.split("-")[0]
+        #print(txt_path)
+        tmp_df = pd.read_csv(txt_path, sep='|', encoding='utf-8', index_col=None)
+        tmp_df['channel_id'] = channel_id
+        tmp_df["ssl.record.content_type"] = tmp_df["ssl.record.content_type"].astype(str)
+        # print(df["ssl.record.content_type"].value_counts())
+        # print("before", len(df))
+        tmp_df = tmp_df[tmp_df["ssl.record.content_type"].str.contains("22")]
+        df = df.append(tmp_df.drop_duplicates("tcp.stream"))
+    assert len(df)
+
+    # replace dots in column names with underscores
+    # mapping = {old_col: old_col.replace(".", "_") for old_col in df.columns}
+    # df.rename(columns=mapping, inplace=True)
+    replace_in_column_names(df, ".", "_")
+    return df
+
+
+def get_tls_snis(crawl_name):
+    tls_snis = dict()
+    ssl_df = get_distinct_ssl_conns(crawl_name)
+    ssl_df = replace_nan(ssl_df)
+    for _, row in ssl_df.iterrows():
+        tls_snis[(row['channel_id'], row["tcp_stream"], row["ip_dst"])] = row["ssl_handshake_extensions_server_name"]
+    return tls_snis

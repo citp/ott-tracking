@@ -67,12 +67,12 @@ def print_all_categories(bug_db):
             categories[cat] += 1
         else:
             categories[cat] = 1
-    print "Number of apps", count
-    print "Number of distinct names", len(names)
-    print "Number of distinct categories", len(categories)
+    print ("Number of apps", count)
+    print ("Number of distinct names", len(names))
+    print ("Number of distinct categories", len(categories))
 
     for cat in categories:
-        print cat, categories[cat]
+        print (cat, categories[cat])
 
 
 # ******************************** Stripping the bug db based on categories you want ********************************
@@ -473,17 +473,18 @@ def test():
     # write_bug_db(get_stripped_bug_db(bug_db, ['ad']), bugs_file_ad_prefix + '.json')
     # write_bug_db(get_stripped_bug_db(bug_db, ['privacy']), bugs_file_privacy_prefix + '.json')
 
-    print "Number of rules in host_path dict", get_count_host_path_dict(bug_db)
-    print "Number of rules in host dict", get_count_host_dict(bug_db)
-    print "Number of rules in regex dict", get_count_regex(bug_db)
-    print "Number of rules in path dict", get_count_path(bug_db)
-    print "Number of first party exceptions", get_count_firstPartyExceptions(bug_db)
+    print("Number of rules in host_path dict", get_count_host_path_dict(bug_db))
+    print("Number of rules in host dict", get_count_host_dict(bug_db))
+    print("Number of rules in regex dict", get_count_regex(bug_db))
+    print("Number of rules in path dict", get_count_path(bug_db))
+    print("Number of first party exceptions", get_count_firstPartyExceptions(bug_db))
 
     write_shorten_ghostery_list(bugs_file_prefix + '.json', 0.8, bugs_file_prefix + '_shortened.json')
     bug_db = read_bug_db(bugs_file_prefix + '_shortened.json')
 
-    print "Number of rules in host_path dict", get_count_host_path_dict(bug_db)
-    print "Number of rules in host dict", get_count_host_dict(bug_db)
-    print "Number of rules in regex dict", get_count_regex(bug_db)
-    print "Number of rules in path dict", get_count_path(bug_db)
-    print "Number of first party exceptions", get_count_firstPartyExceptions(bug_db)
+    print("Number of rules in host_path dict", get_count_host_path_dict(bug_db))
+    print("Number of rules in host dict", get_count_host_dict(bug_db))
+    print("Number of rules in regex dict", get_count_regex(bug_db))
+    print("Number of rules in path dict", get_count_path(bug_db))
+    print("Number of first party exceptions", get_count_firstPartyExceptions(bug_db))
+
