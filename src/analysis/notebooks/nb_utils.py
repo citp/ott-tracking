@@ -1,3 +1,4 @@
+import numpy as np
 import json
 try:
     from urllib2 import urlopen
@@ -127,6 +128,10 @@ def get_category(categories):
         return categories[0]["name"]
 
 
+def replace_nan(df, replacement=""):
+    return df.replace(np.nan, replacement, regex=True)
+
+
 def read_channel_details_df():
     channel_df = []
     ROKU_CHANNEL_DETAILS = "../../../scrape/platforms/roku/channel_lists/channels_info/"
@@ -187,23 +192,36 @@ def read_channel_details_df():
     # print(roku_df.columns)
     #roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
     roku_df['platform'] = 'roku'
+
+    AMAZON_CHANNEL_DETAILS_1K_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_top_with_ranking.csv"
     AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
     AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
     AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
-    amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV)
+
+    amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_1K_CAT_CSV)
+    # print(amazon_df.head())
+    amazon_df['amazon_category'] = amazon_df['amazon_categories'].map(lambda x: x.split('+')[0])
+    amazon_df['amazon_ranking'] = amazon_df['amazon_category_ranking'].map(lambda x: x.split(':')[1])
+
+
+    amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV), sort=True)
     amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV), sort=True)
     tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
     # print(amazon_df.columns)
     # print(tmp_df.columns)
     amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1), sort=True)
     # print(amazon_df.columns)
+    amazon_df = replace_nan(amazon_df)
+    amazon_df['amazon_category'] = amazon_df['amazon_category'].map(lambda x: x.capitalize())
     amazon_df.rename(columns={'amazon_ranking': 'rank',
                               'amazon_category': 'category',
                               'apk_id': 'channel_id',
                               'product_name': 'channel_name'}, inplace=True)
     amazon_df['channel_id'] = amazon_df['channel_id'].astype(str)
     # print(amazon_df.columns)
-    amazon_df = amazon_df.drop_duplicates('channel_id').set_index('channel_id').sort_values(["category", "rank"])
+    amazon_df = amazon_df.drop_duplicates('channel_id', keep='first').set_index('channel_id').sort_values(["category", "rank"])
+    print(amazon_df['category'].unique())
+    #print(amazon_df[amazon_df.category == ""])
     amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
                     'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'

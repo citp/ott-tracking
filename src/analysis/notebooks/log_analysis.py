@@ -16,7 +16,7 @@ from datetime import datetime
 from glob import glob
 from os.path import join, sep, isfile, basename
 from collections import defaultdict, Counter
-from nb_utils import read_channel_details_df, get_crawl_data_path
+from nb_utils import read_channel_details_df, get_crawl_data_path, replace_nan
 from tld import get_fld
 # from disconnect import get_disconnect_blocked_hosts, is_blocked_by_disconnect
 # DISCONNECT_BLOCKLIST = get_disconnect_blocked_hosts()  # load Disconnect's blacklist
@@ -200,10 +200,6 @@ def get_crawl_parameter(craw_dir, param_name):
 
 def get_tv_ip_addr(craw_dir):
     return get_crawl_parameter(craw_dir, "TV_IP_ADDR")
-
-
-def replace_nan(df, replacement=""):
-    return df.replace(np.nan, replacement, regex=True)
 
 
 # pip3 install ujson
