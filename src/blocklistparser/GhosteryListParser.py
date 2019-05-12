@@ -2,10 +2,11 @@ import re
 import json
 import utils
 
+
 class GhosteryListParser:
 
-
-    def __init__(self, bugs_file=None, bug_db=None, categorical_blocking=False):
+    def __init__(self, bugs_file=None, bug_db=None,
+                 categorical_blocking=False):
         if bugs_file is None:
             bugs = bug_db
         else:

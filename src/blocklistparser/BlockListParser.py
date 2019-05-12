@@ -1,7 +1,12 @@
 from adblockparser import AdblockRules
 from GhosteryListParser import GhosteryListParser
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
 import json
+
 
 def read_ab_rules_from_file(filename):
     filter_list = set()
@@ -33,7 +38,7 @@ def get_disconnect_blocked_hosts():
     blocked_hosts = set()
     disconnect = json.loads(open("blocklists/disconnect.json").read())
     categories = disconnect["categories"]
-    for category_name, entries in categories.iteritems():
+    for category_name, entries in categories.items():
         if category_name == "Content":
             # Content category is not used by default by Firefox's
             # tracking protection and Focus browsers
