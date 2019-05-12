@@ -220,8 +220,7 @@ def read_channel_details_df():
     amazon_df['channel_id'] = amazon_df['channel_id'].astype(str)
     # print(amazon_df.columns)
     amazon_df = amazon_df.drop_duplicates('channel_id', keep='first').set_index('channel_id').sort_values(["category", "rank"])
-    print(amazon_df['category'].unique())
-    #print(amazon_df[amazon_df.category == ""])
+    amazon_df.category[amazon_df.category == ""] = 'Others'
     amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
                     'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'
