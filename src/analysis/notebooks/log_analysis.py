@@ -21,6 +21,10 @@ from tld import get_fld
 from trackingprotection_tools import DisconnectParser
 # https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json"
 
+try:
+    from functools import lru_cache
+except ImportError:
+    from functools32 import lru_cache
 
 DEBUG = False
 
@@ -41,12 +45,12 @@ def load_block_lists():
 
 
 import functools
-@functools.lru_cache(maxsize=100000)
+@lru_cache(maxsize=100000)
 def easylist_rules_should_block(easylist_rules, x):
     return easylist_rules.should_block("http://" + x, {'third-party': True})
 
 
-@functools.lru_cache(maxsize=100000)
+@lru_cache(maxsize=100000)
 def easyprivacy_rules_should_block(easyprivacy_rules, x):
     return easyprivacy_rules.should_block("http://" + x, {'third-party': True})
 
@@ -256,6 +260,27 @@ def get_crawl_parameter(craw_dir, param_name):
 def get_tv_ip_addr(craw_dir):
     return get_crawl_parameter(craw_dir, "TV_IP_ADDR")
 
+
+def get_ott_device_mac(crawl_data_dir):
+    """Return OTT device MAC adddress using the jsons.
+
+    We use the MAC address to determine the set of IDs we use in
+    the leak detection.
+    """
+    post_process_dir = join(crawl_data_dir, 'post-process')
+    tv_ip = get_tv_ip_addr(crawl_data_dir)
+    # print(tv_ip)
+    pattern = "*.http.json"
+    for json_path in glob(join(post_process_dir, pattern)):
+        tcp_payloads = load_json_file(json_path)
+        for tcp_payload in tcp_payloads:
+            payload = tcp_payload['_source']['layers']
+            if payload["ip.src"][0] == tv_ip:
+                return payload["eth.src"][0]
+        else:
+            raise Exception(
+                "Cannot determine device MAC for leak detection."
+                " Are post-process (http.json) files missing?")
 
 # pip3 install ujson
 def load_json_file(json_path):

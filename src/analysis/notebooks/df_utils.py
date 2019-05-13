@@ -1,8 +1,10 @@
-from log_analysis import get_http_df, get_crawl_data_path, get_distinct_tcp_conns
-from os.path import join
 import os
 import pickle
 import pandas as pd
+from os.path import join
+
+from log_analysis import get_http_df, get_crawl_data_path, get_distinct_tcp_conns
+from ott_leaks import run_leak_detection
 
 DF_PICKLE_PATH = "df_pickle"
 
@@ -14,7 +16,6 @@ def save_pickle(df, crawl_name, df_type):
     pickle.dump(df, open(path, 'wb'), protocol=2)
     # df.to_pickle(path)
 
-    
 def load_df(crawl_name, df_type):
     path = join(DF_PICKLE_PATH, "%s_%s.pickle" % (crawl_name, df_type))
     return pd.read_pickle(path)
@@ -27,7 +28,9 @@ def load_and_save_dfs(crawl_name):
     save_pickle(http_resp, crawl_name, "http_resp")
     save_pickle(dns, crawl_name, "dns")
     tcp_conn = get_distinct_tcp_conns(crawl_name, http_requests=http_req)
-    save_pickle(tcp_conn, crawl_name, "tcp_conn")   
+    save_pickle(tcp_conn, crawl_name, "tcp_conn")
+    leaks_df, id_dict_roku = run_leak_detection(crawl_name, http_req)
+    save_pickle(leaks_df, crawl_name, "leaks")
 
 
 def print_stats(crawl_name, crawl_title=""):

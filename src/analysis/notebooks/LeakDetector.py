@@ -363,11 +363,12 @@ class LeakDetector():
         strings = list()
         for string in seed_strings:
             strings.append(string)
+            ENABLE_USERNAME_MATCH = False
             # If the search string appears to be an email address, we also want
             # to include just the username portion of the URL, and the address
             # and username with any '.'s removed from the username (since these
             # are optional in Gmail).
-            if '@' in string:
+            if ENABLE_USERNAME_MATCH and '@' in string:
                 parts = string.rsplit('@')
                 if len(parts) == 2:
                     uname, domain = parts
