@@ -670,8 +670,9 @@ def get_playback_detection_results(crawl_name):
         for l in open(log_file):
             if "SMART_CRAWLER: Playback detected on channel" in l:
                 time_str = l.split('[')[1].split(']')[0]
-                timestamp = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f').timestamp()
-                playback_detected[channel_id] = timestamp
+                # the following works with python 3 
+                # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+                playback_detected[channel_id] = time_str
     return playback_detected
 
 
