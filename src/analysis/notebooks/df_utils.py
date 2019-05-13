@@ -1,6 +1,7 @@
 from log_analysis import get_http_df, get_crawl_data_path, get_distinct_tcp_conns
 from os.path import join
 import os
+import pickle
 import pandas as pd
 
 DF_PICKLE_PATH = "df_pickle"
@@ -9,7 +10,9 @@ DF_PICKLE_PATH = "df_pickle"
 def save_pickle(df, crawl_name, df_type):
     os.makedirs(DF_PICKLE_PATH, exist_ok=True)
     path = join(DF_PICKLE_PATH, "%s_%s.pickle" % (crawl_name, df_type))
-    df.to_pickle(path)
+    # use protocol=2 for python2 compatibility
+    pickle.dump(df, open(path, 'wb'), protocol=2)
+    # df.to_pickle(path)
 
     
 def load_df(crawl_name, df_type):

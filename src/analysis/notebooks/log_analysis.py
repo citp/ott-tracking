@@ -18,10 +18,11 @@ from os.path import join, sep, isfile, basename
 from collections import defaultdict, Counter
 from nb_utils import read_channel_details_df, get_crawl_data_path, replace_nan
 from tld import get_fld
-
 from trackingprotection_tools import DisconnectParser
 # https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json"
-# __builtins__.basestring = str
+
+
+DEBUG = False
 
 def load_block_lists():
     nb_dir = os.getcwd()
@@ -47,7 +48,46 @@ def easylist_rules_should_block(easylist_rules, x):
 def easyprivacy_rules_should_block(easyprivacy_rules, x):
     return easyprivacy_rules.should_block("http://" + x, {'third-party': True})
 
+def add_scheme(hostname_or_url):
+    if hostname_or_url.startswith("http://") or hostname_or_url.startswith("https://"):
+        return hostname_or_url    
+    else:
+        return "http://" + hostname_or_url
 
+
+def add_adblocked_status(df, check_by_url=False):
+    ghostery_blocklist, easylist_rules, easyprivacy_rules, \
+        pihole_parser, disconnect = load_block_lists()
+    col = "host"
+    df['disconnect_blocked'] = df[col].map(
+            lambda x: disconnect.should_block(add_scheme(x)) if len(x) else False)
+    df['ghostery_blocked'] = df[col].map(
+        lambda x: ghostery_blocklist.check_host_in_list(add_scheme(x)))
+    df['easylist_blocked'] = df[col].map(
+        lambda x: easylist_rules_should_block(easylist_rules, x))
+    df['easyprivacy_blocked'] = df[col].map(
+        lambda x: easyprivacy_rules_should_block(easyprivacy_rules, x))
+    df['pihole_blocked'] = df[col].map(
+        lambda x: pihole_parser.is_blocked_by_pihole(x))
+    df['adblocked'] = df.disconnect_blocked | df.ghostery_blocked | \
+        df.easylist_blocked | df.easyprivacy_blocked | df.pihole_blocked
+
+    if "url" not in df.columns or not check_by_url:
+        return
+    # check adblocked status by URL, for comparison
+    col = "url"
+    df['disconnect_blocked_by_url'] = df[col].map(
+            lambda x: disconnect.should_block(add_scheme(x)) if len(x) else False)
+    df['ghostery_blocked_by_url'] = df[col].map(
+        lambda x: ghostery_blocklist.check_host_in_list(add_scheme(x)))
+    df['easylist_blocked_by_url'] = df[col].map(
+        lambda x: easylist_rules_should_block(easylist_rules, x))
+    df['easyprivacy_blocked_by_url'] = df[col].map(
+        lambda x: easyprivacy_rules_should_block(easyprivacy_rules, x))
+    df['pihole_blocked_by_url'] = df[col].map(
+        lambda x: pihole_parser.is_blocked_by_pihole(x))
+    df['adblocked_by_url'] = df.disconnect_blocked_by_url | df.ghostery_blocked_by_url | \
+        df.easylist_blocked_by_url | df.easyprivacy_blocked | df.pihole_blocked
 
 def load_roku_channel_details():
     channels = []
@@ -266,7 +306,6 @@ def get_hostname_for_tcp_conn(row, http_domains, tls_snis, ip_2_domains_by_chann
         # print("Will return", host, row['tcp_stream'])
         return host
 
-DEBUG = False
 # Create global_df, containing all SSL/TCP streams SYN packets
 def get_distinct_tcp_conns(crawl_name, name_resolution=True,
                            drop_from_unfinished=True, http_requests=None):
@@ -281,7 +320,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
 
     pattern = "*.tcp_streams"
     if DEBUG:
-        pattern = "236390*.tcp_streams"
+        pattern = "23*.tcp_streams"
     #DEBUG com.amazon.rialto.cordova.webapp.webappb656e57
     for txt_path in glob(join(post_process_dir, pattern)):
         filename = basename(txt_path)
@@ -326,21 +365,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     # 3- use DNS records if 1 and 2 fails
     df['host'] = df.apply(lambda x: get_hostname_for_tcp_conn(x, http_hostnames, tls_snis, ip_2_domains_by_channel), axis=1)
     df = replace_nan(df)
-
-    ghostery_blocklist, easylist_rules, easyprivacy_rules, \
-        pihole_parser, disconnect = load_block_lists()
-    df['disconnect_blocked'] = df['host'].map(
-            lambda x: disconnect.should_block("http://" + x) if len(x) else False)
-    df['ghostery_blocked'] = df.host.map(
-        lambda x: ghostery_blocklist.check_host_in_list("http://" + x))
-    df['easylist_blocked'] = df.host.map(
-        lambda x: easylist_rules_should_block(easylist_rules, x))
-    df['easypivacy_blocked'] = df.host.map(
-        lambda x: easyprivacy_rules_should_block(easyprivacy_rules, x))
-    df['pihole_blocked'] = df.host.map(
-        lambda x: pihole_parser.is_blocked_by_pihole(x))
-    df['adblocked'] = df.ghostery_blocked | df.easylist_blocked | \
-        df.easypivacy_blocked | df.pihole_blocked | df.disconnect_blocked
+    add_adblocked_status(df)
 
     df['domain'] = df.host.map(lambda x: get_fld("http://" + x, fail_silently=True))
     return df
@@ -359,7 +384,7 @@ def get_http1_df(crawl_data_dir):
 
     pattern = "*.http.json"
     if DEBUG:
-        pattern = "236390*.http.json"
+        pattern = "23*.http.json"
 
     for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)
@@ -474,9 +499,15 @@ def get_http_df(crawl_data_dir, drop_from_unfinished=True):
     h2_requests, h2_responses, _ = get_http2_df(crawl_data_dir)
     requests = h1_requests.append(h2_requests, sort=False)
     responses = h1_responses.append(h2_responses, sort=False)
+
     crawl_statuses = get_crawl_status(crawl_data_dir)
     add_channel_crawl_status(requests, crawl_statuses, drop_from_unfinished)
     add_channel_crawl_status(responses, crawl_statuses, drop_from_unfinished)
+
+    playback_detected = get_playback_detection_results(crawl_name)
+    requests['playback'] = requests['channel_id'].map(lambda x: x in playback_detected)
+
+    add_adblocked_status(requests, check_by_url=True)
     requests["tcp_stream"] = pd.to_numeric(requests["tcp_stream"])
     requests["tcp_dstport"] = pd.to_numeric(requests["tcp_dstport"])
     return replace_nan(requests), replace_nan(responses), dns
@@ -502,7 +533,7 @@ def get_http2_df(crawl_data_dir):
 
     pattern = "*.http2.json"
     if DEBUG:
-        pattern = "236390*.http2.json"
+        pattern = "23*.http2.json"
 
     for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)

@@ -15,6 +15,7 @@ except ImportError:
 from tld import get_fld
 from glob import glob
 from os.path import join, sep, isdir
+from IPython.display import display_html
 
 
 TSHARK_FIELD_SEP = "|"
@@ -269,7 +270,15 @@ def make_latex_table(df, label="LABEL", caption="caption",
     return pre + tabu + post.replace("LABEL", label).replace("CAPTION", caption)
 
 
+def display_side_by_side(*args):
+    html_str=''
+    for df in args:
+        html_str+=df.to_html(index=False)
+    display_html(html_str.replace('table','table style="display:inline"'),raw=True)
+    
+
 if __name__ == '__main__':
     df = read_channel_details_df()
     #df = read_roku_channel_details_df()
     print(len(df))
+
