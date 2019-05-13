@@ -39,14 +39,17 @@ def load_block_lists():
     disconnect = DisconnectParser(blocklist="disconnect/services.json")
     return ghostery_blocklist, easylist_rules, easyprivacy_rules, pihole_parser, disconnect
 
+
 import functools
 @functools.lru_cache(maxsize=100000)
 def easylist_rules_should_block(easylist_rules, x):
     return easylist_rules.should_block("http://" + x, {'third-party': True})
 
+
 @functools.lru_cache(maxsize=100000)
 def easyprivacy_rules_should_block(easyprivacy_rules, x):
     return easyprivacy_rules.should_block("http://" + x, {'third-party': True})
+
 
 def add_scheme(hostname_or_url):
     if hostname_or_url.startswith("http://") or hostname_or_url.startswith("https://"):
@@ -88,14 +91,6 @@ def add_adblocked_status(df, check_by_url=False):
         lambda x: pihole_parser.is_blocked_by_pihole(x))
     df['adblocked_by_url'] = df.disconnect_blocked_by_url | df.ghostery_blocked_by_url | \
         df.easylist_blocked_by_url | df.easyprivacy_blocked | df.pihole_blocked
-
-def load_roku_channel_details():
-    channels = []
-    with open(channel_list) as fp:
-        for line in fp:
-            record = json.loads(line)
-            channels.append(record)
-    return channels
 
 
 def load_dns_data(root_dir):
@@ -306,6 +301,7 @@ def get_hostname_for_tcp_conn(row, http_domains, tls_snis, ip_2_domains_by_chann
         # print("Will return", host, row['tcp_stream'])
         return host
 
+
 # Create global_df, containing all SSL/TCP streams SYN packets
 def get_distinct_tcp_conns(crawl_name, name_resolution=True,
                            drop_from_unfinished=True, http_requests=None):
@@ -365,6 +361,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     # 3- use DNS records if 1 and 2 fails
     df['host'] = df.apply(lambda x: get_hostname_for_tcp_conn(x, http_hostnames, tls_snis, ip_2_domains_by_channel), axis=1)
     df = replace_nan(df)
+
     add_adblocked_status(df)
 
     df['domain'] = df.host.map(lambda x: get_fld("http://" + x, fail_silently=True))
@@ -493,10 +490,11 @@ def add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished=False):
         df = df[df.status == "TERMINATED"]
 
 
-def get_http_df(crawl_data_dir, drop_from_unfinished=True):
+def get_http_df(crawl_name, drop_from_unfinished=True):
     # print("Will load HTTP dataframe for", crawl_data_dir)
+    crawl_data_dir = get_crawl_data_path(crawl_name)
     h1_requests, h1_responses, dns = get_http1_df(crawl_data_dir)
-    h2_requests, h2_responses, _ = get_http2_df(crawl_data_dir)
+    h2_requests, h2_responses, dns = get_http2_df(crawl_data_dir)
     requests = h1_requests.append(h2_requests, sort=False)
     responses = h1_responses.append(h2_responses, sort=False)
 

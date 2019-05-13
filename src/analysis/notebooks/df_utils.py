@@ -22,7 +22,7 @@ def load_df(crawl_name, df_type):
 
 def load_and_save_dfs(crawl_name):
     crawl_data_dir = get_crawl_data_path(crawl_name)
-    http_req, http_resp, dns = get_http_df(crawl_data_dir)
+    http_req, http_resp, dns = get_http_df(crawl_name)
     save_pickle(http_req, crawl_name, "http_req")
     save_pickle(http_resp, crawl_name, "http_resp")
     save_pickle(dns, crawl_name, "dns")
