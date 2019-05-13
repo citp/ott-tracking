@@ -761,6 +761,7 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
     except TimeoutError:
         log('Timeout for crawl expired! Ending scrape for channel %s' % channel_id)
     except:
+        err_occurred = True
         log('Error!')
         traceback.print_exc()
     if err_occurred:
