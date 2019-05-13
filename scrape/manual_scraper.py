@@ -57,6 +57,8 @@ def scrape_channel(username):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     for channel_name in channels:
+        if isinstance(channel_name, dict):
+            channel_name = channel_name["id"]
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                 str(channel_name)) + ".txt"
         if isfile(channel_res_file):
@@ -162,12 +164,22 @@ def scrape_channel(username):
 
 
 def read_channels_for_user(username):
-    apk_names = []
-    for l in open("manual_interaction_channel_lists/%s.csv" % username):
-        apk_name = (l.rstrip().split(",")[2])
-        apk_names.append(apk_name)
+    channels = []
+    channel_list_file = "manual_interaction_channel_lists/%s.csv" % username
+    if scrape_config.PLAT == "ROKU":
+        log("Importing Roku channels")
+        channels = get_roku_channel_list(channel_list_file)
+    elif scrape_config.PLAT == "AMAZON":
+        log("Importing Amazon channels")
+        channels = get_amazon_channel_list(channel_list_file)
+    return channels
 
-    return apk_names
+#    apk_names = []
+#    for l in open("manual_interaction_channel_lists/%s.csv" % username):
+#        apk_name = (l.rstrip().split(",")[2])
+#        apk_names.append(apk_name)
+#
+#    return apk_names
 
 
 def main_loop(username):
