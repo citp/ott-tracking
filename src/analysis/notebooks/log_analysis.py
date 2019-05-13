@@ -504,6 +504,7 @@ def get_http_df(crawl_name, drop_from_unfinished=True):
 
     playback_detected = get_playback_detection_results(crawl_name)
     requests['playback'] = requests['channel_id'].map(lambda x: x in playback_detected)
+    responses['playback'] = responses['channel_id'].map(lambda x: x in playback_detected)
 
     add_adblocked_status(requests, check_by_url=True)
     requests["tcp_stream"] = pd.to_numeric(requests["tcp_stream"])
