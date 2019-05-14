@@ -2,19 +2,16 @@ try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
-import ntpath
 import ujson
 import numpy as np
-import re
 import os
-import ipaddress
 import sys
 import pandas as pd
 import json
 import traceback
 from datetime import datetime
 from glob import glob
-from os.path import join, sep, isfile, basename
+from os.path import join, sep, isfile, basename, dirname, realpath
 from collections import defaultdict, Counter
 from nb_utils import read_channel_details_df, get_crawl_data_path, replace_nan
 from tld import get_fld
@@ -28,10 +25,12 @@ except ImportError:
 
 DEBUG = False
 
+
 def load_block_lists():
-    nb_dir = os.getcwd()
-    # switch to blocklist dir to be able to load the blocklists
-    os.chdir('../../../src/blocklistparser')
+    nb_dir = dirname(realpath(__file__))
+    bloc_dir = realpath(join(nb_dir, '../../../src/blocklistparser'))
+    sys.path.insert(0, bloc_dir)
+    os.chdir(bloc_dir)  # block list modules load list from relative path
     from BlockListParser import get_adblock_rules, get_disconnect_blocked_hosts, GhosteryListParser, is_blocked_by_disconnect
     from PiHoleListParser import PiHoleListParser
     easylist_rules, easyprivacy_rules = get_adblock_rules()
@@ -341,7 +340,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
 
     pattern = "*.tcp_streams"
     if DEBUG:
-        pattern = "23*.tcp_streams"
+        pattern = "com.w*.tcp_streams"
     #DEBUG com.amazon.rialto.cordova.webapp.webappb656e57
     for txt_path in glob(join(post_process_dir, pattern)):
         filename = basename(txt_path)
@@ -406,7 +405,7 @@ def get_http1_df(crawl_data_dir):
 
     pattern = "*.http.json"
     if DEBUG:
-        pattern = "23*.http.json"
+        pattern = "com.w*.http.json"
 
     for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)
@@ -432,6 +431,7 @@ def get_http1_df(crawl_data_dir):
                 requests.append({field.replace(".", "_"): value[0]
                                  for field, value in payload.items()})
 
+    print(len(dns_df))
     assert len(requests)
     assert len(responses)
     print("Multiple messages", multiple_msg_cnt)
@@ -518,8 +518,8 @@ def add_channel_crawl_status(df, crawl_statuses, drop_from_unfinished=False):
 def get_http_df(crawl_name, drop_from_unfinished=True):
     # print("Will load HTTP dataframe for", crawl_data_dir)
     crawl_data_dir = get_crawl_data_path(crawl_name)
-    h1_requests, h1_responses, dns = get_http1_df(crawl_data_dir)
-    h2_requests, h2_responses, dns = get_http2_df(crawl_data_dir)
+    h1_requests, h1_responses, h1_dns = get_http1_df(crawl_data_dir)
+    h2_requests, h2_responses, h2_dns = get_http2_df(crawl_data_dir)
     requests = h1_requests.append(h2_requests, sort=False)
     responses = h1_responses.append(h2_responses, sort=False)
 
@@ -534,7 +534,7 @@ def get_http_df(crawl_name, drop_from_unfinished=True):
     add_adblocked_status(requests, check_by_url=True)
     requests["tcp_stream"] = pd.to_numeric(requests["tcp_stream"])
     requests["tcp_dstport"] = pd.to_numeric(requests["tcp_dstport"])
-    return replace_nan(requests), replace_nan(responses), dns
+    return replace_nan(requests), replace_nan(responses), h1_dns
 
 
 # https://www.iana.org/assignments/http2-parameters/http2-parameters.xhtml#frame-type
@@ -557,7 +557,7 @@ def get_http2_df(crawl_data_dir):
 
     pattern = "*.http2.json"
     if DEBUG:
-        pattern = "23*.http2.json"
+        pattern = "com.w*.http2.json"
 
     for json_path in glob(join(post_process_dir, pattern)):
         # print(json_path)
@@ -730,3 +730,30 @@ def get_tls_snis(crawl_name):
     for _, row in ssl_df.iterrows():
         tls_snis[(row['channel_id'], row["tcp_stream"], row["ip_dst"])] = row["ssl_handshake_extensions_server_name"]
     return tls_snis
+
+
+
+def get_resp_url(row, req_urls):
+    return req_urls.get((row['channel_id'], int(row["tcp_stream"]), row["ip_src"], int(row["tcp_srcport"])))
+
+
+def get_https_upgrade_redirectors(crawl_name, http_req, http_resp):
+    http_resp = http_resp[http_resp.code != ""]
+    req_urls = get_http_hostnames(crawl_name, requests=http_req, value_type="url")
+    http_resp['url'] = http_resp.apply(lambda x: get_resp_url(x, req_urls), axis=1)
+    assert not len(http_resp[http_resp.url==""])
+    http_resp = replace_nan(http_resp)
+    redirects = http_resp[http_resp.location != ""]
+
+    add_domain_column(redirects, "url", "req_domain")
+    add_domain_column(redirects, "location", "loc_domain")
+    redirects['https_upgrade'] = redirects.apply(
+        lambda x: (x.tcp_srcport == "80" and x.location.startswith('https://')
+        and x.req_domain==x.loc_domain), axis=1)
+    https_upgrades = redirects[redirects.https_upgrade]
+    cross_origin_redirects = redirects[redirects.req_domain!=redirects.loc_domain]
+    return redirects, https_upgrades, cross_origin_redirects
+
+
+if __name__ == '__main__':
+    load_block_lists()

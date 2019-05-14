@@ -94,6 +94,14 @@ FIELDS="-e frame.time_epoch -e ip.src -e dns.qry.name -e dns.a -e dns.aaaa"
 SUFFIX="dns.csv"
 ./extract_fields.sh -w $OUT_DIR -s $SUFFIX -i $PCAP_DIR -o $KEY_DIR -f $FILTER -t $FORMAT -r "|" $FIELDS
 
+cd ../notebooks
+# process tshark output and build dataframes for http, tcp, dns data
+python3 pickle_dfs.py $DATA_DIR
+
+# detect leaks on the http traffic
+python2 detect_leaks.py $DATA_DIR
+cd -
+
 # Run OCR detection
 # cd ../../imagetextparser/
 # python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8

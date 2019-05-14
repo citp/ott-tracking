@@ -16,7 +16,7 @@ from tld import get_fld
 from glob import glob
 from os.path import join, sep, isdir
 from IPython.display import display_html
-
+from tabulate import tabulate
 
 TSHARK_FIELD_SEP = "|"
 ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
@@ -254,28 +254,53 @@ def get_popular_domains_from_tcp_conns(df, head=10):
 pre = r"""
 \begin{table}[H]
 %\centering
-\resizebox{\columnwidth}{!}{%
+%\resizebox{\columnwidth}{!}{%
 """
 
 post = r"""
-}
+%}
 \caption{CAPTION}
 \label{tab:LABEL}
 \end{table}"""
 
 
 def make_latex_table(df, label="LABEL", caption="caption",
-    tablefmt="latex_booktabs", headers="keys", showindex=False):
-    tabu = tabulate(df, tablefmt="latex_booktabs", headers="keys", showindex=False)
-    return pre + tabu + post.replace("LABEL", label).replace("CAPTION", caption)
+                     tablefmt="latex_booktabs"):
+    df = df.rename(lambda x: x.replace("_", " ").capitalize(), axis='columns')
+    tabu = tabulate(df, tablefmt=tablefmt, headers="keys", showindex=False)
+
+    return pre + tabu + post.replace(
+        "LABEL", label).replace("CAPTION", caption)
 
 
 def display_side_by_side(*args):
-    html_str=''
+    html_str = ''
     for df in args:
-        html_str+=df.to_html(index=False)
-    display_html(html_str.replace('table','table style="display:inline"'),raw=True)
-    
+        html_str += df.to_html(index=False)
+    display_html(html_str.replace(
+        'table', 'table style="display:inline"'), raw=True)
+
+
+def score_first_party(fp, rank_weight=1):
+    """ Weight of 1/(rank of first_party) """
+    return 1.0/float(fp)**rank_weight
+
+
+def get_prominence_score(channel_ranks):
+    return round(sum([score_first_party(channel_rank)
+                      for channel_rank in channel_ranks]), 4)
+
+
+def get_channels_with_most_domains(df, head=10, only_tracking_domains=True):
+    title = "# domains"
+    if only_tracking_domains:
+        df = df[df.adblocked]
+        title = "# tracking\n domains"
+    return df.drop_duplicates(subset=["channel_name", "domain"]).\
+        groupby(["channel_name", "rank", 'category']).size().\
+        reset_index(name=title).\
+        sort_values(by=[title], ascending=False).head(head)
+
 
 if __name__ == '__main__':
     df = read_channel_details_df()
