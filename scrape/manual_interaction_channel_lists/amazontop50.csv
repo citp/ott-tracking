@@ -1,0 +1,52 @@
+# First 50 channels from apk_info_top_with_ranking.csv, sorted by Amazon ranking (extracted from the top 1000 channel list)
+amazon_category_ranking,apk_name,apk_id,product_id,product_name,overlap_token_count,developer_name
+0,tubi tv,com.tubitv.ott,B075NTHVJW,Tubi - Watch Free Movies &amp; TV Shows,2,Tubi%2C Inc
+1,amc,com.amctve.amcfiretv,B072M565NX,AMC,1,AMC Networks
+2,firefox,org.mozilla.tv.firefox,B078B5YMPD,Firefox for Fire TV,1,Mozilla
+3,downloader,com.esaba.downloader,B01N0BP507,Downloader,1,AFTVnews.com
+4,hbo go,com.HBO,B0089BPEZS,HBO GO,2,HBO
+5,dazn,com.dazn,B01IPC7MBE,DAZN,1,DAZN
+6,nbc,com.onemainstream.nbcunivers.android,B018IOV40E,NBC,1,NBCUniversal Media%2C LLC
+7,pluto tv,tv.pluto.android,B00KDSGIPK,Pluto TV - It&#39;s Free TV,2,Pluto TV
+8,hbo now,com.hbo.hbonow,B00XZFCVK4,HBO NOW: Stream TV &amp; Movies,2,HBO Digital Services%2C Inc.
+9,spotify,com.spotify.tv.android,B00N1XIY5Q,Spotify Music - for Fire TV,1,Spotify
+10,cbs,com.cbs.ott,B017250D16,CBS Full Episodes and Live TV,1,CBS Interactive
+11,the cw,com.cw.tv.android,B01LXZLEMN,The CW on Fire TV,2,The CW Network
+12,facebook watch,com.facebook.katana,B0094BB4TW,Facebook,1,Facebook
+13,abc,com.disney.datg.videoplatforms.android.amazon.kindle.abc,B00BYJ6BUO,ABC - Watch Full Episodes &amp; Live TV,1,ABC Digital
+14,fox now,com.fox.now,B00H4IS2HO,FOX NOW: Watch TV Live &amp; On Demand,2,FOX Broadcasting Company
+15,espn,com.espn.gtv,B00E81O27Y,ESPN for Fire TV,1,ESPN Inc.
+16,starz,com.starz.starzplay.firetv,B00YHZVOCW,STARZ,1,Starz Entertainment%2C LLC
+17,playstation vue,com.snei.vue.firetv,B015TN9OQI,PlayStation Vue,2,Sony Interactive Entertainment LLC
+18,nba,com.nbadigital.jumbo,B00HX2CYJS,NBA for Fire TV,1,NBA Digital
+21,mlb tv,com.bamnetworks.mobile.android.gameday.atbat,B007FIJ9EI,MLB At Bat,1,MLB Advanced Media%2C L.P.
+22,fox news,com.amazon.rialto.cordova.webapp.webapp855cc15add08457a8a1fe62312eab585,B00V8X7XTO,Fox News,2,Fox News Channel
+23,history,com.aetn.history.watch,B00E5NH46Q,HISTORY,1,A%26E Television Networks Mobile
+24,bbc america,com.bbca.firetv,B076QLVN87,BBC America,2,AMC Networks
+25,silk browser,com.amazon.cloud9,B01M35MQV4,Amazon Silk - Web Browser,2,Amazon.com
+26,nickjr,com.nick.android.nickjr.tv,B074PDDXF2,Nick Jr. for Fire TV,0,Nickelodeon
+27,player,com.tube8,B06Y1VH2QW,Tube Player - for YouTube,1,Videos App for YouTube
+28,fsgo,com.foxsports.videogo,B00I5VT8KY,FOX Sports,0,FOX Sports Media Group
+29,videos for youtube,com.kyy.tubevideos,B07KQFCN2T,Videos For YouTube,3,Kyy Apps
+30,nfl,com.gotv.nflgamecenter.us.lite,B01LXOU5PM,NFL,1,NFL.com
+31,hallmark,com.feeln.androidapp,B016LKXSXS,Hallmark Movies Now,1,Hallmark Life
+32,nbc sports,com.nbcuni.com.nbcsports.liveextra.firetv,B01923M8T6,NBC Sports,2,NBCUniversal Media%2C LLC
+33,xumo,com.xumo.xumo.tv,B07Q7N4GZG,XUMO: FREE MOVIES &amp; TV,1,Xumo LLC
+34,es file explorer,com.estrongs.android.pop,B008K6HN8I,ES File Explorer File Manager,3,ES Mobile
+35,kids,com.kids4mob,B07C1SNQFD,Kids for YouTube,1,Apps for YouTube Kids
+36,philo,com.philo.philo,B07BKPFXTJ,Philo,1,Philo
+37,red ball 4,com.FDGEntertainment.RedBall4.amazon,B012DOMCL0,Red Ball 4,2,FDG Entertainment GmbH %26 Co.KG
+38,usa,com.amazon.webapps.nbc.usa,B01M15CDM2,USA Network,1,NBCUniversal Media%2C LLC
+39,a e,com.aetn.aetv.watch,B00E5NGYVM,A&amp;E,0,A%26E Television Networks Mobile
+40,showtime anytime,com.showtime.showtimeanytime,B00B4G3MV8,Showtime Anytime,2,Showtime
+41,car parking 3d,com.renderedideas.carparking3d,B07MW2NMSN,Car Parking 3D,3,Rendered Ideas
+42,hungry shark,com.fgol.HungrySharkEvolution,B00AIUUXHC,Hungry Shark Evolution,2,Future Games of London
+43,boomerang,com.dramafever.boom_hybrid,B072MVYHH9,Boomerang FireTV,1,Boomerang
+44,cartoon network,com.turner.cnvideoapp,B00DDYQCFW,Cartoon Network App - Watch Videos  Clips and Full Episodes of Your Favorite Shows,2,Cartoon Network
+45,crossy road,com.hipsterwhale.crossy,B00QW8TYWO,Crossy Road,2,Hipster Whale
+46,vlc,org.videolan.vlc,B00U65KQMQ,VLC for Fire,1,VLC Mobile Team
+47,paramount network,com.vmn.android.spike,B019CVAKMK,Paramount Network,2,Paramount Network
+48,lifetime,com.aetn.lifetime.watch,B00E5NH6YG,Lifetime,1,A%26E Television Networks Mobile
+49,fubotv,com.fubo.firetv.screen,B019DCHDZK,fuboTV: Watch Live Sports &amp; TV,1,fuboTV
+50,youtube,org.chromium.youtube_apk,B00I0GS2SS,YouTube,1,youtube.com
+51,cnn go,com.cnn.mobile.fire.tv,B076TCPKJT,CNNgo,0,CNN Interactive Group%2C Inc.
