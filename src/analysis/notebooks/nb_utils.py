@@ -132,6 +132,10 @@ def get_category(categories):
 def replace_nan(df, replacement=""):
     return df.replace(np.nan, replacement, regex=True)
 
+AMAZON_CHANNEL_DETAILS_1K_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_top_with_ranking.csv"
+AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
+AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
+AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
 
 def read_channel_details_df():
     channel_df = []
@@ -193,11 +197,6 @@ def read_channel_details_df():
     # print(roku_df.columns)
     #roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
     roku_df['platform'] = 'roku'
-
-    AMAZON_CHANNEL_DETAILS_1K_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_top_with_ranking.csv"
-    AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
-    AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
-    AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
 
     amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_1K_CAT_CSV)
     # print(amazon_df.head())

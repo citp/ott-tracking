@@ -3,7 +3,7 @@ CrawlFireTVMITMWarmUp = 'amazon-data-20190509-140804'
 CrawlFireTVMITM = 'amazon-data-20190510-185732'
 CrawlFireTVDisableInterestAds = ''
 CrawlFireTVChildAccount = ''
-CrawlFireTVTop1K = 'amazon-data-20190509-133244'
+CrawlFireTVTop1KMITM = 'amazon-data-20190509-133243'
 CrawlFireTVTop1KNoMITM = 'amazon-data-20190510-205355'
 
 CrawlRokuWarmUpParamSearch = 'roku-data-20190427-014017'
@@ -31,6 +31,6 @@ FIRE_TV_CRAWLS = [
     CrawlFireTVMITM,
     CrawlFireTVDisableInterestAds,
     CrawlFireTVChildAccount,
-    CrawlFireTVTop1K,
+    CrawlFireTVTop1KMITM,
     CrawlFireTVTop1KNoMITM,
     ]
