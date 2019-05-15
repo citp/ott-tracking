@@ -539,7 +539,7 @@ def get_http_df(crawl_name, drop_from_unfinished=True):
 
 # https://www.iana.org/assignments/http2-parameters/http2-parameters.xhtml#frame-type
 HTTP2_FRAME_TYPE_DATA = "0"
-HTTP2_FRAME_TYPE_DATA = "1"
+HTTP2_FRAME_TYPE_HEADERS = "1"
 HTTP2_MIN_NUM_FIELDS = 7
 
 
@@ -593,8 +593,7 @@ def get_http2_df(crawl_data_dir):
                     assert len(value) == 1
                     payload[field] = value[0]
 
-            if (HTTP2_FRAME_TYPE_DATA not in payload["http2_type"] and
-                    HTTP2_FRAME_TYPE_DATA not in payload["http2_type"]):
+            if (HTTP2_FRAME_TYPE_HEADERS not in payload["http2_type"]):
                 continue
 
             if "http2_header_name" not in payload:

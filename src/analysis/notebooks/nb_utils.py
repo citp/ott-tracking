@@ -133,9 +133,11 @@ def replace_nan(df, replacement=""):
     return df.replace(np.nan, replacement, regex=True)
 
 AMAZON_CHANNEL_DETAILS_1K_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_top_with_ranking.csv"
+AMAZON_CHANNEL_DETAILS_TOP_1K = "../../../scrape/platforms/amazon/channel_details/apk-info-top1K.csv"
 AMAZON_CHANNEL_DETAILS_CAT_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info_cat.csv"
 AMAZON_CHANNEL_DETAILS_CSV = "../../../scrape/platforms/amazon/channel_details/apk_info.csv"
 AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV = "../../../scrape/platforms/amazon/channel_lists/test/100-channel_name.csv"
+
 
 def read_channel_details_df():
     channel_df = []
@@ -146,7 +148,7 @@ def read_channel_details_df():
             d = dict()
             obj = json.loads(channel_json_str)
             # print(obj.keys())
-            #d["category"] = obj['categories'][0]["name"]
+            # d["category"] = obj['categories'][0]["name"]
             d["category"] = get_category(obj['categories'])
 
             d["rank"] = obj['rankByWatched']
@@ -171,7 +173,7 @@ def read_channel_details_df():
     ROKU_OLD_CHANNEL_LIST = "../../../legacy-code/roku_readonly/channel_list_readonly.txt"
     ROKU_KIDS_AND_TV_CHANNELS = "../../../scrape/platforms/roku/channel_lists/all_channel_list.txt"
     # ROKU_TOP = "../../../scrape/platforms/roku/channel_lists/channels_info/all_channels.json"
-    #roku_channels_df = read_roku_channel_details_df()
+    # roku_channels_df = read_roku_channel_details_df()
     # print(roku_channels_df.columns)
     # for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
     for channel_list_file in [ROKU_OLD_CHANNEL_LIST, ROKU_KIDS_AND_TV_CHANNELS]:
@@ -187,7 +189,7 @@ def read_channel_details_df():
             channel_df.append(d)
 
     roku_df = pd.DataFrame(channel_df)
-    #roku_df = roku_channels_df
+    # roku_df = roku_channels_df
     # print(roku_df.columns)
     roku_df['channel_id'] = roku_df['channel_id'].astype(str)
     # roku_df = pd.concat([roku_df, roku_channels_df], axis=0, sort=True)
@@ -195,21 +197,23 @@ def read_channel_details_df():
     roku_df = roku_df.drop_duplicates('channel_id', keep='first').\
         set_index('channel_id').sort_values(["category", "rank"])
     # print(roku_df.columns)
-    #roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
+    # roku_df.drop(['_scrape_ts', 'accessCode', 'datePublished', 'desc', 'thumbnail'], inplace=True, axis=1)
     roku_df['platform'] = 'roku'
 
-    amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_1K_CAT_CSV)
+    amazon_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_TOP_1K)
     # print(amazon_df.head())
-    amazon_df['amazon_category'] = amazon_df['amazon_categories'].map(lambda x: x.split('+')[0])
-    amazon_df['amazon_ranking'] = amazon_df['amazon_category_ranking'].map(lambda x: x.split(':')[1])
+    # amazon_df['amazon_category'] = amazon_df['amazon_categories'].map(lambda x: x.split('+')[0])
+    # amazon_df['amazon_ranking'] = amazon_df['amazon_category_ranking'].map(lambda x: x.split(':')[1])
 
-
+    amazon_df.rename(columns={'amazon_categories': 'amazon_category',
+                              'amazon_category_ranking': 'amazon_ranking'}, inplace=True)
     amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CAT_CSV), sort=True)
     amazon_df = amazon_df.append(pd.read_csv(AMAZON_CHANNEL_DETAILS_CSV), sort=True)
+
     tmp_df = pd.read_csv(AMAZON_CHANNEL_DETAILS_100_RANDOM_CSV, comment='#')
     # print(amazon_df.columns)
     # print(tmp_df.columns)
-    amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1), sort=True)
+    # amazon_df = amazon_df.append(tmp_df.rename({"channel_name": "product_name"}, axis=1), sort=True)
     # print(amazon_df.columns)
     amazon_df = replace_nan(amazon_df)
     amazon_df['amazon_category'] = amazon_df['amazon_category'].map(lambda x: x.capitalize())
@@ -218,19 +222,22 @@ def read_channel_details_df():
                               'apk_id': 'channel_id',
                               'product_name': 'channel_name'}, inplace=True)
     amazon_df['channel_id'] = amazon_df['channel_id'].astype(str)
-    # print(amazon_df.columns)
+    print(amazon_df.columns)
     amazon_df = amazon_df.drop_duplicates('channel_id', keep='first').set_index('channel_id').sort_values(["category", "rank"])
     amazon_df.category[amazon_df.category == ""] = 'Others'
-    amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
-                    'overlap_token_count', 'developer_name'], inplace=True, axis=1)
+    amazon_df = amazon_df[['rank', 'category', 'channel_name']]
+    #amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
+    #                'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'
-    # print(amazon_df.columns)
+    print(amazon_df.columns)
+    print("amaz len", len(amazon_df))
     df = roku_df.append(amazon_df, sort=True)
     df = df.replace('kids-family', "Kids & Family").replace('movies-tvs', "Movies & TV").\
             replace('Web-Video', "Web Video").replace('education', "Education").\
             replace('food', "Food").replace('health', "Health").replace('kids', "Kids").\
             replace('lifestyle', "Lifestyle").replace('medical', "Medical").replace('movies', "Movies").\
-            replace('news', "News").replace('shopping', "Shopping").replace('sports', "Sports")
+            replace('news', "News").replace('shopping', "Shopping").replace('sports', "Sports"). \
+            replace('Movies & tv', "Movies & TV")
 
     return df
 
@@ -303,6 +310,9 @@ def get_channels_with_most_domains(df, head=10, only_tracking_domains=True):
 
 if __name__ == '__main__':
     df = read_channel_details_df()
-    #df = read_roku_channel_details_df()
-    print(len(df))
+    # df = read_roku_channel_details_df()
+    # amazon_df = df[(df.platform=="amazon")]
+    # print(len(amazon_df))
+    # top1k = amazon_df
+    # print(top1k.category.value_counts())
 

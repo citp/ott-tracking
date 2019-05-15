@@ -1,8 +1,7 @@
 CrawlFireTVNoMITM = 'amazon-data-20190508-202449'
 CrawlFireTVMITMWarmUp = 'amazon-data-20190509-140804'
 CrawlFireTVMITM = 'amazon-data-20190510-185732'
-CrawlFireTVDisableInterestAds = ''
-CrawlFireTVChildAccount = ''
+CrawlFireTVDisableInterestAds = 'amazon-data-20190512-092528'
 CrawlFireTVTop1KMITM = 'amazon-data-20190509-133243'
 CrawlFireTVTop1KNoMITM = 'amazon-data-20190510-205355'
 
@@ -30,7 +29,6 @@ FIRE_TV_CRAWLS = [
     CrawlFireTVNoMITM,
     CrawlFireTVMITM,
     CrawlFireTVDisableInterestAds,
-    CrawlFireTVChildAccount,
     CrawlFireTVTop1KMITM,
     CrawlFireTVTop1KNoMITM,
     ]

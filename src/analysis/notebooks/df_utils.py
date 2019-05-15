@@ -30,8 +30,8 @@ def correct_firetv_ranks(firetv_df):
 def load_df(crawl_name, df_type):
     path = join(DF_PICKLE_PATH, "%s_%s.pickle" % (crawl_name, df_type))
     df = pd.read_pickle(path)
-    if "amazon" in crawl_name:
-        correct_firetv_ranks(df)
+    # if "amazon" in crawl_name:
+    #    correct_firetv_ranks(df)
     return df
 
 
