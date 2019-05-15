@@ -1,0 +1,121 @@
+---
+title: "Plots"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(grid)
+
+theme_Publication <- function(base_size=10) {
+      (theme_foundation(base_size=base_size)
+       + theme(plot.title = element_text(face = "bold",
+                                         size = rel(1.2), hjust = 0.5),
+               text = element_text(),
+               panel.background = element_rect(colour = NA),
+               plot.background = element_rect(colour = NA),
+               panel.border = element_rect(colour = NA),
+               axis.title = element_text(size = rel(1)),
+               axis.title.y = element_text(angle=90,vjust =3),
+               axis.title.x = element_text(vjust = -0.3),
+               axis.text = element_text(), 
+               axis.line = element_line(colour="#4A4A4A"),
+               axis.ticks = element_line(),
+               panel.grid.major = element_line(colour="#f0f0f0"),
+               panel.grid.minor = element_blank(),
+               legend.key = element_rect(colour = NA),
+               legend.position = "bottom",
+               legend.direction = "horizontal",
+               legend.key.size= unit(0.2, "cm"),
+               #legend.spacing = unit(0, "cm"),
+               plot.margin=unit(c(10,5,5,5),"mm"),
+               strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0")
+          ))
+      
+}
+
+scale_fill_Publication <- function(...){
+      library(scales)
+      discrete_scale("fill","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+
+}
+
+scale_colour_Publication <- function(...){
+      library(scales)
+      discrete_scale("colour","Publication",manual_pal(values = c("#386cb0","#f58403","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+
+}
+```
+
+## amazon 1K crawl
+
+### Read in the data and print the rows, columns
+```{r}
+amazon1k <- read.csv('amazon-data-20190510-205355_tcp_conn.csv')
+nrow(amazon1k)
+colnames(amazon1k)
+```
+
+### How many categories do we have?
+```{r}
+amazon1k %>% distinct(category)
+```
+
+## Does each channel belong to only one category?
+```{r}
+df <- amazon1k %>% distinct(channel_id, category) %>% group_by(channel_id) %>% summarise(counts = n(), unique = counts == 1)
+sum(df$unique)
+```
+
+## Does each channel have only one rank?
+```{r}
+df <- amazon1k %>% distinct(channel_id, rank) %>% group_by(rank) %>% summarise(counts = n(), unique = counts == 1) 
+sum(df$unique)
+```
+
+### How do the categories vary by plackback?
+```{r}
+amazon1k_top <- amazon1k %>% select(channel_id, category, playback) %>% 
+  distinct() %>% 
+  group_by(category) %>% 
+  summarise(total = n(), playback_true = sum(playback == "True"), playback_false = sum(playback == "False")) %>% 
+  arrange(desc(total)) %>% print(n=22) %>% head(10)
+```
+
+
+### Retain channels by prevalence
+```{r}
+amazon1k_top <- amazon1k %>% filter(category %in% amazon1k_top$category) 
+nrow(amazon1k_top)
+```
+
+### Make data ready for plotting
+```{r}
+amazon1k_uniq <- amazon1k_top %>% 
+  filter(adblocked == "True") %>% 
+  distinct(channel_id, domain, category, rank, playback) %>% 
+  group_by(channel_id, category, rank, playback) %>% 
+  count() %>% 
+  arrange(rank)
+```
+
+### Plot
+```{r}
+#amazon1k_uniq <- amazon1k_uniq %>% group_by(category) %>% mutate(med = median(n))
+
+ggplot(amazon1k_uniq, aes(x=rank, y=n, color=playback)) +
+  geom_point(size=0.67, alpha=0.6) + 
+  coord_cartesian(xlim = c(min(amazon1k_uniq$rank), quantile(amazon1k_uniq$rank, 0.99)),
+                  ylim = c(min(amazon1k_uniq$n), quantile(amazon1k_uniq$n, 0.997))) +
+  facet_wrap(~category, nrow=2, ncol=5) + 
+  ylab("Number of Tracking Domains") + 
+  xlab("Channel Rank") + 
+  labs(color="Video Played?") + 
+  scale_colour_Publication() + 
+  theme_Publication() 
+  #+ geom_hline(aes(yintercept = med, group = category), colour = "black", linetype = 2)
+```

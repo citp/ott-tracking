@@ -12,7 +12,7 @@ library(dplyr)
 library(grid)
 
 theme_Publication <- function(base_size=10) {
-      (theme_foundation(base_size=base_size, base_family="helvetica")
+      (theme_foundation(base_size=base_size)
        + theme(plot.title = element_text(face = "bold",
                                          size = rel(1.2), hjust = 0.5),
                text = element_text(),
