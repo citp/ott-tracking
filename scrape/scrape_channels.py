@@ -639,6 +639,7 @@ def smart_crawl(surfer):
                             "-".join(key_sequence)))
             playback_detected = play_key_sequence(surfer, key_sequence, key_seq_idx, launch_idx)
             if playback_detected:
+                surfer.timestamp_event('playback-detected')
                 log('SMART_CRAWLER: Playback detected on channel: %s' %
                     surfer.channel_id)
                 fast_forward(surfer)
