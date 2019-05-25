@@ -2,6 +2,8 @@
 AUDIO_ROOT_DIR=${DATA_DIR}/audio
 DETECTION_WINDOW=5
 CURRENT_CHANNEL=/tmp/OTT_CURRENT_CHANNEL
+CRAWL_FINISHED_FILE="/tmp/CRAWL_FINISHED.txt"
+
 
 # echo "HOSTNAME".$HOSTNAME
 # set the audio HW name for arecord
@@ -25,8 +27,7 @@ do
       break
     fi
 
-    if ! pgrep  "starter_automatic.sh" > /dev/null
-    then
+    if [ -f "${CRAWL_FINISHED_FILE}" ]; then
         echo "Crawl finished. Will stop capturing audio."
         exit 0
     fi
@@ -49,3 +50,4 @@ sox $(ls ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav) ${CH_AUDIO_DIR}/${CHANNEL_ID}_co
 # rm ${CH_AUDIO_DIR}/${CHANNEL_ID}_*-*.wav
 echo "Continuous audio capturing stopped."
 exit 0
+
