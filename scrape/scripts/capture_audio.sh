@@ -25,7 +25,7 @@ do
       break
     fi
 
-    if ! pgrep  "starter.sh" > /dev/null
+    if ! pgrep  "starter_automatic.sh" > /dev/null
     then
         echo "Crawl finished. Will stop capturing audio."
         exit 0
