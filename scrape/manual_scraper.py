@@ -165,7 +165,7 @@ def scrape_channel(username):
 
 def read_channels_for_user(username):
     channels = []
-    channel_list_file = "manual_interaction_channel_lists/%s.csv" % username
+    channel_list_file = "manual/manual_interaction_channel_lists/%s.csv" % username
     if scrape_config.PLAT == "ROKU":
         log("Importing Roku channels")
         channels = get_roku_channel_list(channel_list_file)
