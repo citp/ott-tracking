@@ -1,8 +1,12 @@
+from __future__ import absolute_import
 from curtsies import Input
 from scrape_channels import *
 from datetime import datetime
 from os.path import join, isfile
+from multiprocessing import Process
+import traceback
 import time
+import sys
 
 
 # For each channel to the following (steps with * require a signal):
@@ -13,6 +17,43 @@ import time
 # >>USER: Launch channel (repeat xTimes)
 # 4-SCRIPT* (COLLECT_DATA): collect pcap, (opt. mitm logs), redis-db
 # 5-SCRIPT (END_CHNL): terminate tcpdump, (opt. mitmdump), dns_sniffer
+
+
+def openwpm_call(data_dir):
+    from manual.OpenWPM.automation import CommandSequence, TaskManager
+
+    NUM_BROWSERS = 1
+
+    manager_params, browser_params = TaskManager.load_default_params(NUM_BROWSERS)
+    browser_params[0]['http_instrument'] = True
+    browser_params[0]['cookie_instrument'] = True
+    browser_params[0]['js_instrument'] = True
+    browser_params[0]['save_javascript'] = True
+
+    manager_params['data_directory'] = data_dir
+    manager_params['log_directory'] = data_dir
+
+    manager = TaskManager.TaskManager(manager_params, browser_params)
+    command_sequence = CommandSequence.CommandSequence("about:newtab")
+    command_sequence.start_manual_interaction()
+    print("Executing OpenWPM command")
+    manager.execute_command_sequence(command_sequence)
+    manager.close(block_on_commands=True)
+
+
+def start_openwpm_browser(data_dir):
+    print("Starting OpenWPM")
+    openwmp_process = Process(target=openwpm_call, args=(data_dir,))
+    openwmp_process.start()
+    return openwmp_process
+
+def stop_openwpm_browser(openwmp_process):
+    print("Stopping existing OpenWPM")
+    try:
+        openwmp_process.terminate()
+    except:
+        print("Error stopping OpenWPM browser!")
+        traceback.format_exc()
 
 
 def get_key():
@@ -56,7 +97,10 @@ def scrape_channel(username):
     channels = read_channels_for_user(username)
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
+    openwmp_process = None
     for channel_name in channels:
+        if openwmp_process is not None:
+            stop_openwpm_browser(openwmp_process)
         if isinstance(channel_name, dict):
             channel_name = channel_name["id"]
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
@@ -91,6 +135,7 @@ def scrape_channel(username):
                                 channel_name) + ".txt"
 
         ret = setup_channel(channel_name, date_prefix)
+        openwmp_process = start_openwpm_browser(join(scrape_config.DATA_DIR, "openwpm-data/", channel_name))
         err_occurred = ret[0]
         if err_occurred:
             print("CONSOLE>>> Error occurred in setup!")
@@ -152,6 +197,8 @@ def scrape_channel(username):
         if key == "r":
             continue
         err_occurred = terminate_and_collect_data(surfer, mitmrunner,  date_prefix)
+        stop_openwpm_browser(openwmp_process)
+        openwmp_process = None
 
         terminat_screenshot(sc_tuple[0], sc_tuple[1])
 
