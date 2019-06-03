@@ -27,6 +27,7 @@ CRAWL_ROOT_DIRS = [
     '/media/gacar/Data/iot-house/crawl-data/',
     ]
 
+
 def get_crawl_data_path(crawl_name):
     for crawl_root_dir in CRAWL_ROOT_DIRS:
         crawl_dir_path = join(crawl_root_dir, crawl_name)
@@ -34,6 +35,7 @@ def get_crawl_data_path(crawl_name):
             return crawl_dir_path
     else:
         raise Exception("Cannot find the crawl data dir %s" % crawl_name)
+
 
 def get_ps1_or_ipaddress(url):
     try:

@@ -180,6 +180,8 @@ def get_unique_tcp_stream_ids(post_process_dir, suffix):
 def get_crawl_status(crawl_dir):
     status_dict = {}
     for f in glob(join(crawl_dir, "finished", "*.txt")):
+        if "_questionnaire.txt" in f:
+            continue
         channel_id = basename(f).rsplit(".", 1)[0]
         status = open(f).read().rstrip()
         status_dict[channel_id] = status
@@ -419,7 +421,8 @@ def get_http1_df(crawl_data_dir):
             # some responses have multiple
             if any([len(x) > 1 for x in payload.values()]):
                 multiple_msg_cnt += 1
-                if "http.response.code" not in payload:
+                if payload["ip.src"][0] == tv_ip:
+                # if "http.response.code" not in payload:
                     print("Pipelined request")
                 # print ("Multiple payload", ("http.response.code" in payload))
             payload['channel_id'] = [channel_id]
@@ -656,6 +659,8 @@ def get_http2_df(crawl_data_dir):
     HTTP2_RESP_DROP = ["http2_header_name", "http2_header_value", "eth_src", "ip_dst", "tcp_dstport"]
     # print("Decode errors", decode_errors)
     # print("channels", channels)
+    req_df['host'] = req_df.url.map(lambda x: urlparse(x).hostname)
+    add_domain_column(req_df, "url", "req_domain")
     return (req_df.drop(HTTP2_REQ_DROP, axis=1).replace(np.nan, '', regex=True),
             resp_df.drop(HTTP2_RESP_DROP, axis=1).replace(np.nan, '', regex=True),
             dns_df)
@@ -755,4 +760,5 @@ def get_https_upgrade_redirectors(crawl_name, http_req, http_resp):
 
 
 if __name__ == '__main__':
-    load_block_lists()
+    req,_, _ = get_http_df("amazon-data-20190510-205355")
+

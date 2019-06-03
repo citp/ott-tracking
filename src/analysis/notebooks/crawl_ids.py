@@ -13,6 +13,8 @@ CrawlRokuLimitAdTracking = 'roku-data-20190505-165349'
 CrawlRokuSSLStrip = 'roku-data-20190512-203416'
 CrawlRokuTop1K = 'roku-data-20190508-013650'
 
+CrawlRokuManualTop25 = "roku-manual-20190513-200000"
+CrawlFireTVManualTop25 = "amazon-manual-20190514-110000"
 
 ROKU_CRAWLS = [
     CrawlRokuWarmUpParamSearch,
@@ -32,3 +34,4 @@ FIRE_TV_CRAWLS = [
     CrawlFireTVTop1KMITM,
     CrawlFireTVTop1KNoMITM,
     ]
+
