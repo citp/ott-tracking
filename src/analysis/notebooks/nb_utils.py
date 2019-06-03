@@ -24,7 +24,7 @@ ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
 CRAWL_ROOT_DIRS = [
     '/mnt/iot-house/crawl-data/',
     '/home/gacar/dev/smart-tv/data',
-    '/media/gacar/Data/iot-house/crawl-data/',
+    '/media/gacar/Data/iot-house/',
     ]
 
 
@@ -224,15 +224,15 @@ def read_channel_details_df():
                               'apk_id': 'channel_id',
                               'product_name': 'channel_name'}, inplace=True)
     amazon_df['channel_id'] = amazon_df['channel_id'].astype(str)
-    print(amazon_df.columns)
+    # print(amazon_df.columns)
     amazon_df = amazon_df.drop_duplicates('channel_id', keep='first').set_index('channel_id').sort_values(["category", "rank"])
     amazon_df.category[amazon_df.category == ""] = 'Others'
     amazon_df = amazon_df[['rank', 'category', 'channel_name']]
-    #amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
+    # amazon_df.drop(['product_id', 'apk_name', 'apk_name_matches_product_name',
     #                'overlap_token_count', 'developer_name'], inplace=True, axis=1)
     amazon_df['platform'] = 'amazon'
-    print(amazon_df.columns)
-    print("amaz len", len(amazon_df))
+    # print(amazon_df.columns)
+    # print("amaz len", len(amazon_df))
     df = roku_df.append(amazon_df, sort=True)
     df = df.replace('kids-family', "Kids & Family").replace('movies-tvs', "Movies & TV").\
             replace('Web-Video', "Web Video").replace('education', "Education").\

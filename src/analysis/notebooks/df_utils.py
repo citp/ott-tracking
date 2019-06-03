@@ -39,6 +39,7 @@ def load_and_save_dfs(crawl_name):
     http_req, http_resp, dns = get_http_df(crawl_name)
     save_pickle(http_req, crawl_name, "http_req")
     save_pickle(http_resp, crawl_name, "http_resp")
+    # print("DNS len", len(dns))
     save_pickle(dns, crawl_name, "dns")
     tcp_conn = get_distinct_tcp_conns(crawl_name, http_requests=http_req)
     save_pickle(tcp_conn, crawl_name, "tcp_conn")
