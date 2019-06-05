@@ -180,7 +180,7 @@ def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):
     leak_df = detect_leaks_in_requests(req_df, device_ids, title_dict)
 
     # remove channel names as part of the hostname
-    # accuradio channel talking to accuradio.com
+    # e.g. accuradio channel talking to accuradio.com
     remove_ch_name_url_false_positives(leak_df)
 
     if DEBUG:
