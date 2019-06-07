@@ -54,10 +54,10 @@ def convert_leaks_to_df(device_ids, leaks_dict):
             elif len(leak) == 1:
                 search = leak[0]
                 encoding = "unencoded"
-            else:
+            else:  # double hashes, double encodings etc.
                 search = leak[-1]
                 encoding = "-".join(leak[:-1])
-                print("Leak can't be parsed", len(leak), leak)
+                print("Leak with layered encoding/hashing", len(leak), leak)
             id_type = r_ids.get(search.lower(), "Unknown")
             leaks_dicts.append({'id_type': id_type, 'search': search,
                                 "encoding": encoding, "leak_type": leak_type,
