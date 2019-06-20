@@ -95,6 +95,7 @@ def terminat_screenshot(screenshot_process_terminate_event, screenshot_process):
 
 def scrape_channel(username):
     channels = read_channels_for_user(username)
+    scrape_config.DATA_DIR = scrape_config.DATA_DIR + "-" + username
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     openwmp_process = None
