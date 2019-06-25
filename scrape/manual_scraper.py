@@ -99,7 +99,6 @@ def terminat_screenshot(screenshot_process_terminate_event, screenshot_process):
 
 def scrape_channel(username):
     channels = read_channels_for_user(username)
-    scrape_config.DATA_DIR = scrape_config.DATA_DIR + "-" + username
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
     global OPENWPM_PROCESS
@@ -209,7 +208,7 @@ def scrape_channel(username):
 
         terminat_screenshot(sc_tuple[0], sc_tuple[1])
 
-        questionnaire(channel_name)
+        questionnaire(channel_handle)
         write_log_files(output_file_desc, channel_handle, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
