@@ -3,10 +3,22 @@ from curtsies import Input
 from scrape_channels import *
 from datetime import datetime
 from os.path import join, isfile
+from os import killpg, getpgid
 from multiprocessing import Process
 import traceback
 import time
 import sys
+import signal
+import subprocess
+import os
+import psutil
+
+if scrape_config.PLAT == "ROKU":
+    from platforms.roku.get_all_channels import get_channel_name
+elif scrape_config.PLAT == "AMAZON":
+    from platforms.amazon.get_all_channels import get_channel_name
+
+
 
 
 # For each channel to the following (steps with * require a signal):
@@ -18,42 +30,34 @@ import sys
 # 4-SCRIPT* (COLLECT_DATA): collect pcap, (opt. mitm logs), redis-db
 # 5-SCRIPT (END_CHNL): terminate tcpdump, (opt. mitmdump), dns_sniffer
 
+scrape_config.REC_AUD_BY_PYAUDIO = False
+scrape_config.REC_AUD_BY_ARECORD = False
 
-def openwpm_call(data_dir):
-    from manual.OpenWPM.automation import CommandSequence, TaskManager
 
-    NUM_BROWSERS = 1
-
-    manager_params, browser_params = TaskManager.load_default_params(NUM_BROWSERS)
-    browser_params[0]['http_instrument'] = True
-    browser_params[0]['cookie_instrument'] = True
-    browser_params[0]['js_instrument'] = True
-    browser_params[0]['save_javascript'] = True
-
-    manager_params['data_directory'] = data_dir
-    manager_params['log_directory'] = data_dir
-
-    manager = TaskManager.TaskManager(manager_params, browser_params)
-    command_sequence = CommandSequence.CommandSequence("about:newtab")
-    command_sequence.start_manual_interaction()
-    print("Executing OpenWPM command")
-    manager.execute_command_sequence(command_sequence)
-    manager.close(block_on_commands=True)
-
+OPENWPM_PROCESS = None
 
 def start_openwpm_browser(data_dir):
     print("Starting OpenWPM")
-    openwmp_process = Process(target=openwpm_call, args=(data_dir,))
-    openwmp_process.start()
-    return openwmp_process
+    global OPENWPM_PROCESS
+    if OPENWPM_PROCESS is None:
+        cmd = join('python3 ') + './manual/openwpm_starter.py ' + data_dir
+        OPENWPM_PROCESS = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
 
-def stop_openwpm_browser(openwmp_process):
+def stop_openwpm_browser():
     print("Stopping existing OpenWPM")
-    try:
-        openwmp_process.terminate()
-    except:
-        print("Error stopping OpenWPM browser!")
-        traceback.format_exc()
+    global OPENWPM_PROCESS
+    if not psutil.pid_exists(OPENWPM_PROCESS.pid):
+        print("Cannot find the OpenWPM process! Assuming it is already closed!")
+    else:
+        try:
+            if OPENWPM_PROCESS is not None:
+                os.killpg(os.getpgid(OPENWPM_PROCESS.pid), signal.SIGTERM)
+                OPENWPM_PROCESS = None
+        except:
+            print("Error stopping OpenWPM browser!")
+            traceback.print_exc()
+    OPENWPM_PROCESS = None
+    return
 
 
 def get_key():
@@ -75,9 +79,9 @@ question_list = [
 ]
 Q_BANNER = "<><><><>PLEASE ANSWER THE FOLLOWING QUESTIONS!<><><><>"
 
-def questionnaire(channel_name):
+def questionnaire(channel_handle):
     q_filename = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
-                                str(channel_name + "_questionnaire")) + ".txt"
+                                str(channel_handle + "_questionnaire")) + ".txt"
     print(Q_BANNER)
     with open(q_filename, 'w') as f:
         for question in question_list:
@@ -98,18 +102,21 @@ def scrape_channel(username):
     scrape_config.DATA_DIR = scrape_config.DATA_DIR + "-" + username
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
-    openwmp_process = None
-    for channel_name in channels:
-        if openwmp_process is not None:
-            stop_openwpm_browser(openwmp_process)
-        if isinstance(channel_name, dict):
-            channel_name = channel_name["id"]
+    global OPENWPM_PROCESS
+    for channel_handle in channels:
+        if OPENWPM_PROCESS is not None:
+            stop_openwpm_browser()
+        if isinstance(channel_handle, dict):
+            channel_handle = channel_handle["id"]
+
+        channel_name = get_channel_name(channel_handle)
+        log("Channle name: %s" % channel_name )
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
-                                str(channel_name)) + ".txt"
+                                str(channel_handle)) + ".txt"
         if isfile(channel_res_file):
-            print('Skipping', channel_name, ' due to:', channel_res_file)
+            print('Skipping %s %s' % (channel_handle, channel_name), ' due to:', channel_res_file)
             continue
-        print("Will scrape %s" % channel_name)
+        print("Will scrape %s" % channel_handle)
         #key = get_key()
         #ch = KEY_MAP.get(key, key)
         #restart if "r" is pressed
@@ -129,14 +136,14 @@ def scrape_channel(username):
         else:
             print("CONSOLE>>> Not a valid input, try again!")
             continue
-        # channel_name = input("What is the name of the channel(exact application name): ")
-        # channel_name = channel
+        # channel_handle = input("What is the name of the channel(exact application name): ")
+        # channel_handle = channel
         date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
-                                channel_name) + ".txt"
+                                channel_handle) + ".txt"
 
-        ret = setup_channel(channel_name, date_prefix)
-        openwmp_process = start_openwpm_browser(join(scrape_config.DATA_DIR, "openwpm-data/", channel_name))
+        ret = setup_channel(channel_handle, date_prefix)
+        start_openwpm_browser(join(scrape_config.DATA_DIR, "openwpm-data/", channel_handle))
         err_occurred = ret[0]
         if err_occurred:
             print("CONSOLE>>> Error occurred in setup!")
@@ -163,7 +170,7 @@ def scrape_channel(username):
         #        return
         #if key == "r":
         #    continue
-        print("CONSOLE>>> Installing channel %s" %channel_name)
+        print("CONSOLE>>> Installing channel %s %s " % (channel_handle, channel_name))
         err_occurred = install_channel(surfer)
         if err_occurred:
             print("CONSOLE>>> Error during installing channel %s, restarting" %channel_name)
@@ -198,17 +205,17 @@ def scrape_channel(username):
         if key == "r":
             continue
         err_occurred = terminate_and_collect_data(surfer, mitmrunner,  date_prefix)
-        stop_openwpm_browser(openwmp_process)
-        openwmp_process = None
+        print("CONSOLE>>> Make sure you close the OpenWPM browser!!")
 
         terminat_screenshot(sc_tuple[0], sc_tuple[1])
 
         questionnaire(channel_name)
-        write_log_files(output_file_desc, channel_name, channel_res_file, "TERMINATED")
+        write_log_files(output_file_desc, channel_handle, channel_res_file, "TERMINATED")
         if not err_occurred:
             print("CONSOLE>>> Successfully scrapped channel %s" % channel_name)
         else:
             print("CONSOLE>>> Error in scrapping channel %s" % channel_name)
+        stop_openwpm_browser()
 
 
 def read_channels_for_user(username):

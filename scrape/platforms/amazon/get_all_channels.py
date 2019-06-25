@@ -1,6 +1,10 @@
 ALL_CHANNELS_TXT = 'platforms/amazon/channel_lists/channel_names.csv'  # file that includes all channel details
 
 
+def get_channel_name(channel_handle):
+    return channel_handle
+
+
 def get_channel_list(channel_csv=ALL_CHANNELS_TXT):
     """Returns a dictionary of all available channels for install."""
     channel_list = []

@@ -33,7 +33,7 @@ from channel_surfer import ChannelSurfer ,SurferAborted
 from mitmproxy_runner import MITMRunner
 from dns_sniffer import dns_sniffer_call
 from multiprocessing import Process, Event
-from shutil import copyfile, copyfileobj
+from shutil import copyfile, copyfileobj, rmtree
 from os.path import join, isfile
 from timeout import timeout
 from time import sleep
@@ -701,7 +701,9 @@ def cleanup_data_folder(data_dir, channel_id):
     for filename in glob.iglob(data_dir + '/**/' + str(channel_id) + '-*', recursive=True):
         log('Removing existing file %s for channel %s.' % (filename, channel_id))
         os.remove(filename)
-
+    for fname in glob.iglob(data_dir + '/**/' + str(channel_id), recursive=True):
+        print('Removing existing location %s for channel %s.' % (fname, channel_id))
+        rmtree(fname)
 
 def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
     log('Collecting data for channel %s' % str(surfer.channel_id))
