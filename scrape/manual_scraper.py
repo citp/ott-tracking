@@ -109,13 +109,14 @@ def scrape_channel(username):
             channel_handle = channel_handle["id"]
 
         channel_name = get_channel_name(channel_handle)
-        log("Channle name: %s" % channel_name )
         channel_res_file = join(scrape_config.DATA_DIR, scrape_config.FIN_CHL_PREFIX,
                                 str(channel_handle)) + ".txt"
         if isfile(channel_res_file):
             print('Skipping %s %s' % (channel_handle, channel_name), ' due to:', channel_res_file)
             continue
         print("Will scrape %s" % channel_handle)
+        log("Channle name: %s" % channel_name )
+
         #key = get_key()
         #ch = KEY_MAP.get(key, key)
         #restart if "r" is pressed
@@ -187,6 +188,7 @@ def scrape_channel(username):
                 return
         if key == "r":
             continue
+        surfer.timestamp_event("launch")
         sc_tuple = crawl_channel(surfer, mitmrunner, True)
         while key!= 'c':
             print("CONSOLE>>> Launch the channel manually then press \'c\' when done to collect data.")
