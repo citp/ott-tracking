@@ -122,20 +122,15 @@ def scrape_channel(username):
         #restart if "r" is pressed
         time.sleep(2)
         print("CONSOLE>>> Do you need MITM for the next channel[y/n]? ")
-        key = get_key()
-        if key == "y":
-            scrape_config.MITMPROXY_ENABLED = True
-        elif key == "n":
-            scrape_config.MITMPROXY_ENABLED = False
-        elif key == "r":
-            print("CONSOLE>>> Restarting!")
-            continue
-        elif key == "q":
-            print("CONSOLE>>> Quiting!")
-            return
-        else:
-            print("CONSOLE>>> Not a valid input, try again!")
-            continue
+        key = ''
+        while key != 'y' and key != 'n':
+            key = get_key()
+            if key == "y":
+                scrape_config.MITMPROXY_ENABLED = True
+            elif key == "n":
+                scrape_config.MITMPROXY_ENABLED = False
+            else:
+                print("CONSOLE>>> Not a valid input, try again!")
         # channel_handle = input("What is the name of the channel(exact application name): ")
         # channel_handle = channel
         date_prefix = datetime.now().strftime("%Y%m%d-%H%M%S")
