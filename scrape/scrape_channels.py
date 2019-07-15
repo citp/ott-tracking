@@ -524,7 +524,8 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
         if scrape_config.MITMPROXY_ENABLED:
             mitmrunner = MITMRunner(channel_id, str(scrape_config.DATA_DIR),
                                     str(scrape_config.DUMP_PREFIX), global_keylog_file,
-                                    scrape_config.SSL_STRIP, scrape_config.TLS_INTERCEPT)
+                                    scrape_config.SSL_STRIP, scrape_config.TLS_INTERCEPT,
+                                    scrape_config.MITMPROXY_CERT)
 
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)

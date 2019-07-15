@@ -49,6 +49,10 @@ SSLKEY_PREFIX = "keys/"
 DB_PREFIX = "db/"
 #Each channel will have a file with the result of crawl of that channel in this folder
 FIN_CHL_PREFIX = "finished/"
+if os.path.isfile(os.getenv("MITMPROXY_CERT")):
+    MITMPROXY_CERT = os.path.abspath(os.getenv("MITMPROXY_CERT"))
+else:
+    MITMPROXY_CERT = None
 folders = [PCAP_PREFIX, DUMP_PREFIX, MITM_LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX,
            LOG_PREFIX, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
 

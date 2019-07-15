@@ -186,13 +186,15 @@ def set_event_handler(e):
 
 class MITMRunner(object):
 
-    def __init__(self, channel_id, data_dir, dump_prefix, global_keylog_file, ssl_strip, tls_intercept):
+    def __init__(self, channel_id, data_dir, dump_prefix, global_keylog_file,
+                 ssl_strip, tls_intercept, tls_intercept_cert):
         self.channel_id = str(channel_id)
         self.data_dir = str(data_dir)
         self.dump_prefix = dump_prefix
         self.dump_dir = str(data_dir) + str(dump_prefix)
         self.ssl_strip = ssl_strip
         self.tls_intercept = tls_intercept
+        self.tls_intercept_cert = tls_intercept_cert
         self.event_handler = multiprocessing.Event()
         self.log('Initialized MITMRunner', channel_id)
         self.global_keylog_file = global_keylog_file
@@ -269,6 +271,9 @@ class MITMRunner(object):
         if not self.tls_intercept:
             ARGS.append('--set')
             ARGS.append('tls_intercept=0')
+        if self.tls_intercept_cert is not None:
+            ARGS.append('--cert')
+            ARGS.append(self.tls_intercept_cert)
         print(ARGS)
         mitm_stdout = join(dump_dir, "%s_mitm_std.out" % str(channel_id))
         mitm_stderr = join(dump_dir, "%s_mitm_std.err" % str(channel_id))
