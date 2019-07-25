@@ -72,8 +72,8 @@ def loadUnMitmableHostsAndIps(filename):
     domains = set()
     if isfile(filename):
         for line in open(filename):
+            append_to_file(unMitmableFileNameOut, line)
             line = line.rstrip("\n")
-            append_to_file(mitmableFileName, line)
             _, ip, host, domain = line.split("\t")
             if host:
                 hosts.add(host)
