@@ -1,13 +1,15 @@
+import sqlite3
 import pandas as pd
 import unicodedata
 import LeakDetector
-from nb_utils import get_crawl_data_path
+from nb_utils import get_crawl_data_path, read_channel_details_df
 from device_ids import TV_ID_MAP
-from log_analysis import get_ott_device_mac
-from os.path import join
+from log_analysis import get_ott_device_mac, add_channel_details
+from os.path import join, dirname, basename
 from df_utils import load_df
 from collections import defaultdict
 from nltk.corpus import words
+from glob import glob
 
 
 try:
@@ -70,7 +72,9 @@ def detect_leaks_in_requests(df, device_ids, title_dict=None):
     last_channel = ""
     leak_df = pd.DataFrame({})
     for _, req in df.iterrows():
-        channel_name = unicodedata.normalize('NFKD', req['channel_name']).encode('ascii','ignore')
+        channel_name = unicodedata.normalize(
+            'NFKD', unicode(req['channel_name'])).encode(
+                'ascii', 'ignore')
         if channel_name != last_channel:
             last_channel = channel_name
             DISABLE_CHANNEL_NAME_SEARCH = False
@@ -163,6 +167,28 @@ def search_for_video_titles(crawl_name):
 
 
 DEBUG = False
+
+
+def load_reqs_as_df(openwpm_db_path):
+    con = sqlite3.connect(openwpm_db_path)
+    con.row_factory = sqlite3.Row
+    df = pd.read_sql_query(
+        "SELECT url, referrer, post_body FROM http_requests", con)
+    channel_id = basename(dirname(openwpm_db_path))
+    df['channel_id'] = channel_id
+    channel_df = read_channel_details_df()
+    add_channel_details(df, channel_df)
+    return df
+
+
+def detect_openwpm_leaks(crawl_name):
+    req_df = pd.DataFrame([])
+    crawl_data_dir = get_crawl_data_path(crawl_name)
+
+    for openwpm_db_path in glob(join(crawl_data_dir, "openwpm-data/*/crawl-data.sqlite")):
+        tmp_df = load_reqs_as_df(openwpm_db_path)
+        req_df = req_df.append(tmp_df)
+    return run_leak_detection(crawl_name, req_df)
 
 
 def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):

@@ -18,6 +18,10 @@ CrawlRokuTop1KNoMITM = 'roku-data-20190508-013650'
 CrawlRokuManualTop25 = "roku-manual-20190513-200000"
 CrawlFireTVManualTop25 = "amazon-manual-20190514-110000"
 
+CrawlRokuManualV2 = "roku_manual_v2"
+CrawlFireTVManualV2 = "amazon_manual_v2"
+
+
 ROKU_CRAWLS = [
     CrawlRokuWarmUpParamSearch,
     CrawlRokuNoMITM,

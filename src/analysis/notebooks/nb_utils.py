@@ -14,7 +14,7 @@ except ImportError:
 
 from tld import get_fld
 from glob import glob
-from os.path import join, sep, isdir
+from os.path import join, sep, isdir, expanduser
 from IPython.display import display_html
 from tabulate import tabulate
 
@@ -23,7 +23,7 @@ ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
 
 CRAWL_ROOT_DIRS = [
     '/mnt/iot-house/crawl-data/',
-    '/home/gacar/dev/smart-tv/data',
+    expanduser('~/dev/smart-tv/data'),
     '/media/gacar/Data/iot-house/',
     ]
 
