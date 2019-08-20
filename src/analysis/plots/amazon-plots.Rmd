@@ -55,7 +55,7 @@ scale_colour_Publication <- function(...){
 
 ### Read in the data and print the rows, columns
 ```{r}
-amazon1k <- read.csv('amazon-data-20190510-205355_tcp_conn.csv')
+amazon1k <- read.csv('amazon-data-20190509-133243_tcp_conn.csv')
 nrow(amazon1k)
 colnames(amazon1k)
 ```
@@ -110,12 +110,12 @@ amazon1k_uniq <- amazon1k_top %>%
 ggplot(amazon1k_uniq, aes(x=rank, y=n, color=playback)) +
   geom_point(size=0.67, alpha=0.6) + 
   coord_cartesian(xlim = c(min(amazon1k_uniq$rank), quantile(amazon1k_uniq$rank, 0.99)),
-                  ylim = c(min(amazon1k_uniq$n), quantile(amazon1k_uniq$n, 0.997))) +
+                  ylim = c(0, 40)) +
   facet_wrap(~category, nrow=2, ncol=5) + 
   ylab("Number of Tracking Domains") + 
   xlab("Channel Rank") + 
   labs(color="Video Played?") + 
   scale_colour_Publication() + 
-  theme_Publication() 
+  theme_Publication() + scale_x_continuous(breaks = seq(0, quantile(amazon1k_uniq$rank, 0.99), by = 500))
   #+ geom_hline(aes(yintercept = med, group = category), colour = "black", linetype = 2)
 ```
