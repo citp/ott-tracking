@@ -34,7 +34,7 @@ def check_row_for_leaks(detector, req):
     url, cookie_str, post_body, referrer_str = req['url'], \
         req.get('cookie', ''), req.get('post_data', ''), req.get('referer', '')
     url_leaks = detector.check_url(url)
-    url_leaks += detector.substring_search(url, max_layers=2)
+    # url_leaks += detector.substring_search(url, max_layers=2)
     cookie_leaks = detector.substring_search(cookie_str, max_layers=2)
     post_leaks = detector.substring_search(post_body, max_layers=2)
     if CHECK_REFERRER_LEAKS:
@@ -192,9 +192,6 @@ def detect_openwpm_leaks(crawl_name):
 
 
 def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):
-    if DEBUG:  # to quickly test changes
-        req_df = req_df.head(1000)
-
     crawl_data_dir = get_crawl_data_path(crawl_name)
     if DEBUG:
         print("%d reqs from %d channels" % (
@@ -207,7 +204,7 @@ def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):
 
     # remove channel names as part of the hostname
     # e.g. accuradio channel talking to accuradio.com
-    remove_ch_name_url_false_positives(leak_df)
+    # remove_ch_name_url_false_positives(leak_df)
 
     if DEBUG:
         for id_type in device_ids.keys():
@@ -218,6 +215,17 @@ def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):
     return leak_df, device_ids
 
 
+TITLE_DETECTION = False
+
+
 if __name__ == '__main__':
-    from crawl_ids import CrawlRokuTop1KNoMITM
-    search_for_video_titles(CrawlRokuTop1KNoMITM)
+    if TITLE_DETECTION:
+        from crawl_ids import CrawlRokuTop1KNoMITM
+        search_for_video_titles(CrawlRokuTop1KNoMITM)
+    else:
+        from crawl_ids import CrawlFireTVTop1KMITM
+        crawl_name = CrawlFireTVTop1KMITM
+        req_df = load_df(crawl_name, "http_req")
+        req_df = req_df[req_df.url.str.contains("https://mirror.math.princeton.edu/pub/xbmc/addons/gotham/script.module.requests/")]
+        leaks_df, id_dict = run_leak_detection(crawl_name, req_df)
+        print(leaks_df.url)

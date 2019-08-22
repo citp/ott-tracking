@@ -14,10 +14,11 @@ def detect_leaks(crawl_list):
         print("Will leak detect and pickle %s" % crawl_name)
         try:
             req_df = load_df(crawl_name, "http_req")
-            openwpm_leaks_df, id_dict = detect_openwpm_leaks(crawl_name)
+            if crawl_name.endswith("manual_v2"):
+                openwpm_leaks_df, id_dict = detect_openwpm_leaks(crawl_name)
+                save_pickle(openwpm_leaks_df, crawl_name, "openwpm_leak")
             leaks_df, id_dict = run_leak_detection(crawl_name, req_df)
             save_pickle(leaks_df, crawl_name, "leak")
-            save_pickle(openwpm_leaks_df, crawl_name, "openwpm_leak")
         except Exception as e:
             print("ERR while detecting leaks", e)
             traceback.print_exc()

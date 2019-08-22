@@ -69,6 +69,14 @@ def load_requests_with_leaks(location):
     return requests
 
 
+def get_path_from_url(url):
+    try:
+        return url.split(urlparse(url).netloc, 1)[-1]
+    except Exception as exc:
+        print("Cannot parse url %s %s" % (url, exc))
+        return ""
+
+
 class Hasher():
     def __init__(self):
         # Define Supported hashes
@@ -508,8 +516,10 @@ class LeakDetector():
             print ("\nURL parameters:")
             for key, value in parameters:
                 print ("Key: %s | Value: %s" % (key, value))
+        path = get_path_from_url(url)
+        # path = url
         return self._check_whole_and_parts_for_leaks(
-            url, tokens, parameters, encoding_layers, substring_search)
+            path, tokens, parameters, encoding_layers, substring_search)
 
     def _get_header_str(self, header_str, header_name):
         """Returns the header string parsed from `header_str`"""

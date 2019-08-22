@@ -760,5 +760,7 @@ def get_https_upgrade_redirectors(crawl_name, http_req, http_resp):
 
 
 if __name__ == '__main__':
-    req,_, _ = get_http_df("amazon-data-20190510-205355")
+    crawl_data_dir = get_crawl_data_path("/media/gacar/Data/iot-house/amazon-data-20190509-133243")
+    print(get_ott_device_mac(crawl_data_dir))
+    # req,_, _ = get_http_df("amazon-data-20190510-205355")
 
