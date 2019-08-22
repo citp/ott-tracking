@@ -3,7 +3,7 @@ import pandas as pd
 import unicodedata
 import LeakDetector
 from nb_utils import get_crawl_data_path, read_channel_details_df
-from device_ids import TV_ID_MAP
+from device_ids import TV_ID_MAP, TV_ID_MAP_V1
 from log_analysis import get_ott_device_mac, add_channel_details
 from os.path import join, dirname, basename
 from df_utils import load_df
@@ -198,7 +198,11 @@ def run_leak_detection(crawl_name, req_df, title_dict=None, device_ids=None):
             len(req_df), req_df.channel_id.nunique()))
 
     if device_ids is None:
-        device_ids = TV_ID_MAP[get_ott_device_mac(crawl_data_dir)]
+        # we factory resetted the device before manual_v2 crawls
+        if crawl_name.endswith("manual_v2"):
+            device_ids = TV_ID_MAP[get_ott_device_mac(crawl_data_dir)]
+        else:
+            device_ids = TV_ID_MAP_V1[get_ott_device_mac(crawl_data_dir)]
     print("Will search for the following IDs", device_ids)
     leak_df = detect_leaks_in_requests(req_df, device_ids, title_dict)
 
@@ -223,9 +227,8 @@ if __name__ == '__main__':
         from crawl_ids import CrawlRokuTop1KNoMITM
         search_for_video_titles(CrawlRokuTop1KNoMITM)
     else:
-        from crawl_ids import CrawlFireTVTop1KMITM
-        crawl_name = CrawlFireTVTop1KMITM
+        #from crawl_ids import roku-data-20190505-165349
+        crawl_name = "roku-data-20190505-165349"
         req_df = load_df(crawl_name, "http_req")
-        req_df = req_df[req_df.url.str.contains("https://mirror.math.princeton.edu/pub/xbmc/addons/gotham/script.module.requests/")]
         leaks_df, id_dict = run_leak_detection(crawl_name, req_df)
         print(leaks_df.url)

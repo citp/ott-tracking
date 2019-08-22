@@ -270,7 +270,7 @@ def get_ott_device_mac(crawl_data_dir):
     """
     post_process_dir = join(crawl_data_dir, 'post-process')
     tv_ip = get_tv_ip_addr(crawl_data_dir)
-    # print(tv_ip)
+
     pattern = "*.http.json"
     for json_path in glob(join(post_process_dir, pattern)):
         tcp_payloads = load_json_file(json_path)
@@ -278,10 +278,11 @@ def get_ott_device_mac(crawl_data_dir):
             payload = tcp_payload['_source']['layers']
             if payload["ip.src"][0] == tv_ip:
                 return payload["eth.src"][0]
-        else:
-            raise Exception(
+    else:
+        raise Exception(
                 "Cannot determine device MAC for leak detection."
                 " Are post-process (http.json) files missing?")
+
 
 # pip3 install ujson
 def load_json_file(json_path):
@@ -760,7 +761,7 @@ def get_https_upgrade_redirectors(crawl_name, http_req, http_resp):
 
 
 if __name__ == '__main__':
-    crawl_data_dir = get_crawl_data_path("/media/gacar/Data/iot-house/amazon-data-20190509-133243")
+    crawl_data_dir = get_crawl_data_path("/media/gacar/Data/iot-house/roku-data-20190505-165349")
     print(get_ott_device_mac(crawl_data_dir))
     # req,_, _ = get_http_df("amazon-data-20190510-205355")
 
