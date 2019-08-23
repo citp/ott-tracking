@@ -760,6 +760,23 @@ def get_https_upgrade_redirectors(crawl_name, http_req, http_resp):
     return redirects, https_upgrades, cross_origin_redirects
 
 
+def get_last_smart_launch_times(crawl_name):
+    """Use timestamps.txt files to find the beginning of smart launch for each channel.
+    
+    We will use this to only consider leaks from the last launch.
+    """
+    last_smart_launch_times = {}
+    crawl_dir = get_crawl_data_path(crawl_name)
+    for fname in glob(join(crawl_dir, "logs/*-timestamps.txt")):
+        channel_name = basename(fname).split("-")[0]
+        for l in open(fname):
+            # find the beginning of the smart launch
+            if "key-seq-01" in l and "key-0" not in l:
+                last_smartlaunch_ts = l.rstrip().split(",")[-1]
+                last_smart_launch_times[channel_name] = last_smartlaunch_ts
+
+    return last_smart_launch_times
+
 if __name__ == '__main__':
     crawl_data_dir = get_crawl_data_path("/media/gacar/Data/iot-house/roku-data-20190505-165349")
     print(get_ott_device_mac(crawl_data_dir))
