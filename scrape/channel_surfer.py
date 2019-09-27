@@ -21,6 +21,7 @@ import scrape_config
 
 
 LOCAL_LOG_DIR = os.getenv("LogDir")
+SCREENSHOT_FOLDER = os.getenv("SCREENSHOT_FOLDER")
 LOG_FILE = 'channel_surfer.log'
 INSTALL_RETRY_CNT = 4
 LOG_CRC_EN = True
@@ -258,7 +259,7 @@ class ChannelSurfer(object):
             if self.platform == "ROKU" or scrape_config.AMAZON_HDMI_SCREENSHOT:
                 # Find all the screenshots, sorted by creation time
                 screenshot_list = []
-                for screenshot_raw_file in os.listdir(LOCAL_LOG_DIR):
+                for screenshot_raw_file in os.listdir(SCREENSHOT_FOLDER):
                     if screenshot_raw_file.startswith('continuous_screenshot-') and screenshot_raw_file.endswith(
                             '.png'):
                         screenshot_list.append(screenshot_raw_file)
@@ -271,7 +272,7 @@ class ChannelSurfer(object):
 
                 # The screenshot we need is the 2nd latest file
                 second_latest_file = screenshot_list[-2]
-                FFMPEG_SCREENSHOT_NAME = os.path.join(LOCAL_LOG_DIR, second_latest_file)
+                FFMPEG_SCREENSHOT_NAME = os.path.join(SCREENSHOT_FOLDER, second_latest_file)
 
                 # Extract the unix timestamp from the screenshot's filename (assuming that we're on Eastern Time)
                 human_timestamp = second_latest_file.replace('continuous_screenshot-', '').replace('.png', '')

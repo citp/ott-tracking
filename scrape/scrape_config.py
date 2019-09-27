@@ -5,7 +5,6 @@ Crawl settings
 
 ENABLE_SMART_CRAWLER = True  # remove after testing
 MITMABLE_DOMAINS_WARM_UP_CRAWL = True
-RSYNC_EN = False
 REC_AUD_BY_PYAUDIO = False
 REC_AUD_BY_ARECORD = True
 TLS_INTERCEPT = True
@@ -55,9 +54,6 @@ else:
     MITMPROXY_CERT = None
 folders = [PCAP_PREFIX, DUMP_PREFIX, MITM_LOG_PREFIX, SCREENSHOT_PREFIX, SSLKEY_PREFIX,
            LOG_PREFIX, AUDIO_PREFIX, FIN_CHL_PREFIX, DB_PREFIX]
-
-
-RSYNC_DIR = ' hoomanm@portal.cs.princeton.edu:/n/fs/iot-house/hooman/crawl-data/'
 
 
 CUTOFF_TRESHOLD=100000

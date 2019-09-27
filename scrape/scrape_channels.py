@@ -129,34 +129,13 @@ def dump_redis(PREFIX, date_prefix):
     with open(rIP2NameDB_path, 'w') as f:
         redisdl.dump(f, host='localhost', port=6379, db=1)
 
-def rsync(date_prefix):
-    time.sleep(3)
-
-    rsync_command = str('rsync -rlptDv --remove-source-files ' +
-                        str(scrape_config.DATA_DIR) +
-                        scrape_config.RSYNC_DIR +
-                        date_prefix)
-    log(rsync_command)
-    p = subprocess.run(
-        rsync_command,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    log("rsync return code: " + str(p.returncode))
-    if p.returncode != 0:
-        log("rsync failed!")
-
-
 def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_success):
     # Write logs
     try:
         if output_file_desc is not None:
             log('Writing logs for channel ', channel_id)
-            copy_log_file(channel_id, output_file_desc, False)
+            copy_log_file(channel_id, output_file_desc)
 
-        if scrape_config.RSYNC_EN:
-            rsync()
-            if output_file_desc is not None:
-                copy_log_file(channel_id, output_file_desc, True)
 
         # Write result to file
         log('Writing result of crawl to ', channel_res_file)
@@ -322,18 +301,14 @@ def check_folders():
             os.makedirs(fullpath)
 
 
-def copy_log_file(channel_id, output_file_desc, is_rsync_res):
+def copy_log_file(channel_id, output_file_desc):
     filename = '{}-{}'.format(
         channel_id,
         int(time.time())
     )
 
-    if not is_rsync_res:
-        output_path = str(scrape_config.DATA_DIR) + "/" + \
+    output_path = str(scrape_config.DATA_DIR) + "/" + \
                       scrape_config.LOG_PREFIX +"/" + str(filename) + ".log"
-    else:
-        output_path = str(scrape_config.DATA_DIR) + "/" + \
-                      scrape_config.LOG_PREFIX +"/" + str(filename) + ".rsync.log"
 
     #copy dest file for copying
     to_file = open(output_path,mode="w")
