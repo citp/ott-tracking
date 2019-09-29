@@ -30,6 +30,7 @@ class RokuRemoteControl():
         except requests.exceptions.HTTPError as err:
             print((r.status_code, r.reason))
         except Exception as e:
+            print ("HTTP POST REQ FAIL FOR %s" % str(url))
             traceback.print_tb(e.__traceback__)
             return None
         return r

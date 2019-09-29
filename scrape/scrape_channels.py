@@ -44,6 +44,7 @@ if scrape_config.REC_AUD_BY_ARECORD:
     from audio_recorder import audio_played_second
 
 MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
+EXTERN_FAIL_PREFIX = '/tmp/extern_fail'
 OTT_CURRENT_CHANNEL_FILE = "/tmp/OTT_CURRENT_CHANNEL"
 CRAWL_FINISHED_FILE = "/tmp/CRAWL_FINISHED.txt"
 
@@ -146,6 +147,10 @@ def write_log_files(output_file_desc, channel_id, channel_res_file, scrape_succe
         log(traceback.format_exc())
 
 
+def channel_extern_failure_file(channel_id):
+    return "%s_%s" % (EXTERN_FAIL_PREFIX, str(channel_id))
+
+
 def start_crawl(channel_list_file):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
@@ -223,7 +228,24 @@ def start_crawl(channel_list_file):
                 log('Skipping', channel['id'], ' due to:', channel_res_file)
                 continue
 
-            scrape_success = pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, reboot_device)
+            #This file indicates external errors!
+            extern_fail_file = channel_extern_failure_file(str(channel['id']))
+            remove_file(extern_fail_file)
+
+            scrape_success = pre_auto_scrape(channel, output_file_desc,
+                                             channel_res_file, date_prefix, reboot_device)
+            while isfile(extern_fail_file):
+                log("Crawl for channel %s had external failure."
+                    % str(channel['id']))
+                if failure_count > 5:
+                    break
+                log("Sleeping 1 minutes...")
+                remove_file(extern_fail_file)
+                failure_count += 1
+                time.sleep(60)
+                scrape_success = pre_auto_scrape(channel, output_file_desc,
+                                                 channel_res_file, date_prefix,
+                                                 reboot_device)
             if scrape_success:
                 failure_count = 0
             else:
@@ -239,23 +261,18 @@ def start_crawl(channel_list_file):
             email_msg += "Crawl results will be moved to NFS."
         send_alert_email("[Crawl Finished]", email_msg)
 
-
 @timeout(scrape_config.SCRAPE_TO)
 def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, reboot_device):
     log('Scraping', channel['_category'], '-', channel['id'])
     channel_state = CrawlState.STARTING
     try:
         scrape_success = False
-        if scrape_config.THREADED_SCRAPE:
-            que = queue.Queue()
-            t = PropagatingThread(target=lambda q, arg1, arg2, arg3: q.put(automatic_scrape(arg1, arg2, arg3)),
-                                  args=(que, channel['id'], date_prefix, reboot_device, ))
+        channel_state = automatic_scrape(channel['id'], date_prefix, reboot_device)
 
-            t.start()
-            t.join(timeout=scrape_config.SCRAPE_TO)
-            channel_state = que.get()
-        else:
-            channel_state = automatic_scrape(channel['id'], date_prefix, reboot_device)
+        extern_fail_file = channel_extern_failure_file(str(channel['id']))
+        if isfile(extern_fail_file):
+            return False
+
         log("Crawl result: " + str(channel_state))
         if channel_state == channel_state.TERMINATED:
             scrape_success = True
@@ -349,6 +366,9 @@ def detect_playback_using_audio(seconds, surfer):
         recent_audio_path = join(
             scrape_config.DATA_DIR, scrape_config.AUDIO_PREFIX,
             str(surfer.channel_id), recent_audio_filename)
+        if not isfile(recent_audio_path):
+            log("Audio path %s not found!" %recent_audio_path)
+            return False
         return -1 != audio_played_second(recent_audio_path, 5)
 
 
@@ -505,6 +525,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
         timestamp = int(time.time())
         surfer.capture_packets(timestamp)
         with open(OTT_CURRENT_CHANNEL_FILE, 'w') as f:
+            log("Writing to %s" % OTT_CURRENT_CHANNEL_FILE)
             f.write("%s" % channel_id)
 
         if scrape_config.REC_AUD_BY_ARECORD:
@@ -533,6 +554,9 @@ def clean_up_channel(surfer, recorder=None, mitmrunner=None):
         recorder.dump(join(scrape_config.DATA_DIR,
                            str(scrape_config.AUDIO_PREFIX), audio_file_addr))
     elif scrape_config.REC_AUD_BY_ARECORD:
+        if isfile(OTT_CURRENT_CHANNEL_FILE):
+            print("Removing OTT_CURRENT_CHANNEL_FILE in "
+                  "%s" % OTT_CURRENT_CHANNEL_FILE)
         remove_file(OTT_CURRENT_CHANNEL_FILE)
 
     surfer.kill_all_tcpdump()

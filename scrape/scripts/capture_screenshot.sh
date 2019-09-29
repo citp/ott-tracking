@@ -6,11 +6,12 @@ sleep 2s
 rm /tmp/SMART_TV_KILL_SCREENSHOT
 
 # Capture screenshot continuously and write to same file
-ScreenshotFile="${LogDir}/continuous_screenshot-%Y-%m-%d_%H-%M-%S.png"
-ScreenshotLogFile=${LogDir}/continuous_screenshot.log
+mkdir -p ${SCREENSHOT_FOLDER} 2> /dev/null
+ScreenshotFile="${SCREENSHOT_FOLDER}/continuous_screenshot-%Y-%m-%d_%H-%M-%S.png"
+ScreenshotLogFile=${SCREENSHOT_FOLDER}/continuous_screenshot.log
 
 # Remove previous screenshot files
-rm ${LogDir}/continuous_screenshot-*.png
+rm ${SCREENSHOT_FOLDER}/continuous_screenshot-*.png
 
 set -x
 while true
