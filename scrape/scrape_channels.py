@@ -529,7 +529,8 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
             f.write("%s" % channel_id)
 
         if scrape_config.REC_AUD_BY_ARECORD:
-            subprocess.call('pgrep -f capture_audio | xargs kill -9&', shell=True)
+            #Killing existing audio capture script
+            subprocess.call('pgrep -f capture_audio | xargs kill -9 2>> /dev/null', shell=True)
             subprocess.call('./scripts/capture_audio.sh&', shell=True)
 
         if scrape_config.MITMPROXY_ENABLED:
