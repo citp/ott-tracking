@@ -4,6 +4,8 @@ DETECTION_WINDOW=5
 CURRENT_CHANNEL=/tmp/OTT_CURRENT_CHANNEL
 CRAWL_FINISHED_FILE="/tmp/CRAWL_FINISHED.txt"
 EXTERN_FAIL_PREFIX='/tmp/extern_fail'
+#kill existing arecords
+pkill -9 arecord
 
 # echo "HOSTNAME".$HOSTNAME
 # set the audio HW name for arecord
