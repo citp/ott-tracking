@@ -1,4 +1,6 @@
 import os
+from requests import get
+
 '''
 Crawl settings
 '''
@@ -66,8 +68,10 @@ else:
 
 PLAT = os.getenv("PLATFORM")
 
+EXTERNAL_IP_ADDRESS = get('https://api.ipify.org').text
+
 print("Environment:")
-l = list( locals().items())
+l = list(locals().items())
 for k in l:
     if "__" in k[0] or "module" in str(k[1]):
         continue
