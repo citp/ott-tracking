@@ -239,7 +239,7 @@ def start_crawl(channel_list_file):
                     % str(channel['id']))
                 if failure_count > 5:
                     break
-                log("Sleeping 1 minutes...")
+                log("Sleeping 1 minute...")
                 remove_file(extern_fail_file)
                 failure_count += 1
                 time.sleep(60)
@@ -529,6 +529,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
             f.write("%s" % channel_id)
 
         if scrape_config.REC_AUD_BY_ARECORD:
+            subprocess.call('pgrep -f capture_audio | xargs kill -9&', shell=True)
             subprocess.call('./scripts/capture_audio.sh&', shell=True)
 
         if scrape_config.MITMPROXY_ENABLED:
