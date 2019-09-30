@@ -256,6 +256,7 @@ def get_crawl_parameter(craw_dir, param_name):
         for line in open(crawl_config):
             if param_name in line:
                 return line.rstrip().split("=")[-1]
+    raise ValueError('Cannot find %s in %s' % (param_name, craw_dir))
 
 
 def get_tv_ip_addr(craw_dir):
@@ -331,7 +332,7 @@ def get_hostname_for_tcp_conn(row, http_domains, tls_snis, ip_2_domains_by_chann
 
 # Create global_df, containing all SSL/TCP streams SYN packets
 def get_distinct_tcp_conns(crawl_name, name_resolution=True,
-                           drop_from_unfinished=True, http_requests=None):
+                           drop_from_unfinished=True, http_requests=None, adBlockStat=True):
     df = pd.DataFrame([])
     crawl_data_dir = get_crawl_data_path(crawl_name)
     tv_ip = get_tv_ip_addr(crawl_data_dir)
@@ -348,6 +349,7 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     for txt_path in glob(join(post_process_dir, pattern)):
         filename = basename(txt_path)
         channel_id = filename.split("-")[0]
+        #print(txt_path)
         tmp_df = pd.read_csv(txt_path, sep=',', encoding='utf-8',
                              index_col=None,
                              error_bad_lines=False)
@@ -389,7 +391,8 @@ def get_distinct_tcp_conns(crawl_name, name_resolution=True,
     df['host'] = df.apply(lambda x: get_hostname_for_tcp_conn(x, http_hostnames, tls_snis, ip_2_domains_by_channel), axis=1)
     df = replace_nan(df)
 
-    add_adblocked_status(df)
+    if adBlockStat:
+        add_adblocked_status(df)
 
     df['domain'] = df.host.map(lambda x: get_fld("http://" + x, fail_silently=True))
     return df
