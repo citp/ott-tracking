@@ -19,7 +19,6 @@ import subprocess
 import sys
 import redisdl
 import threading
-import queue
 import enum
 import scrape_config
 import glob
@@ -151,6 +150,13 @@ def channel_extern_failure_file(channel_id):
     return "%s_%s" % (EXTERN_FAIL_PREFIX, str(channel_id))
 
 
+# indicates an external failure happened
+def channel_extern_failure(channel_id):
+    extern_fail_file = channel_extern_failure_file(channel_id)
+    if isfile(extern_fail_file):
+        return True
+
+
 def start_crawl(channel_list_file):
     output_file_desc = open(scrape_config.LOG_FILE_PATH_NAME)
     dns_sniffer_run()
@@ -234,7 +240,7 @@ def start_crawl(channel_list_file):
 
             scrape_success = pre_auto_scrape(channel, output_file_desc,
                                              channel_res_file, date_prefix, reboot_device)
-            while isfile(extern_fail_file):
+            while channel_extern_failure(str(channel['id'])):
                 log("Crawl for channel %s had external failure."
                     % str(channel['id']))
                 if failure_count > 5:
@@ -268,10 +274,6 @@ def pre_auto_scrape(channel, output_file_desc, channel_res_file, date_prefix, re
     try:
         scrape_success = False
         channel_state = automatic_scrape(channel['id'], date_prefix, reboot_device)
-
-        extern_fail_file = channel_extern_failure_file(str(channel['id']))
-        if isfile(extern_fail_file):
-            return False
 
         log("Crawl result: " + str(channel_state))
         if channel_state == channel_state.TERMINATED:
@@ -707,8 +709,10 @@ def cleanup_data_folder(data_dir, channel_id):
         print('Removing existing location %s for channel %s.' % (fname, channel_id))
         rmtree(fname)
 
-def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
-    log('Collecting data for channel %s' % str(surfer.channel_id))
+
+def terminate(surfer, mitmrunner):
+    stop_screenshot()
+    log('Terminating crawler for channel %s' % str(surfer.channel_id))
     surfer.timestamp_event("terminate")
 
     err_occurred = False
@@ -716,10 +720,24 @@ def terminate_and_collect_data(surfer, mitmrunner, date_prefix):
         clean_up_channel(surfer, recorder, mitmrunner)
         surfer.deduplicate_screenshots()
         surfer.terminate_rrc()
+    except TimeoutError:
+        log('Timeout for crawl expired in terminate!')
+        raise
+    except Exception:
+        err_occurred = True
+        log('Error!')
+        traceback.print_exc()
+    return err_occurred
+
+
+def collect_data(surfer, date_prefix):
+    log('Collecting data for channel %s' % str(surfer.channel_id))
+    surfer.timestamp_event("collect_data")
+
+    err_occurred = False
+    try:
         dump_redis(join(scrape_config.DATA_DIR, scrape_config.DB_PREFIX), date_prefix)
         surfer.write_timestamps()
-        #dump_as_json(timestampsn(scrape_config.DATA_DIR, scrape_config.LOG_PREFIX,
-        #                              "%s_timestamps.json" % channel_id))
     except TimeoutError:
         log('Timeout for crawl expired in collect_data!')
         raise
@@ -755,8 +773,11 @@ def automatic_scrape(channel_id, date_prefix, reboot_device):
                 if not err_occurred:
                     channel_state = CrawlState.TERMINATING
                     # Terminate screenshots immediately
-                    stop_screenshot()
-                    err_occurred = terminate_and_collect_data(surfer, mitmrunner, date_prefix)
+                    err_occurred = terminate(surfer, mitmrunner)
+                    if channel_extern_failure(channel_id):
+                        err_occurred = True
+                    if not err_occurred:
+                        err_occurred = collect_data(surfer, date_prefix)
                     if not err_occurred:
                         channel_state = CrawlState.TERMINATED
                     if not surfer.ever_active:
