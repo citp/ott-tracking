@@ -30,8 +30,7 @@ elif scrape_config.PLAT == "AMAZON":
 # 4-SCRIPT* (COLLECT_DATA): collect pcap, (opt. mitm logs), redis-db
 # 5-SCRIPT (END_CHNL): terminate tcpdump, (opt. mitmdump), dns_sniffer
 
-scrape_config.REC_AUD_BY_PYAUDIO = False
-scrape_config.REC_AUD_BY_ARECORD = False
+scrape_config.REC_AUD = False
 
 
 OPENWPM_PROCESS = None

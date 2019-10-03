@@ -36,10 +36,8 @@ from shutil import copyfile, copyfileobj, rmtree
 from os.path import join, isfile
 from timeout import timeout
 from time import sleep
-if scrape_config.REC_AUD_BY_PYAUDIO:
-    from audio_recorder import AudioRecorder
 
-if scrape_config.REC_AUD_BY_ARECORD:
+if scrape_config.REC_AUD:
     from audio_recorder import audio_played_second
 
 MITM_LEARNED_NEW_ENDPOINT = "/tmp/MITM_LEARNED_NEW_ENDPOINT"
@@ -193,8 +191,6 @@ def start_crawl(channel_list_file):
                 channels.remove(channel)
 
         if not next_channels:
-            if scrape_config.REC_AUD_BY_PYAUDIO:
-                recorder.complete_audio_recording()
             dns_sniffer_stop()
             log("Scrapping finished. Terminating the crawl")
             break
@@ -299,18 +295,6 @@ def log(*args):
     with open(os.path.join(scrape_config.LOCAL_LOG_DIR , scrape_config.LOG_FILE), 'a') as fp:
         print(s, file=fp)
 
-if scrape_config.REC_AUD_BY_PYAUDIO:
-    # Create recorder object
-    try:
-        recorder = AudioRecorder(log)
-        recorder.start()  # Starting audio thread
-    except Exception as e:
-        log(e)
-        log('Error while creating the recorder. Perhaps the device doesn\'t have an audio output cable connected?')
-        scrape_config.REC_AUD_BY_PYAUDIO = False
-else:
-    recorder = None
-
 
 def check_folders():
     for f in scrape_config.folders:
@@ -360,9 +344,7 @@ def detect_playback_using_screenshots(surfer):
 
 
 def detect_playback_using_audio(seconds, surfer):
-    if scrape_config.REC_AUD_BY_PYAUDIO:
-        return recorder.is_audio_playing(seconds)
-    elif scrape_config.REC_AUD_BY_ARECORD:
+    if scrape_config.REC_AUD:
         # surfer.channel_id
         recent_audio_filename = "%s_most_recent.wav" % surfer.channel_id
         recent_audio_path = join(
@@ -530,7 +512,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
             log("Writing to %s" % OTT_CURRENT_CHANNEL_FILE)
             f.write("%s" % channel_id)
 
-        if scrape_config.REC_AUD_BY_ARECORD:
+        if scrape_config.REC_AUD:
             #Killing existing audio capture script
             subprocess.call('pgrep -f capture_audio | xargs kill -9 2>> /dev/null', shell=True)
             subprocess.call('./scripts/capture_audio.sh&', shell=True)
@@ -552,12 +534,7 @@ def setup_channel(channel_id, date_prefix, reboot_device=False):
 
 
 def clean_up_channel(surfer, recorder=None, mitmrunner=None):
-    if scrape_config.REC_AUD_BY_PYAUDIO:
-        audio_file_addr = '%s.wav' % '{}-{}'.format(surfer.channel_id,
-                                                    int(time.time()))
-        recorder.dump(join(scrape_config.DATA_DIR,
-                           str(scrape_config.AUDIO_PREFIX), audio_file_addr))
-    elif scrape_config.REC_AUD_BY_ARECORD:
+    if scrape_config.REC_AUD:
         if isfile(OTT_CURRENT_CHANNEL_FILE):
             print("Removing OTT_CURRENT_CHANNEL_FILE in "
                   "%s" % OTT_CURRENT_CHANNEL_FILE)
@@ -670,8 +647,6 @@ def crawl_channel(surfer, mitmrunner, manual_crawl=False):
     else:
         err_occurred = False
         try:
-            if scrape_config.REC_AUD_BY_PYAUDIO:
-                recorder.start_recording(scrape_config.SCRAPE_TO, surfer.channel_id)
 
             if scrape_config.MITMABLE_DOMAINS_WARM_UP_CRAWL:
                 launch_channel_for_mitm_warmup(surfer, scrape_config.LAUNCH_RETRY_CNT)
