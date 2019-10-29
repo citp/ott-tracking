@@ -41,7 +41,7 @@ usage()
     echo "The order of arguments MUST be preserved!"
 }
 
-while [ "$1" != "" ]; do
+while [[ "$1" != "" ]]; do
     case $1 in
         # write results to file
         -w )                    WRITE_TO_FILE=true
@@ -96,25 +96,25 @@ done
 # create a temp dir to store intermediate files
 #if [ "$WRITE_TO_FILE" = true ] ; then
 #    OUTDIR=$(mktemp -d pcap_extract_fields.XXXXXXXXX)
-mkdir -p $OUTDIR
+mkdir -p ${OUTDIR}
 #fi
 
 MAX_PROCESS=8
 i=0
-for f in $PCAP_DIR/*.pcap; do
+for f in ${PCAP_DIR}/*.pcap; do
   basename=$(basename "$f")
   channelid=`echo $basename | awk -F'[-]' '{print $1}'`
 
   SSLKEYOPTION=""
   # We assume that each SSLKEYLOGFILE is like 1234.txt
-  SSLKEYFILE=${SSLKEYLOGFOLDER}/`ls $SSLKEYLOGFOLDER | grep "^${channelid}\.txt"`
+  SSLKEYFILE=${SSLKEYLOGFOLDER}/`ls ${SSLKEYLOGFOLDER} | grep "^${channelid}\.txt"`
   [[ ! -z "${SSLKEYLOGFOLDER}" ]] && SSLKEYOPTION="-o ssl.keylog_file:${SSLKEYFILE}"
 
-  if [ "$WRITE_TO_FILE" = true ] ; then
+  if [[ "$WRITE_TO_FILE" = true ]] ; then
     FILE_ADDR=${OUTDIR}/${basename}.${SUFFIX}
-    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPARATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq > ${FILE_ADDR} && chmod 777 ${FILE_ADDR} && echo Finished processing "${FILE_ADDR}" &
+    tshark -r $f ${SSLKEYOPTION} -E header=y -E separator=${SEPARATOR} -T ${FORMAT} ${FIELDS} -Y "${FILTER}" | uniq > ${FILE_ADDR} && chmod 777 ${FILE_ADDR} && echo Finished processing "${FILE_ADDR}" &
   else
-    tshark -r $f $SSLKEYOPTION -E header=y -E separator=$SEPARATOR -T $FORMAT $FIELDS -Y "$FILTER" | uniq  &
+    tshark -r $f ${SSLKEYOPTION} -E header=y -E separator=${SEPARATOR} -T ${FORMAT} ${FIELDS} -Y "${FILTER}" | uniq  &
   fi
 
   #sleep 0.05;
@@ -124,7 +124,7 @@ for f in $PCAP_DIR/*.pcap; do
 done
 wait
 
-if [ "$WRITE_TO_FILE" = true ] ; then
+if [[ "$WRITE_TO_FILE" = true ]] ; then
   echo "Output in $OUTDIR"
 fi
 
