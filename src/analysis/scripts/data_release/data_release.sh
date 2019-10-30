@@ -32,13 +32,13 @@ FORMAT="json"
 SUFFIX="http.json"
 FIELDS="-e frame.time_epoch -e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport -e http.request.method \
 -e http.request.full_uri -e http.file_data"
-./extract_fields.sh -w ${OUT_DIR} -s ${SUFFIX} -i ${PCAP_DIR} -o ${KEY_DIR} -f ${FILTER} -t ${FORMAT} ${FIELDS}
+../extract_fields.sh -w ${OUT_DIR} -s ${SUFFIX} -i ${PCAP_DIR} -o ${KEY_DIR} -f ${FILTER} -t ${FORMAT} ${FIELDS}
 
 #Get all DNS requests and responses
 FILTER="dns"
 SUFFIX="dns.json"
 FIELDS="-e frame.time_epoch -e dns.qry.name -e dns.a -e dns.aaaa"
-./extract_fields.sh -w ${OUT_DIR} -s ${SUFFIX} -i ${PCAP_DIR} -o ${KEY_DIR} -f ${FILTER} -t ${FORMAT} ${FIELDS}
+../extract_fields.sh -w ${OUT_DIR} -s ${SUFFIX} -i ${PCAP_DIR} -o ${KEY_DIR} -f ${FILTER} -t ${FORMAT} ${FIELDS}
 
 #Create the crawl info file
 CRAWL_INFO_FILE="${OUT_DIR}/crawl_info.txt"
