@@ -1,4 +1,4 @@
-# TLS Fingerprinting
+# Extract TLS Fingerprints from a given PCAP
 
 ## Installation
 
