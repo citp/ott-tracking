@@ -776,21 +776,7 @@ def flushall_iptables():
 
 
 def send_alert_email(subject, msg):
-    fromaddr = 'abbbbbba23@gmail.com'
-    toaddrs = ['hoomanm@princeton.edu', 'gunes@princeton.edu', 'yuxingh@cs.princeton.edu']
-    msg = 'Subject: %s\n\n%s' % (subject, msg)
-    # Credentials (if needed)
-    username = 'abbbbbba23@gmail.com'
-    password = 'Abbbbbba1'  # TODO change it
-
-    # The actual mail send
-    server = SMTP('smtp.gmail.com:587')
-    server.starttls()
-    server.login(username, password)
-    log('Sending notification email to ' + str(toaddrs))
-    server.sendmail(fromaddr, toaddrs, msg)
-    server.quit()
-
+    pass
 
 def remove_crawl_finished_file():
     try:
