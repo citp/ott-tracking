@@ -1,1 +1,0 @@
-dumpcap -P -i eth0 -w /output.pcap -b 'filesize:100000' -f 'net 172.24.1.1/24'
