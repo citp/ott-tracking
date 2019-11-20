@@ -1,3 +1,9 @@
+"""
+Based on https://github.com/mitmproxy/mitmproxy/blob/master/examples/complex/sslstrip.py
+This script implements an sslstrip-like attack based on mitmproxy.
+https://moxie.org/software/sslstrip/
+"""
+
 import collections
 import redis
 import time
@@ -38,33 +44,6 @@ def append_to_file(file_path, text):
     with open(file_path, 'a') as f:
         f.write(text)
 
-"""
-
-gunes: it is quite difficult parse the existing format
-# we switched to flat format instead
-EOL = "\n"
-def convert_unmitmable(filename, outdir):
-    tuples = set()
-    for l in open(filename):
-        l = l.rstrip()
-        if not l:
-            continue
-        parts = l.split(" ", 2)
-        ch_id = parts[1].replace('"', '').strip(":")
-        b = json.loads(parts[2])
-        assert len(b) == 1
-        domain = b.keys()[0]
-        ip_port = b.values()[0]
-        ip = ip_port.split(" ")[0].split("'")[1]
-        # port = ip_port.split(" ")[1].rstrip(")")
-        if not ip:
-            raise ValueError("convert_unmitmable: No IP address")
-        tuples.add((ch_id, ip, domain))
-    f_basename = basename(filename)
-    with open(join(outdir, f_basename), "w") as f:
-        for _tuple in tuples:
-            f.write("\t".join(_tuple) + EOL)
-"""
 
 def loadUnMitmableHostsAndIps(filename):
     hosts = set()
@@ -349,13 +328,6 @@ def next_layer(next_layer):
             next_layer_replacement = RawTCPLayer(next_layer.ctx, ignore=True)
             next_layer.reply.send(next_layer_replacement)
             # tls_strategy.record_skipped(server_address)
-
-
-
-"""
-This script implements an sslstrip-like attack based on mitmproxy.
-https://moxie.org/software/sslstrip/
-"""
 
 
 # set of SSL/TLS capable hosts

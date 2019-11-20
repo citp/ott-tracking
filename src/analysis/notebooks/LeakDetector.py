@@ -1,3 +1,10 @@
+"""
+ Based on code from "I never signed up for this! Privacy implications of email
+ tracking" by Steve Englehardt, Jeffrey Han, Arvind Narayanan.
+ Proceedings on Privacy Enhancing Technologies 2018.1 (2018): 109-126.
+"""
+
+
 import html
 try:
     from urlparse import urlparse

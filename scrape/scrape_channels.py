@@ -1,5 +1,5 @@
 """
-Goes through channel list. Scrapes all of them.
+Scrapes channels in the CSV.
 
 TODO:
 
