@@ -74,7 +74,7 @@ def read_pcap_fields_from_csvs(csv_dir, suffix=".csv"):
 
 
 # Download and parse Roku channel json - From Danny's notebook
-CHANNEL_DATA_URL = 'https://iot-inspector.princeton.edu/pcaps/roku-channel-surfer/channel-list.txt'
+CHANNEL_DATA_URL = 'https://remote-server-hosting-pcaps/pcaps/roku-channel-surfer/channel-list.txt'
 
 
 def download_roku_channel_details(channel_data_url=CHANNEL_DATA_URL):
