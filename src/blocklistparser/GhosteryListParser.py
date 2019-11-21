@@ -1,3 +1,7 @@
+"""
+Based on @shivamagarwal-iitb code from https://github.com/shivamagarwal-iitb/BlockListParser
+"""
+
 import re
 import json
 import utils
