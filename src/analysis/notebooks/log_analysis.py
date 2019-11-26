@@ -781,7 +781,5 @@ def get_last_smart_launch_times(crawl_name):
     return last_smart_launch_times
 
 if __name__ == '__main__':
-    crawl_data_dir = get_crawl_data_path("/media/gacar/Data/iot-house/roku-data-20190505-165349")
-    print(get_ott_device_mac(crawl_data_dir))
-    # req,_, _ = get_http_df("amazon-data-20190510-205355")
+    pass
 

@@ -22,9 +22,8 @@ TSHARK_FIELD_SEP = "|"
 ROKU_MACS = ["d8:31:34:22:e6:ff"]  # Roku MAC addresses to filter packets
 
 CRAWL_ROOT_DIRS = [
-    '/mnt/iot-house/crawl-data/',
     expanduser('~/dev/smart-tv/data'),
-    '/media/gacar/Data/iot-house/',
+    '/Data/iot-house/',
     ]
 
 
