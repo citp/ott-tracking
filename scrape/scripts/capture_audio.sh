@@ -10,16 +10,8 @@ pkill -9 arecord
 # echo "HOSTNAME".$HOSTNAME
 # set the audio HW name for arecord
 # http://www.voxforge.org/home/docs/faq/faq/linux-how-to-determine-your-audio-cards-or-usb-mics-maximum-sampling-rate
-if [ "$HOSTNAME" = "miyav" ]; then
-  AUDIO_HW="hw:0,0"
-elif [ "$HOSTNAME" = "asgard" ]; then
-  AUDIO_HW="hw:0,0"
-elif [ "$HOSTNAME" = "torro" ]; then
-  AUDIO_HW="hw:2,0"
-else
-  echo "I don't know about this machine. Please update this script"
-  exit 1
-fi
+AUDIO_HW="hw:0,0"
+
 
 CHANNEL_ID=$(<${CURRENT_CHANNEL})
 CH_AUDIO_DIR=${AUDIO_ROOT_DIR}/${CHANNEL_ID}
