@@ -72,7 +72,7 @@ def read_pcap_fields_from_csvs(csv_dir, suffix=".csv"):
             yield [channel_id, start_ts] + pcap_fields
 
 
-# Download and parse Roku channel json - From Danny's notebook
+# Download and parse Roku channel json
 CHANNEL_DATA_URL = 'https://remote-server-hosting-pcaps/pcaps/roku-channel-surfer/channel-list.txt'
 
 
