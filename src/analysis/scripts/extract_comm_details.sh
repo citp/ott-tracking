@@ -101,8 +101,3 @@ python3 pickle_dfs.py $DATA_DIR
 # detect leaks on the http traffic
 python2 detect_leaks.py $DATA_DIR
 cd -
-
-# Run OCR detection
-# cd ../../imagetextparser/
-# python3 cloudvisiontextparser.py $IMG_DIR $OUT_DIR 8
-# cd -

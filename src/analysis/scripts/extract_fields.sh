@@ -25,9 +25,6 @@
 #
 # Geolocation (and pretty much everything)
 #   extract_fields.sh /path/to/pcaps -e eth.src -e ip.proto -e ip.dst -e frame.protocols -e tcp.dstport -e udp.dstport -e http.request.method -e http.host -e ssl.handshake.extensions_server_name -e ip.geoip.dst_country -e ip.geoip.dst_city -e ip.geoip.dst_asnum -e ip.geoip.dst_lat -e ip.geoip.dst_lon
-#
-# Inspired by the command at:
-# https://docs.google.com/document/d/12w11tJux344TZe3wLajzCD6D3BJJVZEYMMePgLvZSPg/edit#
 
 
 FILTER="eth"  # do not filter out any packets by default
@@ -127,12 +124,3 @@ wait
 if [[ "$WRITE_TO_FILE" = true ]] ; then
   echo "Output in $OUTDIR"
 fi
-
-
-
-#Contenders for POST body capture:
-#tshark: https://stackoverflow.com/questions/8903815/how-do-i-use-tshark-to-print-request-response-pairs-from-a-pcap-file
-#httpdump: https://github.com/hsiafan/httpdump
-#httpcap https://pypi.org/project/httpcap/
-#pcap-http-analyzer: https://github.com/Enough-Software/pcap-http-analyzer.git
-
