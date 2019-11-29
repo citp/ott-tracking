@@ -253,9 +253,6 @@ def start_crawl(channel_list_file):
             else:
                 failure_count += 1
 
-    if scrape_config.MOVE_TO_NFS:
-        subprocess.call('./tools/move-to-nfs/move.sh ' + scrape_config.DATA_DIR + " ~/csportal-mnt/crawl-data/",
-                        shell=True)
     if scrape_config.SEND_EMAIL_AFTER_CRAWL:
         log('Sending notification email.')
         email_msg = "Crawl %s finished.\r\n" % (scrape_config.DATA_DIR)
@@ -820,4 +817,3 @@ if __name__ == '__main__':
         sys.exit(0)
     #NOTE: This doesn't terminate child processes
     # executed with Popen! They remain running!
-
