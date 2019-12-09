@@ -1,0 +1,13 @@
+#Set platform
+export PLATFORM=ROKU
+
+# TV IP address
+export TV_IP_ADDR='0.0.0.0'
+
+# Data directory for logs, flows and and other data
+DATA_DIR_SUFFIX="roku-data"
+export DATA_DIR=`realpath $DATA_DIR_PREFIX`/${DATA_DIR_SUFFIX}
+
+# TODO: read from this env var
+# Directory of unmitmable hosts we built in the warm up crawls
+export UNMITMABLE_HOST_DIR=""

@@ -1,0 +1,16 @@
+#Set platform
+export PLATFORM=AMAZON
+
+# TV IP address
+export TV_IP_ADDR='0.0.0.0'
+
+# Data directory for logs, flows and and other data
+DATA_DIR_SUFFIX="amazon-data"
+export DATA_DIR=`realpath $DATA_DIR_PREFIX`/${DATA_DIR_SUFFIX}
+
+# FireTV Serial Number:
+export TV_SERIAL_NO='[SERIAL_NUMBER]'
+
+# TODO: read from this env var
+# Directory of unmitmable hosts we built in the warm up crawls
+export UNMITMABLE_HOST_DIR=""
