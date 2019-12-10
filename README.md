@@ -1,10 +1,10 @@
-![Overview of our smart OTT crawler](diagram.png)
-
 # Introduction
   This repository contains code and data for the ACM CCS'19 paper ["Watching You Watch: The Tracking Ecosystem of Over-the-Top TV Streaming Devices"](https://tv-watches-you.princeton.edu/tv-tracking-acm-ccs19.pdf)
   
   Find out more about our research on the paper's website: https://tv-watches-you.princeton.edu/
-  
+
+![Overview of our smart OTT crawler](diagram.png)
+
 ## Repo Structure
 - scrape: Code for interacting with OTTs and capturing network traffic. See the [README](scrape/README.md) in [scrape](scrape) folder for instructions.
 - src: Analysis code. See the [README](src/README.md) in [src](src).
