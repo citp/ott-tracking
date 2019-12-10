@@ -5,4 +5,4 @@ For each new crawl, we run the `extract_comm_details.sh` script. This script pro
 - `cd src/analysis/scripts`
 - `./extract_comm_details.sh PATH_TO_CRAWL_DATA/roku-data-2019XXXX-XXXXXX/`
 
-Using the pickled datatframes, you can run the [notebooks](analysis/notebooks).
+You can then run the [notebooks](analysis/notebooks) using the pickled datatframes.
