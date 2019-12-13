@@ -1,9 +1,7 @@
 # Introduction
   This repository contains code for the ACM CCS'19 paper ["Watching You Watch: The Tracking Ecosystem of Over-the-Top TV Streaming Devices"](https://tv-watches-you.princeton.edu/tv-tracking-acm-ccs19.pdf)
   
-  For data please use this [form](https://tv-watches-you.princeton.edu/data_request/).
-  
-  Find out more about our research on the paper's website: https://tv-watches-you.princeton.edu/
+    Find out more about our research on the paper's website: https://tv-watches-you.princeton.edu/
 
 ![Overview of our smart OTT crawler](diagram.png)
 
@@ -12,6 +10,8 @@
 - src: Analysis code. See the [README](src/README.md) in [src](src).
 - tls-fingerprints: TLS fingerprinting code. See the [README](tls-fingerprints/README.md) in [tls-fingerprints](tls-fingerprints) folder for instructions.
 
+## Data requests
+You can fill in [this form](https://tv-watches-you.princeton.edu/data_request/) to request the data from the study.
 
 ## Citation
 You can use the following BibTeX entry to cite our paper:
