@@ -6,9 +6,9 @@ Find out more about our research on the paper's website: https://tv-watches-you.
 ![Overview of our smart OTT crawler](diagram.png)
 
 ## Repo Structure
-- scrape: Code for interacting with OTTs and capturing network traffic. See the [README](scrape/README.md) in [scrape](scrape) folder for instructions.
-- src: Analysis code. See the [README](src/README.md) in [src](src).
-- tls-fingerprints: TLS fingerprinting code. See the [README](tls-fingerprints/README.md) in [tls-fingerprints](tls-fingerprints) folder for instructions.
+- `scrape`: Code for interacting with OTTs and capturing network traffic. See the [README](scrape/README.md) in [scrape](scrape) folder for instructions.
+- `src`: Analysis code. See the [README](src/README.md) in [src](src).
+- `tls-fingerprints`: TLS fingerprinting code. See the [README](tls-fingerprints/README.md) in [tls-fingerprints](tls-fingerprints) folder for instructions.
 
 ## Data requests
 You can fill in [this form](https://tv-watches-you.princeton.edu/data_request/) to request the data from the study.
