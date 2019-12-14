@@ -1,4 +1,4 @@
-# Prerequisites
+## Prerequisites
 
 - Install pip3 ffmpeg
   - `sudo apt install python3-pip ffmpeg`
